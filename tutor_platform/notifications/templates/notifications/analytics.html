@@ -1,0 +1,221 @@
+{% extends "notifications/base.html" %}
+{% load static %}
+
+{% block notification_content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Notification Analytics</h2>
+    <div class="btn-group" role="group">
+        <button type="button" class="btn btn-outline-primary active">All Time</button>
+        <button type="button" class="btn btn-outline-primary">Last 7 Days</button>
+        <button type="button" class="btn btn-outline-primary">Last 30 Days</button>
+        <button type="button" class="btn btn-outline-primary">Last 90 Days</button>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-number">{{ stats.total }}</div>
+            <div class="stat-label">Total Notifications</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-number">{{ stats.read }}</div>
+            <div class="stat-label">Read</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-number">{{ stats.unread }}</div>
+            <div class="stat-label">Unread</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-number">
+                {% if stats.total > 0 %}
+                    {{ stats.read|mul:100|div:stats.total|floatformat:0 }}%
+                {% else %}
+                    0%
+                {% endif %}
+            </div>
+            <div class="stat-label">Read Rate</div>
+        </div>
+    </div>
+</div>
+
+<!-- Notification Types Chart -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Notifications by Type</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="typeChart" class="analytics-chart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Delivery Channels</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="channelChart" class="analytics-chart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Type Statistics Table -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">Notification Type Statistics</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive analytics-table">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th>Count</th>
+                        <th>Percentage</th>
+                        <th>Email Sent</th>
+                        <th>Push Sent</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for type_stat in type_stats %}
+                    <tr>
+                        <td>
+                            <span class="notification-type-badge type-{{ type_stat.notification_type|lower }}">
+                                {{ type_stat.notification_type }}
+                            </span>
+                        </td>
+                        <td>{{ type_stat.count }}</td>
+                        <td>
+                            {% if stats.total > 0 %}
+                                {{ type_stat.count|mul:100|div:stats.total|floatformat:1 }}%
+                            {% else %}
+                                0%
+                            {% endif %}
+                        </td>
+                        <td>
+                            <i class="fas fa-envelope {% if type_stat.email_sent > 0 %}text-success{% else %}text-muted{% endif %}"></i>
+                            {{ type_stat.email_sent }}
+                        </td>
+                        <td>
+                            <i class="fas fa-mobile-alt {% if type_stat.push_sent > 0 %}text-success{% else %}text-muted{% endif %}"></i>
+                            {{ type_stat.push_sent }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">Recent Activity</h5>
+    </div>
+    <div class="card-body">
+        {% if recent_notifications %}
+            <div class="list-group">
+                {% for notification in recent_notifications %}
+                <div class="list-group-item notification-item {% if not notification.is_read %}unread{% endif %} priority-{{ notification.priority|lower }}">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <h6 class="mb-1">{{ notification.title }}</h6>
+                            <p class="mb-1">{{ notification.content|truncatechars:100 }}</p>
+                        </div>
+                        <div class="ms-3">
+                            <span class="notification-type-badge type-{{ notification.notification_type|lower }}">
+                                {{ notification.notification_type }}
+                            </span>
+                            <span class="notification-type-badge priority-{{ notification.priority|lower }}">
+                                {{ notification.priority }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="text-muted small mt-2">
+                        <i class="fas fa-clock me-1"></i>
+                        {{ notification.created_at|timesince }} ago
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                No recent notification activity.
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Notification Type Chart
+const typeCtx = document.getElementById('typeChart').getContext('2d');
+const typeChart = new Chart(typeCtx, {
+    type: 'doughnut',
+    data: {
+        labels: [{% for type_stat in type_stats %}'{{ type_stat.notification_type }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+        datasets: [{
+            data: [{% for type_stat in type_stats %}{{ type_stat.count }}{% if not forloop.last %},{% endif %}{% endfor %}],
+            backgroundColor: [
+                '#007bff', '#28a745', '#ffc107', '#dc3545', '#17a2b8', '#20c997', '#6f42c1', '#e83e8c'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+
+// Delivery Channel Chart
+const channelCtx = document.getElementById('channelChart').getContext('2d');
+const channelChart = new Chart(channelCtx, {
+    type: 'bar',
+    data: {
+        labels: ['Email', 'Push', 'In-App'],
+        datasets: [{
+            label: 'Notifications Sent',
+            data: [{{ stats.email_sent }}, {{ stats.push_sent }}, {{ stats.total|sub:stats.email_sent|sub:stats.push_sent }}],
+            backgroundColor: [
+                'rgba(54, 162, 235, 0.7)',
+                'rgba(40, 167, 69, 0.7)',
+                'rgba(23, 162, 184, 0.7)'
+            ],
+            borderColor: [
+                'rgba(54, 162, 235, 1)',
+                'rgba(40, 167, 69, 1)',
+                'rgba(23, 162, 184, 1)'
+            ],
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

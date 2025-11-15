@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Unsubscribe from Notifications{% endblock %}
+
+{% block extra_css %}
+<style>
+    .unsubscribe-container {
+        max-width: 600px;
+        margin: 50px auto;
+        padding: 30px;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    .unsubscribe-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    .unsubscribe-icon {
+        font-size: 48px;
+        color: #dc3545;
+        margin-bottom: 20px;
+    }
+    .unsubscribe-options {
+        margin-bottom: 30px;
+    }
+    .frequency-option {
+        display: flex;
+        align-items: center;
+        padding: 15px;
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+        margin-bottom: 10px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+    .frequency-option:hover {
+        background-color: #f0f0f0;
+    }
+    .frequency-option input {
+        margin-right: 10px;
+    }
+    .notification-types {
+        margin-bottom: 30px;
+    }
+    .type-group {
+        margin-bottom: 20px;
+    }
+    .type-group h6 {
+        margin-bottom: 10px;
+        color: #495057;
+    }
+    .type-checkboxes {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 10px;
+    }
+    .btn-container {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 30px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="unsubscribe-container">
+        <div class="unsubscribe-header">
+            <div class="unsubscribe-icon">
+                <i class="fas fa-bell-slash"></i>
+            </div>
+            <h1>Notification Preferences</h1>
+            <p class="lead">Manage how you receive notifications from TutorPlatform</p>
+        </div>
+        
+        <form method="post" action="{% url 'notifications:unsubscribe' %}">
+            {% csrf_token %}
+            <input type="hidden" name="token" value="{{ token }}">
+            <input type="hidden" name="email" value="{{ email }}">
+            
+            <!-- Email Notifications -->
+            <div class="notification-types">
+                <h5>Email Notifications</h5>
+                <div class="type-group">
+                    <h6>Notification Types</h6>
+                    <div class="type-checkboxes">
+                        <label class="form-check">
+                            <input type="checkbox" class="form-check-input" name="email_messages" checked>
+                            <span class="form-check-label">Messages</span>
+                        </label>
+                        <label class="form-check">
+                            <input type="checkbox" class="form-check-input" name="email_proposals" checked>
+                            <span class="form-check-label">Proposals</span>
+                        </label>
+                        <label class="form-check">
+                            <input type="checkbox" class="form-check-input" name="email_awards" checked>
+                            <span class="form-check-label">Awards</span>
+                        </label>
+                        <label class="form-check">
+                            <input type="checkbox" class="form-check-input" name="email_sessions" checked>
+                            <span class="form-check-label">Sessions</span>
+                        </label>
+                        <label class="form-check">
+                            <input type="checkbox" class="form-check-input" name="email_reviews" checked>
+                            <span class="form-check-label">Reviews</span>
+                        </label>
+                        <label class="form-check">
+                            <input type="checkbox" class="form-check-input" name="email_payments" checked>
+                            <span class="form-check-label">Payments</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="type-group">
+                    <h6>Email Frequency</h6>
+                    <div class="unsubscribe-options">
+                        <label class="frequency-option">
+                            <input type="radio" name="frequency" value="immediate" checked>
+                            <span>Immediate</span>
+                        </label>
+                        <label class="frequency-option">
+                            <input type="radio" name="frequency" value="daily">
+                            <span>Daily Digest</span>
+                        </label>
+                        <label class="frequency-option">
+                            <input type="radio" name="frequency" value="weekly">
+                            <span>Weekly Digest</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Push Notifications -->
+            <div class="notification-types">
+                <h5>Push Notifications</h5>
+                <div class="type-group">
+                    <h6>Notification Types</h6>
+                    <div class="type-checkboxes">
+                        <label class="form-check">
+                            <input type="checkbox" class="form-check-input" name="push_messages" checked>
+                            <span class="form-check-label">Messages</span>
+                        </label>
+                        <label class="form-check">
+                            <input type="checkbox" class="form-check-input" name="push_proposals" checked>
+                            <span class="form-check-label">Proposals</span>
+                        </label>
+                        <label class="form-check">
+                            <input type="checkbox" class="form-check-input" name="push_awards" checked>
+                            <span class="form-check-label">Awards</span>
+                        </label>
+                        <label class="form-check">
+                            <input type="checkbox" class="form-check-input" name="push_sessions" checked>
+                            <span class="form-check-label">Sessions</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="btn-container">
+                <button type="submit" class="btn btn-primary">Update Preferences</button>
+                <a href="{% url 'home' %}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

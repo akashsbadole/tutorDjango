@@ -1,0 +1,293 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.9, 3.10, 3.11]
+        django-version: [4.1, 4.2]
+        
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-django pytest-cov pytest-mock pytest-benchmark
+        pip install django==${{ matrix.django-version }}
+
+    - name: Cache node modules
+      uses: actions/cache@v3
+      with:
+        path: ~/.npm
+        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-
+
+    - name: Install frontend dependencies
+      run: |
+        cd ui_components
+        npm ci
+
+    - name: Run unit tests
+      run: |
+        python manage.py test tests.unit --settings=tutor_platform.test_settings --cov=tutor_platform --cov-report=xml
+      env:
+        DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_db
+        REDIS_URL: redis://localhost:6379/0
+
+    - name: Run integration tests
+      run: |
+        python manage.py test tests.integration --settings=tutor_platform.test_settings --cov=tutor_platform --cov-report=xml --cov-append
+      env:
+        DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_db
+        REDIS_URL: redis://localhost:6379/0
+
+    - name: Run API tests
+      run: |
+        python manage.py test tests.api --settings=tutor_platform.test_settings --cov=tutor_platform --cov-report=xml --cov-append
+      env:
+        DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_db
+        REDIS_URL: redis://localhost:6379/0
+
+    - name: Run performance tests
+      run: |
+        python manage.py test tests.performance --settings=tutor_platform.test_settings --benchmark
+      env:
+        DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_db
+        REDIS_URL: redis://localhost:6379/0
+
+    - name: Run security tests
+      run: |
+        python manage.py test tests.security --settings=tutor_platform.test_settings
+      env:
+        DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_db
+        REDIS_URL: redis://localhost:6379/0
+
+    - name: Run frontend tests
+      run: |
+        cd ui_components
+        npm test -- --coverage
+        npm run test:e2e -- --headless
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+
+    - name: Upload frontend coverage
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./ui_components/coverage/lcov.info
+        flags: frontend
+        name: codecov-umbrella
+
+    - name: Run performance benchmarks
+      run: |
+        python manage.py performance_test --benchmark --output=benchmark_report.json
+      env:
+        DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_db
+        REDIS_URL: redis://localhost:6379/0
+
+    - name: Upload benchmark results
+      uses: actions/upload-artifact@v3
+      with:
+        name: benchmark-results
+        path: benchmark_report.json
+
+    - name: Run security scan
+      run: |
+        python manage.py security_test --all --output=security_report.html
+      env:
+        DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_db
+        REDIS_URL: redis://localhost:6379/0
+
+    - name: Upload security report
+      uses: actions/upload-artifact@v3
+      with:
+        name: security-report
+        path: security_report.html
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install flake8 black isort mypy pylint bandit safety
+
+    - name: Run flake8
+      run: |
+        flake8 tutor_platform --count --select=E9,F63,F7,F82 --show-source --statistics
+
+    - name: Run black
+      run: |
+        black --check --diff tutor_platform
+
+    - name: Run isort
+      run: |
+        isort --check-only --diff tutor_platform
+
+    - name: Run mypy
+      run: |
+        mypy tutor_platform --ignore-missing-imports
+
+    - name: Run pylint
+      run: |
+        pylint tutor_platform --disable=C0114,C0115 --output-format=text
+
+    - name: Run bandit
+      run: |
+        bandit -r tutor_platform -f json -o bandit-report.json
+
+    - name: Run safety
+      run: |
+        safety check --json --output safety-report.json
+
+    - name: Upload lint reports
+      uses: actions/upload-artifact@v3
+      with:
+        name: lint-reports
+        path: |
+          bandit-report.json
+          safety-report.json
+
+  build:
+    runs-on: ubuntu-latest
+    needs: [test, lint]
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install build twine
+
+    - name: Build package
+      run: |
+        python setup.py sdist bdist_wheel
+
+    - name: Upload to PyPI (test)
+      if: github.ref == 'refs/heads/develop'
+      env:
+        TWINE_USERNAME: __token__
+        TWINE_PASSWORD: ${{ secrets.TEST_PYPI_API_TOKEN }}
+      run: |
+        twine upload --repository testpypi dist/*
+
+    - name: Upload to PyPI (production)
+      if: github.ref == 'refs/heads/main'
+      env:
+        TWINE_USERNAME: __token__
+        TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+      run: |
+        twine upload dist/*
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: [test]
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        push: true
+        tags: |
+          djangotutor/tutor-platform:latest
+          djangotutor/tutor-platform:${{ github.sha }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [build]
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Deploy to production
+      run: |
+        echo "Deploying to production..."
+        # Add deployment commands here

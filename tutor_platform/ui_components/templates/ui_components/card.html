@@ -1,0 +1,436 @@
+{% load ui_tags %}
+<div class="theme-card card-modern {{ variant|default:'basic' }} {{ card_class|default:'mb-4' }} {{ extra_classes|default:'' }}"
+     {% if card_id %}id="{{ card_id }}"{% endif %}
+     x-data="{
+         visible: false,
+         hover: false,
+         loading: {{ loading|default:'false' }},
+         selected: false
+     }"
+     x-intersect.once="visible = true"
+     :class="{
+         'fade-in': visible,
+         'card-interactive': '{{ variant }}' === 'interactive',
+         'card-dashboard': '{{ variant }}' === 'dashboard',
+         'card-selected': selected,
+         'card-loading': loading
+     }"
+     @mouseenter="hover = true"
+     @mouseleave="hover = false"
+     role="article"
+     {% if clickable %}tabindex="0" @click="handleClick()" @keydown.enter="handleClick()"{% endif %}>
+    
+    <!-- Card Loading Overlay -->
+    <div class="card-loading-overlay position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+         x-show="loading"
+         x-transition
+         style="z-index: 10; background-color: rgba(255, 255, 255, 0.9); backdrop-filter: blur(2px);">
+        <div class="text-center">
+            <div class="spinner-border text-primary mb-2" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <small class="text-muted">Loading content...</small>
+        </div>
+    </div>
+    
+    <!-- Card Header -->
+    {% if title or header %}
+    <div class="card-header d-flex justify-content-between align-items-center {{ header_class|default:'' }}">
+        <div class="d-flex align-items-center">
+            {% if header_icon %}
+            <div class="header-icon me-3">
+                <i class="bi {{ header_icon }} fs-4" style="color: var(--color-primary);"></i>
+            </div>
+            {% endif %}
+            
+            {% if title %}
+            <div class="header-content">
+                <h5 class="mb-0 {{ title_class|default:'' }}">{{ title }}</h5>
+                {% if subtitle %}
+                <small class="text-muted">{{ subtitle }}</small>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+        
+        {% if header %}
+            {{ header|safe }}
+        {% endif %}
+        
+        <!-- Card Actions -->
+        {% if actions %}
+        <div class="card-actions">
+            <div class="dropdown">
+                <button class="btn btn-sm btn-link text-muted"
+                        type="button"
+                        data-bs-toggle="dropdown"
+                        aria-expanded="false"
+                        aria-label="Card actions">
+                    <i class="bi bi-three-dots-vertical"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    {% for action in actions %}
+                    <li>
+                        <a class="dropdown-item"
+                           href="{{ action.url|default:'#' }}"
+                           {% if action.action %}@click="{{ action.action }}"{% endif %}
+                           {% if action.disabled %}disabled{% endif %}>
+                            {% if action.icon %}<i class="bi {{ action.icon }} me-2"></i>{% endif %}
+                            {{ action.label }}
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    <!-- Card Image -->
+    {% if image_url or image %}
+    <div class="card-image-container">
+        {% if image_url %}
+        <img src="{{ image_url }}"
+             alt="{{ image_alt|default:title }}"
+             class="card-img-top"
+             loading="lazy">
+        {% elif image %}
+        {{ image|safe }}
+        {% endif %}
+        
+        <!-- Image Overlay for Interactive Cards -->
+        {% if variant == 'interactive' and overlay_text %}
+        <div class="card-image-overlay d-flex align-items-center justify-content-center"
+             x-show="hover"
+             x-transition>
+            <div class="text-center text-white">
+                <i class="bi bi-arrow-right-circle fs-1 mb-2"></i>
+                <p class="mb-0 fw-semibold">{{ overlay_text|default:'Click to view' }}</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    <!-- Card Body -->
+    <div class="card-body {{ body_class|default:'' }}">
+        <!-- Dashboard Trend Indicator -->
+        {% if variant == 'dashboard' and trend %}
+        <div class="card-trend-indicator position-absolute top-0 end-0 p-2">
+            {% if trend == 'up' %}
+                <span class="badge bg-success d-flex align-items-center">
+                    <i class="bi bi-arrow-up me-1"></i> {{ trend_value|default:'+12%' }}
+                </span>
+            {% elif trend == 'down' %}
+                <span class="badge bg-danger d-flex align-items-center">
+                    <i class="bi bi-arrow-down me-1"></i> {{ trend_value|default:'-5%' }}
+                </span>
+            {% elif trend == 'stable' %}
+                <span class="badge bg-secondary d-flex align-items-center">
+                    <i class="bi bi-dash me-1"></i> {{ trend_value|default:'0%' }}
+                </span>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        <!-- Skeleton Loading State -->
+        {% if variant == 'skeleton' %}
+        <div class="skeleton-loader">
+            <div class="skeleton skeleton-text w-75 mb-3" style="height: 1.5rem;"></div>
+            <div class="skeleton skeleton-text w-100 mb-2" style="height: 1rem;"></div>
+            <div class="skeleton skeleton-text w-100 mb-2" style="height: 1rem;"></div>
+            <div class="skeleton skeleton-text w-50" style="height: 1rem;"></div>
+        </div>
+        {% else %}
+        <!-- Regular Content -->
+        {% if content %}
+            {{ content|safe }}
+        {% endif %}
+        {% block card_content %}{% endblock %}
+        {% endif %}
+    </div>
+    
+    <!-- Card Footer -->
+    {% if footer or footer_actions %}
+    <div class="card-footer {{ footer_class|default:'' }}">
+        {% if footer %}
+            {{ footer|safe }}
+        {% endif %}
+        
+        {% if footer_actions %}
+        <div class="card-footer-actions d-flex justify-content-between align-items-center">
+            <div class="footer-left">
+                {% for action in footer_actions %}
+                    {% if not action.align or action.align == 'left' %}
+                    <button class="btn {{ action.class|default:'btn-sm btn-outline-primary' }} me-2"
+                            {% if action.action %}@click="{{ action.action }}"{% endif %}
+                            {% if action.disabled %}disabled{% endif %}
+                            type="{{ action.type|default:'button' }}">
+                        {% if action.icon %}<i class="bi {{ action.icon }} me-1"></i>{% endif %}
+                        {{ action.label }}
+                    </button>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            
+            <div class="footer-right ms-auto">
+                {% for action in footer_actions %}
+                    {% if action.align == 'right' %}
+                    <button class="btn {{ action.class|default:'btn-sm btn-primary' }} ms-2"
+                            {% if action.action %}@click="{{ action.action }}"{% endif %}
+                            {% if action.disabled %}disabled{% endif %}
+                            type="{{ action.type|default:'button' }}">
+                        {% if action.icon %}<i class="bi {{ action.icon }} me-1"></i>{% endif %}
+                        {{ action.label }}
+                    </button>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    <!-- Interactive Card Hover Overlay -->
+    {% if variant == 'interactive' and not image_url %}
+    <div class="card-hover-overlay position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+         x-show="hover"
+         x-transition
+         style="pointer-events: none; background: linear-gradient(135deg, rgba(var(--color-primary), 0.9), rgba(var(--color-primary), 0.7));">
+        <div class="text-center text-white">
+            <i class="bi bi-arrow-right-circle fs-1 mb-2"></i>
+            <p class="mb-0 fw-semibold">{{ overlay_text|default:'Click to view' }}</p>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Selection Indicator for Selectable Cards -->
+    {% if selectable %}
+    <div class="card-selection-indicator position-absolute top-0 start-0 m-2">
+        <div class="form-check">
+            <input class="form-check-input"
+                   type="checkbox"
+                   x-model="selected"
+                   id="{{ card_id|default:'card' }}_select">
+            <label class="form-check-label" for="{{ card_id|default:'card' }}_select"></label>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('cardModern', () => ({
+        handleClick() {
+            if (this.loading) return;
+            
+            // Emit click event for parent components
+            this.$dispatch('card-click', {
+                cardId: '{{ card_id|default:"" }}',
+                selected: this.selected
+            });
+            
+            // Handle navigation if URL provided
+            {% if click_url %}
+            window.location.href = '{{ click_url }}';
+            {% endif %}
+        },
+        
+        select() {
+            this.selected = !this.selected;
+            this.$dispatch('card-selection-changed', {
+                cardId: '{{ card_id|default:"" }}',
+                selected: this.selected
+            });
+        }
+    }));
+});
+</script>
+
+<style>
+/* Modern Card Styles */
+.card-modern {
+    border: none;
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition-base);
+    overflow: hidden;
+    position: relative;
+}
+
+.card-modern:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+}
+
+.card-modern.card-interactive:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-4px);
+    cursor: pointer;
+}
+
+.card-modern.card-selected {
+    border: 2px solid var(--color-primary);
+    box-shadow: 0 0 0 0.2rem rgba(var(--color-primary), 0.25);
+}
+
+.card-modern.card-loading {
+    pointer-events: none;
+}
+
+/* Card Header */
+.card-modern .card-header {
+    background-color: transparent;
+    border-bottom: 1px solid var(--color-border-light);
+    padding: var(--space-4);
+}
+
+.header-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--border-radius-lg);
+    background-color: rgba(var(--color-primary), 0.1);
+}
+
+/* Card Image */
+.card-modern .card-image-container {
+    position: relative;
+    overflow: hidden;
+}
+
+.card-modern .card-img-top {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    transition: var(--transition-base);
+}
+
+.card-modern:hover .card-img-top {
+    transform: scale(1.05);
+}
+
+.card-image-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(var(--color-primary), 0.9), rgba(var(--color-primary), 0.7));
+    opacity: 0;
+    transition: var(--transition-base);
+}
+
+/* Card Body */
+.card-modern .card-body {
+    padding: var(--space-4);
+    position: relative;
+}
+
+/* Card Footer */
+.card-modern .card-footer {
+    background-color: transparent;
+    border-top: 1px solid var(--color-border-light);
+    padding: var(--space-4);
+}
+
+.card-footer-actions {
+    gap: var(--space-2);
+}
+
+/* Trend Indicator */
+.card-trend-indicator {
+    z-index: 5;
+}
+
+.card-trend-indicator .badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+}
+
+/* Selection Indicator */
+.card-selection-indicator {
+    z-index: 5;
+}
+
+.card-selection-indicator .form-check-input:checked {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+}
+
+/* Skeleton Loading */
+.skeleton-loader {
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+.skeleton {
+    background: linear-gradient(90deg, var(--color-gray-200) 25%, var(--color-gray-100) 50%, var(--color-gray-200) 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+    border-radius: var(--border-radius-md);
+}
+
+@keyframes loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .card-modern .card-img-top {
+        height: 150px;
+    }
+    
+    .card-modern .card-header,
+    .card-modern .card-body,
+    .card-modern .card-footer {
+        padding: var(--space-3);
+    }
+    
+    .card-footer-actions {
+        flex-direction: column;
+        gap: var(--space-3);
+    }
+    
+    .footer-right {
+        margin-left: 0 !important;
+        margin-top: var(--space-2);
+    }
+}
+
+/* Dark Mode Adjustments */
+[data-theme="dark"] .card-modern {
+    background-color: var(--color-bg-secondary);
+    border-color: var(--color-border-medium);
+}
+
+[data-theme="dark"] .card-modern .card-header,
+[data-theme="dark"] .card-modern .card-footer {
+    border-color: var(--color-border-medium);
+}
+
+[data-theme="dark"] .skeleton {
+    background: linear-gradient(90deg, var(--color-gray-700) 25%, var(--color-gray-600) 50%, var(--color-gray-700) 75%);
+}
+
+/* Accessibility */
+.card-modern:focus {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .card-modern,
+    .card-modern .card-img-top,
+    .card-image-overlay {
+        transition: none;
+    }
+    
+    .skeleton {
+        animation: none;
+    }
+}
+</style>

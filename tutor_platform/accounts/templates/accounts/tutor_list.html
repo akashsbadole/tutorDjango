@@ -1,0 +1,300 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load account_filters %}
+
+{% block title %}Find Tutors - Django Tutor Platform{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3">Find Tutors</h1>
+            <p class="text-muted">Connect with expert tutors for personalized learning</p>
+        </div>
+    </div>
+
+    <!-- Search and Filter -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="GET" action="{% url 'search:tutor_search' %}" hx-get="{% url 'search:tutor_search' %}" hx-target="#tutor-list" hx-push-url="true">
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                    <input type="text" class="form-control" name="q" placeholder="Search tutors..." value="{{ request.GET.q }}">
+                                </div>
+                            </div>
+                            <div class="col-md-2 mb-3">
+                                <select class="form-select" name="subjects">
+                                    <option value="">All Subjects</option>
+                                    {% for subject in subjects %}
+                                        <option value="{{ subject.id }}" {% if request.GET.subjects == subject.id|stringformat:"s" %}selected{% endif %}>
+                                            {{ subject.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-2 mb-3">
+                                <select class="form-select" name="experience_years_min">
+                                    <option value="">Any Experience</option>
+                                    <option value="1" {% if request.GET.experience_years_min == '1' %}selected{% endif %}>1+ Years</option>
+                                    <option value="3" {% if request.GET.experience_years_min == '3' %}selected{% endif %}>3+ Years</option>
+                                    <option value="5" {% if request.GET.experience_years_min == '5' %}selected{% endif %}>5+ Years</option>
+                                    <option value="10" {% if request.GET.experience_years_min == '10' %}selected{% endif %}>10+ Years</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2 mb-3">
+                                <select class="form-select" name="education_level">
+                                    <option value="">Any Education</option>
+                                    <option value="BACHELOR" {% if request.GET.education_level == 'BACHELOR' %}selected{% endif %}>Bachelor's</option>
+                                    <option value="MASTER" {% if request.GET.education_level == 'MASTER' %}selected{% endif %}>Master's</option>
+                                    <option value="PHD" {% if request.GET.education_level == 'PHD' %}selected{% endif %}>PhD</option>
+                                    <option value="OTHER" {% if request.GET.education_level == 'OTHER' %}selected{% endif %}>Other</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2 mb-3">
+                                <select class="form-select" name="sort_by">
+                                    <option value="relevance">Most Relevant</option>
+                                    <option value="rating">Highest Rated</option>
+                                    <option value="experience">Most Experience</option>
+                                    <option value="rate_low">Lowest Rate</option>
+                                    <option value="rate_high">Highest Rate</option>
+                                    <option value="sessions">Most Sessions</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">Price Range ($/hour)</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" name="hourly_rate_min" placeholder="Min" value="{{ request.GET.hourly_rate_min }}">
+                                    <span class="input-group-text">-</span>
+                                    <input type="number" class="form-control" name="hourly_rate_max" placeholder="Max" value="{{ request.GET.hourly_rate_max }}">
+                                </div>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">Availability</label>
+                                <select class="form-select" name="availability">
+                                    <option value="">Any Time</option>
+                                    <option value="MORNING" {% if request.GET.availability == 'MORNING' %}selected{% endif %}>Morning</option>
+                                    <option value="AFTERNOON" {% if request.GET.availability == 'AFTERNOON' %}selected{% endif %}>Afternoon</option>
+                                    <option value="EVENING" {% if request.GET.availability == 'EVENING' %}selected{% endif %}>Evening</option>
+                                    <option value="WEEKEND" {% if request.GET.availability == 'WEEKEND' %}selected{% endif %}>Weekend</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">Teaching Style</label>
+                                <select class="form-select" name="teaching_style">
+                                    <option value="">Any Style</option>
+                                    <option value="VISUAL" {% if request.GET.teaching_style == 'VISUAL' %}selected{% endif %}>Visual</option>
+                                    <option value="AUDITORY" {% if request.GET.teaching_style == 'AUDITORY' %}selected{% endif %}>Auditory</option>
+                                    <option value="KINESTHETIC" {% if request.GET.teaching_style == 'KINESTHETIC' %}selected{% endif %}>Kinesthetic</option>
+                                    <option value="READING" {% if request.GET.teaching_style == 'READING' %}selected{% endif %}>Reading/Writing</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 mb-3 d-flex align-items-end">
+                                <div class="btn-group w-100">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-search"></i> Search
+                                    </button>
+                                    <a href="{% url 'search:tutor_search' %}" class="btn btn-outline-secondary">Clear</a>
+                                    <a href="{% url 'search:advanced_search' %}" class="btn btn-outline-info">
+                                        <i class="bi bi-sliders"></i> Advanced
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Summary -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <p class="mb-0">Found <strong>{{ tutors.count }}</strong> tutors</p>
+                <div class="btn-group" role="group">
+                    <input type="radio" class="btn-check" name="view" id="grid-view" autocomplete="off" checked>
+                    <label class="btn btn-outline-primary" for="grid-view">
+                        <i class="bi bi-grid-3x3-gap"></i>
+                    </label>
+                    
+                    <input type="radio" class="btn-check" name="view" id="list-view" autocomplete="off">
+                    <label class="btn btn-outline-primary" for="list-view">
+                        <i class="bi bi-list"></i>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tutor List -->
+    <div id="tutor-list">
+        <div class="row" id="tutor-grid">
+            {% for tutor in tutors %}
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100 card-hover">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center mb-3">
+                                <img src="{{ tutor.user.profile_picture.url|default:'/static/images/default-avatar.png' }}"
+                                     class="rounded-circle me-3" width="60" height="60" alt="{{ tutor.user.get_full_name }}">
+                                <div>
+                                    <h5 class="card-title mb-0">{{ tutor.user.get_full_name }}</h5>
+                                    <div class="text-warning small">
+                                        {{ tutor.average_rating|star_display }}
+                                        <span class="text-muted">({{ tutor.average_rating|default:0 }}/5.0, {{ tutor.completed_sessions|default:0 }} reviews)</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="card-text">{{ tutor.bio|truncatewords:20 }}</p>
+                            <div class="mb-2">
+                                {% for subject in tutor.tutor_subjects.all|slice:":3" %}
+                                    <span class="badge bg-light text-dark me-1">{{ subject.subject.name }}</span>
+                                {% endfor %}
+                                {% if tutor.tutor_subjects.all.count > 3 %}
+                                    <span class="badge bg-light text-dark">+{{ tutor.tutor_subjects.all.count|add:"-3" }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="row text-center mb-3">
+                                <div class="col-4">
+                                    <small class="text-muted">Experience</small>
+                                    <div class="fw-bold">{{ tutor.experience_years }} yrs</div>
+                                </div>
+                                <div class="col-4">
+                                    <small class="text-muted">Sessions</small>
+                                    <div class="fw-bold">{{ tutor.completed_sessions|default:0 }}</div>
+                                </div>
+                                <div class="col-4">
+                                    <small class="text-muted">Rate</small>
+                                    <div class="fw-bold text-primary">${{ tutor.hourly_rate_min|default:0 }}/hr</div>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    {% if tutor.user.is_verified %}
+                                        <span class="badge bg-success me-1">Verified</span>
+                                    {% endif %}
+                                    {% if tutor.is_featured %}
+                                        <span class="badge bg-warning">Featured</span>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <a href="{% url 'accounts:tutor_detail' tutor.id %}" class="btn btn-sm btn-outline-primary">View Profile</a>
+                                    {% if user.is_authenticated and user.user_type == 'STUDENT' %}
+                                        <button class="btn btn-sm btn-primary" 
+                                                hx-get="{% url 'messaging:conversation_create' %}?tutor={{ tutor.id }}"
+                                                hx-target="#message-modal"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#message-modal">
+                                            <i class="bi bi-envelope"></i>
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="col-12">
+                    <div class="text-center py-5">
+                        <i class="bi bi-person-x text-muted" style="font-size: 3rem;"></i>
+                        <h4 class="mt-3">No tutors found</h4>
+                        <p class="text-muted">Try adjusting your search criteria</p>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if is_paginated %}
+            <nav aria-label="Tutor pagination">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">First</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Previous</a>
+                        </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Next</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Last</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Message Modal -->
+<div class="modal fade" id="message-modal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <!-- Content will be loaded via HTMX -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-submit search form on keyup with delay
+    document.addEventListener('DOMContentLoaded', function() {
+        let searchTimeout;
+        const searchForm = document.querySelector('form');
+        const searchInput = document.querySelector('input[name="search"]');
+        
+        if (searchInput && searchForm) {
+            // Handle keyup events for auto-search
+            searchInput.addEventListener('keyup', function() {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(function() {
+                    // Use HTMX to trigger the form
+                    htmx.trigger(searchForm, 'submit');
+                }, 500);
+            });
+        }
+        
+        // Toggle between grid and list view
+        document.getElementById('grid-view').addEventListener('change', function() {
+            if (this.checked) {
+                document.getElementById('tutor-grid').className = 'row';
+            }
+        });
+        
+        document.getElementById('list-view').addEventListener('change', function() {
+            if (this.checked) {
+                document.getElementById('tutor-grid').className = 'row list-view';
+            }
+        });
+        
+        // Initialize tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        });
+    });
+</script>
+{% endblock %}

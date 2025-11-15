@@ -25,7 +25,7 @@ SECRET_KEY = "django-insecure-g*g^z!*j#mnnc3!z3b2cx-oqh4ppa*laf**_6i)f(%#n_i*=@0
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'testserver']
 
 
 # Application definition
@@ -37,16 +37,45 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    # Third party apps
+    "django.contrib.sites",
+    "allauth",
+    "allauth.account",
+    "allauth.socialaccount",
+    "rest_framework",
+    "rest_framework_simplejwt",
+    "corsheaders",
+    "django_filters",
+    # Local apps
+    "ui_components",
+    "accounts",
+    "requirements",
+    "messaging",
+    "notifications",
+    "paymentsdetails",
+    "admin_portal",
+    "search",
+    "paypal_integration",
 ]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "allauth.account.middleware.AccountMiddleware",
+    "admin_portal.middleware.AdminAccessLoggingMiddleware",
+    "admin_portal.middleware.AdminSessionSecurityMiddleware",
+    "admin_portal.middleware.AdminPermissionMiddleware",
+    "admin_portal.middleware.AdminRateLimitMiddleware",
+    "admin_portal.middleware.AdminSecurityHeadersMiddleware",
+    "paypal_integration.middleware.PayPalRequestLoggingMiddleware",
+    "paypal_integration.middleware.PayPalCSRFProtectionMiddleware",
+    "paypal_integration.middleware.PayPalSecurityHeadersMiddleware",
 ]
 
 ROOT_URLCONF = "tutor_platform.urls"
@@ -54,7 +83,7 @@ ROOT_URLCONF = "tutor_platform.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -62,6 +91,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "ui_components.context_processors.ui_context",
             ],
         },
     },
@@ -81,6 +111,15 @@ DATABASES = {
 }
 
 
+# Custom User Model
+AUTH_USER_MODEL = "accounts.User"
+
+# Authentication Backends
+AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",
+    "allauth.account.auth_backends.AuthenticationBackend",
+]
+
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
 
@@ -90,6 +129,9 @@ AUTH_PASSWORD_VALIDATORS = [
     },
     {
         "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+        "OPTIONS": {
+            "min_length": 8,
+        }
     },
     {
         "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
@@ -98,6 +140,61 @@ AUTH_PASSWORD_VALIDATORS = [
         "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
+
+# Django Allauth Configuration
+SITE_ID = 1
+ACCOUNT_EMAIL_VERIFICATION = "optional"
+ACCOUNT_LOGIN_METHODS = {"email"}
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']
+ACCOUNT_RATE_LIMITS = {
+    'login_failed': '5/m',
+}
+ACCOUNT_PASSWORD_MIN_LENGTH = 8
+ACCOUNT_SESSION_REMEMBER = True
+ACCOUNT_USER_MODEL_USERNAME_FIELD = "username"
+ACCOUNT_USER_MODEL_EMAIL_FIELD = "email"
+ACCOUNT_FORMS = {
+    "signup": "accounts.forms.CustomSignupForm",
+    "login": "accounts.forms.CustomLoginForm",
+}
+
+# Django REST Framework Configuration
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "PAGE_SIZE": 20,
+}
+
+# JWT Configuration
+from datetime import timedelta
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ROTATE_REFRESH_TOKENS": True,
+}
+
+# CORS Configuration
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+
+# Media Files
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
+
+# Email Configuration (for development)
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
+# Masked Email Configuration
+MASKED_EMAIL_REAL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+MASKED_EMAIL_DOMAIN = "masked.tutorplatform.com"
 
 
 # Internationalization
@@ -121,3 +218,294 @@ STATIC_URL = "static/"
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Payment Gateway Configuration
+PAYMENT_GATEWAYS = {
+    'STRIPE': {
+        'PUBLISHABLE_KEY': 'pk_test_...',  # Replace with your actual Stripe publishable key
+        'SECRET_KEY': 'sk_test_...',  # Replace with your actual Stripe secret key
+        'WEBHOOK_SECRET': 'whsec_...',  # Replace with your actual Stripe webhook secret
+        'SUCCESS_URL': 'https://your-site.com/payments/success/',
+        'CANCEL_URL': 'https://your-site.com/payments/cancel/',
+    },
+    'PAYPAL': {
+        'CLIENT_ID': 'YOUR_PAYPAL_CLIENT_ID',  # Replace with your actual PayPal client ID
+        'CLIENT_SECRET': 'YOUR_PAYPAL_CLIENT_SECRET',  # Replace with your actual PayPal client secret
+        'MODE': 'sandbox',  # or 'live'
+        'SUCCESS_URL': 'https://your-site.com/payments/success/',
+        'CANCEL_URL': 'https://your-site.com/payments/cancel/',
+        'WEBHOOK_ID': 'YOUR_PAYPAL_WEBHOOK_ID',  # Replace with your actual PayPal webhook ID
+    },
+}
+
+# PayPal Integration Configuration
+PAYPAL_CONFIG = {
+    # API Configuration
+    'CLIENT_ID': getattr(PAYMENT_GATEWAYS['PAYPAL'], 'CLIENT_ID', ''),
+    'CLIENT_SECRET': getattr(PAYMENT_GATEWAYS['PAYPAL'], 'CLIENT_SECRET', ''),
+    'MODE': getattr(PAYMENT_GATEWAYS['PAYPAL'], 'MODE', 'sandbox'),
+    'WEBHOOK_ID': getattr(PAYMENT_GATEWAYS['PAYPAL'], 'WEBHOOK_ID', ''),
+    
+    # API Endpoints
+    'SANDBOX_API_URL': 'https://api-m.sandbox.paypal.com',
+    'LIVE_API_URL': 'https://api-m.paypal.com',
+    'SANDBOX_WEB_URL': 'https://www.sandbox.paypal.com',
+    'LIVE_WEB_URL': 'https://www.paypal.com',
+    
+    # Webhook Configuration
+    'WEBHOOK_URL': '/paypal/webhook/',
+    'WEBHOOK_EVENTS': [
+        'PAYMENT.AUTHORIZATION.CREATED',
+        'PAYMENT.AUTHORIZATION.VOIDED',
+        'PAYMENT.CAPTURE.COMPLETED',
+        'PAYMENT.CAPTURE.DENIED',
+        'PAYMENT.CAPTURE.PENDING',
+        'PAYMENT.CAPTURE.REFUNDED',
+        'PAYMENT.CAPTURE.REVERSED',
+        'PAYMENT.SALE.COMPLETED',
+        'PAYMENT.SALE.DENIED',
+        'PAYMENT.SALE.PENDING',
+        'PAYMENT.SALE.REFUNDED',
+        'PAYMENT.SALE.REVERSED',
+        'MERCHANT.ONBOARDING.COMPLETED',
+        'BILLING.SUBSCRIPTION.ACTIVATED',
+        'BILLING.SUBSCRIPTION.CANCELLED',
+        'BILLING.SUBSCRIPTION.CREATED',
+        'BILLING.SUBSCRIPTION.EXPIRED',
+        'BILLING.SUBSCRIPTION.SUSPENDED',
+        'CHECKOUT.ORDER.APPROVED',
+        'CHECKOUT.ORDER.COMPLETED',
+        'CHECKOUT.PAYMENT-APPROVAL.COMPLETED',
+        'DISPUTE.CREATED',
+        'DISPUTE.RESOLVED',
+        'DISPUTE.UPDATED',
+        'RISK.DISPUTE.CREATED',
+        'RISK.DISPUTE.RESOLVED',
+    ],
+    
+    # Security Settings
+    'SKIP_WEBHOOK_VERIFICATION': False,  # Set to True for development only
+    'WEBHOOK_TIMEOUT': 30,  # Webhook verification timeout in seconds
+    'API_TIMEOUT': 60,  # API request timeout in seconds
+    'MAX_RETRIES': 3,  # Maximum number of retries for API requests
+    
+    # Rate Limiting
+    'WEBHOOK_RATE_LIMIT': 100,  # Maximum webhooks per minute
+    'WEBHOOK_RATE_WINDOW': 60,  # Rate limit window in seconds
+    
+    # Logging Configuration
+    'LOG_REQUESTS': True,  # Log all PayPal requests
+    'LOG_RESPONSES': True,  # Log all PayPal responses
+    'LOG_WEBHOOKS': True,  # Log all webhook events
+    
+    # Currency Configuration
+    'SUPPORTED_CURRENCIES': [
+        'USD', 'EUR', 'GBP', 'CAD', 'AUD', 'JPY', 'CNY',
+        'INR', 'MXN', 'BRL', 'CHF', 'SEK', 'NOK', 'DKK'
+    ],
+    'DEFAULT_CURRENCY': 'USD',
+    
+    # Fee Configuration
+    'DOMESTIC_FEE_RATE': 0.029,  # 2.9% for domestic transactions
+    'INTERNATIONAL_FEE_RATE': 0.039,  # 3.9% for international transactions
+    'FIXED_FEE': 0.30,  # Fixed fee in USD
+    'CURRENCY_CONVERSION_FEE': 0.04,  # 4% for currency conversion
+    
+    # Subscription Configuration
+    'SUBSCRIPTION_ENABLED': True,
+    'SUBSCRIPTION_PLANS': {
+        'BASIC': {
+            'name': 'Basic Tutor Plan',
+            'description': 'Access to basic tutoring features',
+            'price': '9.99',
+            'currency': 'USD',
+            'interval': 'MONTH',
+            'interval_count': 1,
+        },
+        'PREMIUM': {
+            'name': 'Premium Tutor Plan',
+            'description': 'Access to all tutoring features',
+            'price': '19.99',
+            'currency': 'USD',
+            'interval': 'MONTH',
+            'interval_count': 1,
+        },
+        'ENTERPRISE': {
+            'name': 'Enterprise Tutor Plan',
+            'description': 'Advanced features for institutions',
+            'price': '49.99',
+            'currency': 'USD',
+            'interval': 'MONTH',
+            'interval_count': 1,
+        },
+    },
+    
+    # Payout Configuration
+    'PAYOUT_ENABLED': True,
+    'PAYOUT_MIN_AMOUNT': 1.00,
+    'PAYOUT_MAX_AMOUNT': 10000.00,
+    'PAYOUT_FEE_RATE': 0.025,  # 2.5% payout fee
+    'PAYOUT_FIXED_FEE': 0.25,  # Fixed payout fee
+    'PAYOUT_BATCH_SIZE': 100,  # Maximum payouts per batch
+    
+    # Refund Configuration
+    'REFUND_ENABLED': True,
+    'REFUND_PERIOD_DAYS': 180,  # Days after which refunds are not allowed
+    'PARTIAL_REFUND_ENABLED': True,
+    'REFUND_FEE_RATE': 0.00,  # Refund fee rate (0% for full refunds)
+    
+    # Dispute Configuration
+    'DISPUTE_ENABLED': True,
+    'DISPUTE_RESPONSE_DAYS': 20,  # Days to respond to disputes
+    'DISPUTE_EVIDENCE_TYPES': [
+        'PROOF_OF_FULFILLMENT',
+        'PROOF_OF_SERVICE',
+        'TRACKING_NUMBER',
+        'REFUND_ACKNOWLEDGMENT',
+        'CORRESPONDENCE_WITH_BUYER',
+    ],
+}
+
+# PayPal Integration Paths
+PAYPAL_LOGGING_PATHS = [
+    '/paypal/',
+    '/api/paypal/',
+    '/webhooks/paypal/',
+]
+
+PAYPAL_WEBHOOK_PATHS = [
+    '/webhooks/paypal/',
+    '/api/webhooks/paypal/',
+    '/paypal/webhook/',
+]
+
+# PayPal Integration Settings
+PAYPAL_SKIP_WEBHOOK_VERIFICATION = False  # Set to True for development only
+PAYPAL_WEBHOOK_ID = getattr(PAYMENT_GATEWAYS['PAYPAL'], 'WEBHOOK_ID', '')
+
+# Escrow Configuration
+ESCROW_SETTINGS = {
+    'MIN_DEPOSIT_AMOUNT': 1.00,  # Minimum deposit amount
+    'MAX_DEPOSIT_AMOUNT': 10000.00,  # Maximum deposit amount
+    'MIN_WITHDRAWAL_AMOUNT': 1.00,  # Minimum withdrawal amount
+    'MAX_WITHDRAWAL_AMOUNT': 10000.00,  # Maximum withdrawal amount
+    'HOLD_PERIOD_DAYS': 7,  # Days to hold funds in escrow
+    'AUTO_RELEASE_DAYS': 3,  # Days after which funds are automatically released
+}
+
+# Commission Configuration
+COMMISSION_SETTINGS = {
+    'DEFAULT_RATE': 0.10,  # Default commission rate (10%)
+    'MIN_RATE': 0.01,  # Minimum commission rate (1%)
+    'MAX_RATE': 0.25,  # Maximum commission rate (25%)
+    'TUTOR_RATE': 0.05,  # Special rate for tutors (5%)
+    'STUDENT_RATE': 0.15,  # Special rate for students (15%)
+}
+
+# Payout Configuration
+PAYOUT_SETTINGS = {
+    'MIN_AMOUNT': 10.00,  # Minimum payout amount
+    'MAX_AMOUNT': 50000.00,  # Maximum payout amount
+    'PROCESSING_FEE_RATE': 0.029,  # Processing fee rate (2.9%)
+    'PROCESSING_FEE_FLAT': 0.30,  # Flat processing fee ($0.30)
+    'PROCESSING_FEE_MAX': 10.00,  # Maximum processing fee ($10.00)
+    'SCHEDULE_DAYS': 7,  # Days to schedule payouts in advance
+    'BATCH_PROCESSING': True,  # Enable batch processing
+}
+
+# UI Components Configuration
+UI_COMPONENTS = {
+    'DEFAULT_THEME': 'light',  # 'light' or 'dark'
+    'THEME_STORAGE_KEY': 'ui_theme',
+    'THEME_COOKIE_SECURE': False,
+    'THEME_COOKIE_SAMESITE': 'Lax',
+    'THEME_COOKIE_HTTPONLY': False,
+    'THEME_COOKIE_MAX_AGE': 365 * 24 * 60 * 60,  # 1 year
+    
+    # HTMX Configuration
+    'HTMX_ENABLED': True,
+    'HTMX_DEFAULT_TARGET': '#content',
+    'HTMX_DEFAULT_SWAP': 'innerHTML',
+    'HTMX_DEFAULT_TRIGGER': 'click',
+    'HTMX_LOADING_CLASS': 'htmx-loading',
+    'HTMX_REQUEST_CLASS': 'htmx-request',
+    'HTMX_INDICATOR_CLASS': 'htmx-indicator',
+    
+    # Alpine.js Configuration
+    'ALPINE_ENABLED': True,
+    'ALPINE_DEBUG': DEBUG,
+    
+    # Component Configuration
+    'AUTO_INITIALIZE': True,
+    'LAZY_LOAD_IMAGES': True,
+    'ANIMATIONS_ENABLED': True,
+    'TOAST_NOTIFICATIONS': True,
+    'TOAST_DURATION': 5000,  # milliseconds
+    'TOAST_POSITION': 'top-right',  # 'top-left', 'top-right', 'bottom-left', 'bottom-right'
+    
+    # Form Configuration
+    'FORM_AUTO_RESIZE': True,
+    'FORM_CHAR_COUNTER': True,
+    'FORM_AUTO_FOCUS': True,
+    'FORM_VALIDATION_FEEDBACK': True,
+    
+    # Table Configuration
+    'TABLE_SORTING': True,
+    'TABLE_FILTERING': True,
+    'TABLE_PAGINATION': True,
+    'TABLE_ITEMS_PER_PAGE': 25,
+    'TABLE_SEARCH_DEBOUNCE': 300,  # milliseconds
+    
+    # Modal Configuration
+    'MODAL_BACKDROP': True,
+    'MODAL_KEYBOARD': True,
+    'MODAL_FOCUS': True,
+    'MODAL_ANIMATION': True,
+    
+    # Search Configuration
+    'SEARCH_AUTO_COMPLETE': True,
+    'SEARCH_RECENT_SEARCHES': True,
+    'SEARCH_MAX_RECENT': 5,
+    'SEARCH_DEBOUNCE': 300,  # milliseconds
+    
+    # Notification Configuration
+    'NOTIFICATION_POLLING': True,
+    'NOTIFICATION_POLL_INTERVAL': 30000,  # milliseconds
+    'NOTIFICATION_SOUND': False,
+    'NOTIFICATION_DESKTOP': False,
+    
+    # Performance Configuration
+    'LAZY_LOADING': True,
+    'IMAGE_OPTIMIZATION': True,
+    'MINIFY_HTML': not DEBUG,
+    'CACHE_TEMPLATES': not DEBUG,
+    'COMPRESS_ASSETS': not DEBUG,
+}
+
+# HTMX Configuration
+HTMX_CONFIG = {
+    'globalViewTransitions': True,
+    'useTemplateFragments': True,
+    'defaultSwapStyle': UI_COMPONENTS['HTMX_DEFAULT_SWAP'],
+    'defaultSwapDelay': 0,
+    'defaultSettleDelay': 0,
+}
+
+# Alpine.js Configuration
+ALPINE_CONFIG = {
+    'debug': UI_COMPONENTS['ALPINE_DEBUG'],
+    'prefix': 'x-',
+}
+
+# Security Headers for HTMX
+SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
+SECURE_CROSS_ORIGIN_EMBEDDER_POLICY = "require-corp"
+SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
+
+# CSP Configuration for HTMX and Alpine.js
+CSP_DEFAULT_SRC = ("'self'",)
+CSP_SCRIPT_SRC = ("'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://unpkg.com")
+CSP_STYLE_SRC = ("'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net")
+CSP_IMG_SRC = ("'self'", "data:", "https:")
+CSP_FONT_SRC = ("'self'", "https://cdn.jsdelivr.net")
+CSP_CONNECT_SRC = ("'self'",)

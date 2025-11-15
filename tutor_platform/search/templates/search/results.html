@@ -1,0 +1,376 @@
+{% extends "search/base.html" %}
+{% load static %}
+
+{% block title %}Search Results{% endblock %}
+
+{% block search_content %}
+<!-- Search Form -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form id="search-form" method="get" action="{% url 'search:results' %}">
+            <div class="row g-3">
+                <div class="col-md-8">
+                    <div class="input-group">
+                        <input type="text" 
+                               class="form-control form-control-lg" 
+                               id="search-input" 
+                               name="q" 
+                               placeholder="Search for tutors, requirements, or more..." 
+                               value="{{ query }}"
+                               autocomplete="off">
+                        <button class="btn btn-primary" type="submit">
+                            <i class="fas fa-search"></i> Search
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="btn-group w-100" role="group">
+                        <input type="radio" class="btn-check" name="content_type" id="type-global" value="global" {% if content_type == 'global' %}checked{% endif %}>
+                        <label class="btn btn-outline-primary" for="type-global">All</label>
+                        
+                        <input type="radio" class="btn-check" name="content_type" id="type-tutors" value="tutors" {% if content_type == 'tutors' %}checked{% endif %}>
+                        <label class="btn btn-outline-primary" for="type-tutors">Tutors</label>
+                        
+                        <input type="radio" class="btn-check" name="content_type" id="type-requirements" value="requirements" {% if content_type == 'requirements' %}checked{% endif %}>
+                        <label class="btn btn-outline-primary" for="type-requirements">Requirements</label>
+                        
+                        <input type="radio" class="btn-check" name="content_type" id="type-messages" value="messages" {% if content_type == 'messages' %}checked{% endif %}>
+                        <label class="btn btn-outline-primary" for="type-messages">Messages</label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Advanced Filters Toggle -->
+            <div class="row mt-3">
+                <div class="col-12">
+                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#advanced-filters">
+                        <i class="fas fa-filter me-1"></i> Advanced Filters
+                        <i class="fas fa-chevron-down ms-1"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary ms-2" type="button" id="save-search-btn">
+                        <i class="fas fa-bookmark me-1"></i> Save Search
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary ms-2" type="button" id="export-results-btn">
+                        <i class="fas fa-download me-1"></i> Export Results
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Advanced Filters -->
+            <div class="collapse mt-3" id="advanced-filters">
+                <div class="card card-body">
+                    <div class="row g-3">
+                        <!-- Date Range -->
+                        <div class="col-md-4">
+                            <label for="date-from" class="form-label">From Date</label>
+                            <input type="date" class="form-control" id="date-from" name="date_from" value="{{ filters.date_from|default:'' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="date-to" class="form-label">To Date</label>
+                            <input type="date" class="form-control" id="date-to" name="date_to" value="{{ filters.date_to|default:'' }}">
+                        </div>
+                        
+                        <!-- Sort Options -->
+                        <div class="col-md-4">
+                            <label for="sort-by" class="form-label">Sort By</label>
+                            <select class="form-select" id="sort-by" name="sort_by">
+                                <option value="relevance" {% if sort_by == 'relevance' %}selected{% endif %}>Relevance</option>
+                                <option value="date_desc" {% if sort_by == 'date_desc' %}selected{% endif %}>Newest First</option>
+                                <option value="date_asc" {% if sort_by == 'date_asc' %}selected{% endif %}>Oldest First</option>
+                                <option value="rating_desc" {% if sort_by == 'rating_desc' %}selected{% endif %}>Highest Rating</option>
+                                <option value="price_asc" {% if sort_by == 'price_asc' %}selected{% endif %}>Lowest Price</option>
+                                <option value="price_desc" {% if sort_by == 'price_desc' %}selected{% endif %}>Highest Price</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Content Type Specific Filters -->
+                    {% if content_type == 'tutors' %}
+                    <div class="row g-3 mt-2">
+                        <div class="col-md-3">
+                            <label for="subject" class="form-label">Subject</label>
+                            <select class="form-select" id="subject" name="subject">
+                                <option value="">All Subjects</option>
+                                {% for subject in subjects %}
+                                <option value="{{ subject.id }}" {% if filters.subject|stringformat:"s" == subject.id|stringformat:"s" %}selected{% endif %}>{{ subject.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="min-rate" class="form-label">Min Rate ($/hr)</label>
+                            <input type="number" class="form-control" id="min-rate" name="min_rate" value="{{ filters.min_rate|default:'' }}" min="0">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="max-rate" class="form-label">Max Rate ($/hr)</label>
+                            <input type="number" class="form-control" id="max-rate" name="max_rate" value="{{ filters.max_rate|default:'' }}" min="0">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="availability" class="form-label">Availability</label>
+                            <select class="form-select" id="availability" name="availability">
+                                <option value="">Any</option>
+                                <option value="available" {% if filters.availability == 'available' %}selected{% endif %}>Available Now</option>
+                                <option value="busy" {% if filters.availability == 'busy' %}selected{% endif %}>Busy</option>
+                            </select>
+                        </div>
+                    </div>
+                    {% elif content_type == 'requirements' %}
+                    <div class="row g-3 mt-2">
+                        <div class="col-md-3">
+                            <label for="req-subject" class="form-label">Subject</label>
+                            <select class="form-select" id="req-subject" name="subject">
+                                <option value="">All Subjects</option>
+                                {% for subject in subjects %}
+                                <option value="{{ subject.id }}" {% if filters.subject|stringformat:"s" == subject.id|stringformat:"s" %}selected{% endif %}>{{ subject.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="budget-min" class="form-label">Min Budget ($)</label>
+                            <input type="number" class="form-control" id="budget-min" name="budget_min" value="{{ filters.budget_min|default:'' }}" min="0">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="budget-max" class="form-label">Max Budget ($)</label>
+                            <input type="number" class="form-control" id="budget-max" name="budget_max" value="{{ filters.budget_max|default:'' }}" min="0">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="urgency" class="form-label">Urgency</label>
+                            <select class="form-select" id="urgency" name="urgency">
+                                <option value="">Any</option>
+                                <option value="low" {% if filters.urgency == 'low' %}selected{% endif %}>Low</option>
+                                <option value="medium" {% if filters.urgency == 'medium' %}selected{% endif %}>Medium</option>
+                                <option value="high" {% if filters.urgency == 'high' %}selected{% endif %}>High</option>
+                            </select>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Results Summary -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        {% if query %}
+        <h5>Results for "{{ query }}"</h5>
+        {% else %}
+        <h5>All Results</h5>
+        {% endif %}
+        <p class="text-muted mb-0">
+            Found {{ page_obj.paginator.count }} results 
+            {% if page_obj.paginator.count > 0 %}
+            (showing {{ page_obj.start_index }}-{{ page_obj.end_index }})
+            {% endif %}
+        </p>
+    </div>
+    <div>
+        <div class="btn-group" role="group">
+            <input type="radio" class="btn-check" name="view-mode" id="view-list" autocomplete="off" checked>
+            <label class="btn btn-outline-secondary" for="view-list">
+                <i class="fas fa-list"></i> List
+            </label>
+            
+            <input type="radio" class="btn-check" name="view-mode" id="view-grid" autocomplete="off">
+            <label class="btn btn-outline-secondary" for="view-grid">
+                <i class="fas fa-th"></i> Grid
+            </label>
+        </div>
+    </div>
+</div>
+
+<!-- Search Results -->
+<div id="search-results-container">
+    {% if page_obj.object_list %}
+    <div id="results-list" class="search-results-list">
+        {% for result in page_obj.object_list %}
+        <div class="card mb-3 search-result-item" data-content-type="{{ result.content_type.model }}">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-1">
+                        <div class="result-type-icon">
+                            {% if result.content_type.model == 'user' %}
+                            <i class="fas fa-user-tie fa-2x text-primary"></i>
+                            {% elif result.content_type.model == 'requirement' %}
+                            <i class="fas fa-tasks fa-2x text-success"></i>
+                            {% elif result.content_type.model == 'message' %}
+                            <i class="fas fa-envelope fa-2x text-info"></i>
+                            {% elif result.content_type.model == 'payment' %}
+                            <i class="fas fa-dollar-sign fa-2x text-warning"></i>
+                            {% else %}
+                            <i class="fas fa-file fa-2x text-secondary"></i>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-11">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <h5 class="card-title">
+                                    <a href="{{ result.url }}" class="text-decoration-none">
+                                        {{ result.title|default:result.object_repr }}
+                                    </a>
+                                </h5>
+                                
+                                {% if result.highlight %}
+                                <div class="search-highlight mb-2">
+                                    {{ result.highlight|safe }}
+                                </div>
+                                {% endif %}
+                                
+                                <p class="card-text text-muted">
+                                    {{ result.description|truncatewords:30 }}
+                                </p>
+                                
+                                <!-- Result Metadata -->
+                                <div class="row mt-2">
+                                    <div class="col-md-8">
+                                        <small class="text-muted">
+                                            {% if result.content_type.model == 'user' %}
+                                            <i class="fas fa-star text-warning"></i> {{ result.metadata.rating|default:"No rating" }}
+                                            <span class="ms-3"><i class="fas fa-dollar-sign"></i> ${{ result.metadata.hourly_rate_min|default:"0" }}/hr</span>
+                                            <span class="ms-3"><i class="fas fa-graduation-cap"></i> {{ result.metadata.experience_years|default:"0" }} years</span>
+                                            {% elif result.content_type.model == 'requirement' %}
+                                            <i class="fas fa-dollar-sign"></i> Budget: ${{ result.metadata.budget_min|default:"0" }}-{{ result.metadata.budget_max|default:"0" }}
+                                            <span class="ms-3"><i class="fas fa-clock"></i> {{ result.metadata.deadline|default:"No deadline" }}</span>
+                                            <span class="ms-3"><i class="fas fa-exclamation-triangle"></i> {{ result.metadata.urgency_level|default:"Low" }} urgency</span>
+                                            {% elif result.content_type.model == 'message' %}
+                                            <i class="fas fa-user"></i> From: {{ result.metadata.sender }}
+                                            <span class="ms-3"><i class="fas fa-calendar"></i> {{ result.metadata.created_at|date:"M d, Y" }}</span>
+                                            {% elif result.content_type.model == 'payment' %}
+                                            <i class="fas fa-dollar-sign"></i> ${{ result.metadata.amount }}
+                                            <span class="ms-3"><i class="fas fa-credit-card"></i> {{ result.metadata.payment_type }}</span>
+                                            <span class="ms-3"><i class="fas fa-check-circle"></i> {{ result.metadata.status }}</span>
+                                            {% endif %}
+                                        </small>
+                                    </div>
+                                    <div class="col-md-4 text-end">
+                                        <small class="text-muted">
+                                            Relevance: {{ result.relevance_score|floatformat:2 }}
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <nav aria-label="Search results pagination">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?q={{ query }}&page={{ page_obj.previous_page_number }}&content_type={{ content_type }}&sort_by={{ sort_by }}">Previous</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <span class="page-link">Previous</span>
+            </li>
+            {% endif %}
+            
+            {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+            <li class="page-item active">
+                <span class="page-link">{{ num }}</span>
+            </li>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+            <li class="page-item">
+                <a class="page-link" href="?q={{ query }}&page={{ num }}&content_type={{ content_type }}&sort_by={{ sort_by }}">{{ num }}</a>
+            </li>
+            {% endif %}
+            {% endfor %}
+            
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?q={{ query }}&page={{ page_obj.next_page_number }}&content_type={{ content_type }}&sort_by={{ sort_by }}">Next</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <span class="page-link">Next</span>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+    
+    {% else %}
+    <!-- No Results -->
+    <div class="text-center py-5">
+        <i class="fas fa-search fa-3x text-muted mb-3"></i>
+        <h4>No results found</h4>
+        <p class="text-muted">
+            {% if query %}
+            We couldn't find any results for "{{ query }}".
+            {% else %}
+            No results found for the current filters.
+            {% endif %}
+            Try adjusting your search terms or filters.
+        </p>
+        
+        <!-- Search Suggestions -->
+        <div class="mt-4">
+            <h5>Try these suggestions:</h5>
+            <div class="d-flex flex-wrap justify-content-center gap-2">
+                {% for suggestion in suggestions %}
+                <button class="btn btn-outline-secondary btn-sm" onclick="searchFor('{{ suggestion }}')">
+                    {{ suggestion }}
+                </button>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // View mode toggle
+    document.querySelectorAll('input[name="view-mode"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            const resultsList = document.getElementById('results-list');
+            if (this.id === 'view-grid') {
+                resultsList.classList.add('search-results-grid');
+                resultsList.classList.remove('search-results-list');
+            } else {
+                resultsList.classList.add('search-results-list');
+                resultsList.classList.remove('search-results-grid');
+            }
+        });
+    });
+    
+    // Save search button
+    document.getElementById('save-search-btn').addEventListener('click', function() {
+        const modal = new bootstrap.Modal(document.getElementById('saveSearchModal'));
+        modal.show();
+    });
+    
+    // Export results button
+    document.getElementById('export-results-btn').addEventListener('click', function() {
+        const currentUrl = new URL(window.location);
+        currentUrl.searchParams.set('export', 'csv');
+        window.open(currentUrl.toString(), '_blank');
+    });
+    
+    // Search for suggestion
+    function searchFor(query) {
+        document.getElementById('search-input').value = query;
+        document.getElementById('search-form').submit();
+    }
+    
+    // Auto-submit form when filters change
+    document.querySelectorAll('#advanced-filters input, #advanced-filters select').forEach(element => {
+        element.addEventListener('change', function() {
+            // Debounce form submission
+            clearTimeout(window.filterTimeout);
+            window.filterTimeout = setTimeout(() => {
+                document.getElementById('search-form').submit();
+            }, 1000);
+        });
+    });
+</script>
+{% endblock %}

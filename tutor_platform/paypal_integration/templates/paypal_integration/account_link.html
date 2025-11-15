@@ -1,0 +1,268 @@
+{% extends "paypal_integration/base.html" %}
+{% load static %}
+
+{% block title %}Link PayPal Account{% endblock %}
+
+{% block paypal_content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-link me-2"></i>
+                    Link Your PayPal Account
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Why link your PayPal account?</strong> Linking your PayPal account allows you to 
+                    make and receive payments securely through our platform. Your financial information is encrypted and protected.
+                </div>
+                
+                <form method="post" id="account-link-form">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.paypal_email.id_for_label }}" class="form-label">
+                                    PayPal Email Address <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="fab fa-paypal"></i>
+                                    </span>
+                                    {{ form.paypal_email }}
+                                </div>
+                                {% if form.paypal_email.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.paypal_email.errors %}
+                                            <span>{{ error }}</span>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="form-text text-muted">
+                                    Enter the email address associated with your PayPal account
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.paypal_user_id.id_for_label }}" class="form-label">
+                                    PayPal User ID <span class="text-danger">*</span>
+                                </label>
+                                {{ form.paypal_user_id }}
+                                {% if form.paypal_user_id.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.paypal_user_id.errors %}
+                                            <span>{{ error }}</span>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="form-text text-muted">
+                                    Your unique PayPal user identifier
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.account_type.id_for_label }}" class="form-label">
+                                    Account Type <span class="text-danger">*</span>
+                                </label>
+                                {{ form.account_type }}
+                                {% if form.account_type.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.account_type.errors %}
+                                            <span>{{ error }}</span>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="form-text text-muted">{{ form.account_type.help_text }}</small>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.verification_status.id_for_label }}" class="form-label">
+                                    Verification Status
+                                </label>
+                                {{ form.verification_status }}
+                                {% if form.verification_status.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.verification_status.errors %}
+                                            <span>{{ error }}</span>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="form-text text-muted">{{ form.verification_status.help_text }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    {{ form.is_primary }}
+                                    <label class="form-check-label" for="{{ form.is_primary.id_for_label }}">
+                                        Set as primary PayPal account
+                                    </label>
+                                </div>
+                                {% if form.is_primary.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.is_primary.errors %}
+                                            <span>{{ error }}</span>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="form-text text-muted">
+                                    This will be your default account for payments and payouts
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-link me-2"></i>
+                            Link PayPal Account
+                        </button>
+                        <a href="{% url 'paypal_integration:account_list' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- PayPal Information -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    PayPal Account Information
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Account Types</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>Personal:</strong> For individual use, basic features</li>
+                            <li><strong>Premier:</strong> Enhanced features, moderate selling</li>
+                            <li><strong>Business:</strong> Full features, high volume selling</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Verification Benefits</h6>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-check text-success me-2"></i>Higher sending limits</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Buyer protection</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Trust indicators</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Priority support</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="alert alert-warning mt-3">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Security Notice:</strong> Never share your PayPal login credentials with anyone. 
+                    Our platform will never ask for your PayPal password.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- How to Find PayPal User ID -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-question-circle me-2"></i>
+                    How to Find Your PayPal User ID
+                </h6>
+            </div>
+            <div class="card-body">
+                <ol class="ps-3">
+                    <li>Log in to your PayPal account</li>
+                    <li>Go to <strong>Account Settings</strong></li>
+                    <li>Click on your profile picture or name</li>
+                    <li>Your User ID will be displayed in the profile information</li>
+                    <li>Copy and paste the User ID into the form above</li>
+                </ol>
+                
+                <div class="text-center mt-3">
+                    <img src="{% static 'paypal_integration/img/paypal-user-id-screenshot.png' %}" 
+                         alt="PayPal User ID Location" 
+                         class="img-fluid rounded border"
+                         style="max-width: 400px;">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('account-link-form');
+    const emailInput = document.getElementById('{{ form.paypal_email.id_for_label }}');
+    
+    if (form && emailInput) {
+        form.addEventListener('submit', function(e) {
+            // Validate email format
+            const email = emailInput.value.trim();
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            
+            if (!emailRegex.test(email)) {
+                e.preventDefault();
+                alert('Please enter a valid PayPal email address');
+                return false;
+            }
+            
+            // Show loading state
+            const submitBtn = form.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Linking Account...';
+            }
+        });
+        
+        // Real-time email validation
+        emailInput.addEventListener('blur', function() {
+            const email = this.value.trim();
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            
+            if (email && !emailRegex.test(email)) {
+                this.classList.add('is-invalid');
+                if (!this.nextElementSibling || !this.nextElementSibling.classList.contains('invalid-feedback')) {
+                    const feedback = document.createElement('div');
+                    feedback.className = 'invalid-feedback d-block';
+                    feedback.textContent = 'Please enter a valid email address';
+                    this.parentNode.insertBefore(feedback, this.nextSibling);
+                }
+            } else {
+                this.classList.remove('is-invalid');
+                const feedback = this.parentNode.querySelector('.invalid-feedback');
+                if (feedback) {
+                    feedback.remove();
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

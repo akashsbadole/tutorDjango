@@ -1,0 +1,320 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Award Proposal - Django Tutor Platform{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3">Award Proposal</h1>
+            <p class="text-muted">Confirm awarding this proposal to start learning sessions</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <form hx-post="{% url 'requirements:proposal_accept' proposal.id %}" hx-target="#form-errors" hx-swap="innerHTML">
+                        {% csrf_token %}
+                        
+                        <!-- Proposal Summary -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">Proposal Summary</h5>
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label text-muted">Requirement</label>
+                                            <p><a href="{% url 'requirements:requirement_detail' proposal.requirement.id %}" class="text-decoration-none">{{ proposal.requirement.title }}</a></p>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label text-muted">Subject</label>
+                                            <p>{{ proposal.requirement.subject.name }}</p>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label text-muted">Tutor</label>
+                                            <p>{{ proposal.tutor.user.get_full_name }}</p>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label text-muted">Proposed Rate</label>
+                                            <p class="fw-bold text-primary">${{ proposal.proposed_rate }}/hour</p>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-12">
+                                            <label class="form-label text-muted">Proposal Text</label>
+                                            <p>{{ proposal.proposal_text }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Payment Information -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">Payment Information</h5>
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle me-2"></i>
+                                <strong>Escrow System:</strong> Your payment will be held in escrow until the session is completed. 
+                                This ensures both parties are protected throughout the learning process.
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Payment Method</label>
+                                    <select class="form-select" name="payment_method" required>
+                                        <option value="">Select payment method</option>
+                                        {% for method in payment_methods %}
+                                            <option value="{{ method.id }}">{{ method.card_type }} ending in {{ method.last_four }}</option>
+                                        {% endfor %}
+                                        <option value="new">+ Add New Payment Method</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Initial Deposit Amount</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        <input type="number" class="form-control" name="deposit_amount" 
+                                               value="{{ initial_deposit|default:proposal.proposed_rate|multiply:2 }}" 
+                                               min="{{ proposal.proposed_rate }}" step="5" required>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="auto-refill" name="auto_refill">
+                                        <label class="form-check-label" for="auto-refill">
+                                            Automatically refill escrow when balance is low
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Session Schedule -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">Session Schedule</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Preferred Start Date</label>
+                                    <input type="date" class="form-control" name="start_date" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Preferred Time</label>
+                                    <input type="time" class="form-control" name="start_time" required>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Session Duration</label>
+                                    <select class="form-select" name="session_duration" required>
+                                        <option value="30">30 minutes</option>
+                                        <option value="60" selected>60 minutes</option>
+                                        <option value="90">90 minutes</option>
+                                        <option value="120">120 minutes</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Frequency</label>
+                                    <select class="form-select" name="frequency">
+                                        <option value="ONE_TIME">One Time</option>
+                                        <option value="WEEKLY">Weekly</option>
+                                        <option value="BI_WEEKLY">Bi-Weekly</option>
+                                        <option value="MONTHLY">Monthly</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Terms and Conditions -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">Terms and Conditions</h5>
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6>Platform Terms</h6>
+                                    <ul class="list-unstyled">
+                                        <li class="mb-2">
+                                            <i class="bi bi-check-circle text-success me-2"></i>
+                                            Payment will be held in escrow until session completion
+                                        </li>
+                                        <li class="mb-2">
+                                            <i class="bi bi-check-circle text-success me-2"></i>
+                                            24-hour cancellation policy applies
+                                        </li>
+                                        <li class="mb-2">
+                                            <i class="bi bi-check-circle text-success me-2"></i>
+                                            Platform fee of 10% will be deducted from total amount
+                                        </li>
+                                        <li class="mb-2">
+                                            <i class="bi bi-check-circle text-success me-2"></i>
+                                            Sessions must be confirmed by both parties
+                                        </li>
+                                    </ul>
+                                    
+                                    <h6>Refund Policy</h6>
+                                    <ul class="list-unstyled">
+                                        <li class="mb-2">
+                                            <i class="bi bi-check-circle text-success me-2"></i>
+                                            Full refund if cancelled 24+ hours before session
+                                        </li>
+                                        <li class="mb-2">
+                                            <i class="bi bi-check-circle text-success me-2"></i>
+                                            50% refund if cancelled 12-24 hours before session
+                                        </li>
+                                        <li class="mb-2">
+                                            <i class="bi bi-check-circle text-success me-2"></i>
+                                            No refund if cancelled less than 12 hours before session
+                                        </li>
+                                    </ul>
+                                    
+                                    <div class="form-check mb-3">
+                                        <input class="form-check-input" type="checkbox" id="terms-accepted" name="terms_accepted" required>
+                                        <label class="form-check-label" for="terms-accepted">
+                                            I have read and agree to the <a href="#" class="text-decoration-none">Terms of Service</a> and <a href="#" class="text-decoration-none">Refund Policy</a>
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="form-check mb-3">
+                                        <input class="form-check-input" type="checkbox" id="privacy-accepted" name="privacy_accepted" required>
+                                        <label class="form-check-label" for="privacy-accepted">
+                                            I agree to the <a href="#" class="text-decoration-none">Privacy Policy</a> and consent to sharing my information with the tutor
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="form-errors"></div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success">
+                                <span class="htmx-indicator spinner-border spinner-border-sm me-2" role="status"></span>
+                                Award Proposal & Start Learning
+                            </button>
+                            <a href="{% url 'requirements:proposal_detail' proposal.id %}" class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-md-4">
+            <!-- Cost Breakdown -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Cost Breakdown</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <div class="d-flex justify-content-between">
+                            <span>Tutor Rate:</span>
+                            <span>${{ proposal.proposed_rate }}/hr</span>
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <div class="d-flex justify-content-between">
+                            <span>Platform Fee (10%):</span>
+                            <span>${{ platform_fee }}</span>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="mb-2">
+                        <div class="d-flex justify-content-between fw-bold">
+                            <span>Total per hour:</span>
+                            <span>${{ total_per_hour }}</span>
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <div class="d-flex justify-content-between">
+                            <span>Initial sessions (2):</span>
+                            <span>${{ initial_sessions_cost }}</span>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between fw-bold text-success">
+                        <span>Total Initial Payment:</span>
+                        <span>${{ total_initial_payment }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tutor Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Tutor Information</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <img src="{{ proposal.tutor.profile_picture.url|default:'/static/images/default-avatar.png' }}" 
+                             class="rounded-circle me-3" width="50" height="50" alt="{{ proposal.tutor.user.get_full_name }}">
+                        <div>
+                            <h6 class="mb-0">{{ proposal.tutor.user.get_full_name }}</h6>
+                            <div class="text-warning small">
+                                {% for i in proposal.tutor.average_rating|star_range %}
+                                    <i class="bi bi-star-fill"></i>
+                                {% endfor %}
+                                <span class="text-muted">({{ proposal.tutor.total_reviews }})</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <h6 class="text-primary">{{ proposal.tutor.experience_years }}</h6>
+                            <small class="text-muted">Years Exp.</small>
+                        </div>
+                        <div class="col-6">
+                            <h6 class="text-success">{{ proposal.tutor.session_count }}</h6>
+                            <small class="text-muted">Sessions</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Help Section -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Need Help?</h6>
+                </div>
+                <div class="card-body">
+                    <p class="card-text small">If you have any questions about the awarding process or payment, our support team is here to help.</p>
+                    <div class="d-grid gap-2">
+                        <a href="#" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-question-circle"></i> View FAQ
+                        </a>
+                        <a href="#" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-envelope"></i> Contact Support
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Handle form submission success
+    document.body.addEventListener('htmx:afterRequest', function(evt) {
+        if (evt.detail.successful && evt.detail.target.id === 'form-errors') {
+            // Redirect on successful submission
+            window.location.href = evt.detail.xhr.responseURL || '{% url "requirements:proposal_detail" proposal.id %}';
+        }
+    });
+    
+    // Set minimum date to today
+    document.addEventListener('DOMContentLoaded', function() {
+        const dateInput = document.querySelector('input[name="start_date"]');
+        if (dateInput) {
+            const today = new Date().toISOString().split('T')[0];
+            dateInput.min = today;
+        }
+    });
+</script>
+{% endblock %}

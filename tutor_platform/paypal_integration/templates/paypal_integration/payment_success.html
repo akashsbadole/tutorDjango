@@ -1,0 +1,147 @@
+{% extends "paypal_integration/base.html" %}
+{% load static %}
+
+{% block title %}Payment Successful - PayPal{% endblock %}
+
+{% block paypal_content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm border-success">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-check-circle me-2"></i>
+                    Payment Completed Successfully
+                </h5>
+            </div>
+            <div class="card-body text-center">
+                <div class="success-icon mb-4">
+                    <i class="fas fa-check-circle text-success" style="font-size: 4rem;"></i>
+                </div>
+                
+                <h4 class="text-success mb-3">Thank You!</h4>
+                <p class="lead mb-4">
+                    Your payment has been processed successfully through PayPal.
+                </p>
+                
+                {% if transaction_id %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Transaction ID:</strong> {{ transaction_id }}
+                    </div>
+                {% endif %}
+                
+                {% if amount and currency %}
+                    <div class="payment-details bg-light p-3 rounded mb-4">
+                        <h6 class="text-muted mb-3">Payment Details</h6>
+                        <div class="row">
+                            <div class="col-6">
+                                <small class="text-muted">Amount Paid</small>
+                                <h5 class="text-success">{{ currency }} {{ amount }}</h5>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">Status</small>
+                                <h5 class="text-success">Completed</h5>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+                
+                <div class="d-grid gap-2">
+                    <a href="{% url 'paypal_integration:transaction_list' %}" class="btn btn-primary">
+                        <i class="fas fa-history me-2"></i>
+                        View Transaction History
+                    </a>
+                    <a href="/" class="btn btn-outline-primary">
+                        <i class="fas fa-home me-2"></i>
+                        Return to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Additional Information -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-receipt me-2"></i>
+                    What Happens Next?
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <i class="fas fa-envelope text-primary mb-3" style="font-size: 2rem;"></i>
+                            <h6>Confirmation Email</h6>
+                            <p class="text-muted small">
+                                You will receive a payment confirmation email shortly.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <i class="fas fa-file-invoice text-info mb-3" style="font-size: 2rem;"></i>
+                            <h6>Invoice/Receipt</h6>
+                            <p class="text-muted small">
+                                A detailed receipt has been generated for this transaction.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <i class="fas fa-shield-alt text-success mb-3" style="font-size: 2rem;"></i>
+                            <h6>Buyer Protection</h6>
+                            <p class="text-muted small">
+                                Your payment is protected by PayPal's Buyer Protection.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Print Button -->
+<div class="row mt-3">
+    <div class="col-12 text-center">
+        <button onclick="window.print()" class="btn btn-outline-secondary">
+            <i class="fas fa-print me-2"></i>
+            Print Receipt
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-hide success message after 10 seconds
+    setTimeout(function() {
+        const alerts = document.querySelectorAll('.alert');
+        alerts.forEach(function(alert) {
+            alert.style.transition = 'opacity 0.5s';
+            alert.style.opacity = '0';
+            setTimeout(function() {
+                alert.remove();
+            }, 500);
+        });
+    }, 10000);
+    
+    // Track payment completion for analytics
+    {% if transaction_id %}
+    if (typeof gtag !== 'undefined') {
+        gtag('event', 'payment_completed', {
+            'transaction_id': '{{ transaction_id }}',
+            'amount': '{{ amount }}',
+            'currency': '{{ currency }}'
+        });
+    }
+    {% endif %}
+});
+</script>
+{% endblock %}

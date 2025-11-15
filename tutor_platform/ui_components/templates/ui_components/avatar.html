@@ -1,0 +1,92 @@
+{% load ui_tags %}
+{% if link %}
+    <a href="{% if user.get_absolute_url %}{{ user.get_absolute_url }}{% else %}#{% endif %}" 
+       class="user-avatar-container {{ container_class|default:'' }}">
+{% else %}
+    <div class="user-avatar-container {{ container_class|default:'' }}">
+{% endif %}
+
+    {% if user.avatar %}
+        <img src="{{ user.avatar.url }}" 
+             alt="{{ user.get_full_name|default:user.username }}" 
+             class="user-avatar rounded-circle {{ avatar_class|default:'' }}"
+             style="width: {{ size_width }}; height: {{ size_height }}; object-fit: cover;">
+    {% else %}
+        <div class="user-avatar-placeholder rounded-circle bg-primary text-white d-flex align-items-center justify-content-center {{ avatar_class|default:'' }}"
+             style="width: {{ size_width }}; height: {{ size_height }}; font-size: {{ font_size }}; font-weight: bold;">
+            {{ user.username|slice:":2"|upper }}
+        </div>
+    {% endif %}
+
+    {% if show_name %}
+        <div class="user-name {{ name_class|default:'' }}">
+            <div class="fw-bold">{{ user.get_full_name|default:user.username }}</div>
+            {% if user.user_type %}
+                <div class="text-muted small">{{ user.get_user_type_display }}</div>
+            {% endif %}
+        </div>
+    {% endif %}
+
+{% if link %}
+    </a>
+{% else %}
+    </div>
+{% endif %}
+
+<style>
+.user-avatar-container {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.user-avatar,
+.user-avatar-placeholder {
+    transition: transform 0.2s;
+}
+
+.user-avatar:hover,
+.user-avatar-placeholder:hover {
+    transform: scale(1.05);
+}
+
+.user-name {
+    flex: 1;
+    min-width: 0;
+}
+
+.user-name div {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+</style>
+
+<script>
+// Set size variables based on size parameter
+{% if size == 'xs' %}
+    {% if not size_width %}{{ size_width }} = '24px';{% endif %}
+    {% if not size_height %}{{ size_height }} = '24px';{% endif %}
+    {% if not font_size %}{{ font_size }} = '0.7rem';{% endif %}
+{% elif size == 'sm' %}
+    {% if not size_width %}{{ size_width }} = '32px';{% endif %}
+    {% if not size_height %}{{ size_height }} = '32px';{% endif %}
+    {% if not font_size %}{{ font_size }} = '0.8rem';{% endif %}
+{% elif size == 'md' %}
+    {% if not size_width %}{{ size_width }} = '40px';{% endif %}
+    {% if not size_height %}{{ size_height }} = '40px';{% endif %}
+    {% if not font_size %}{{ font_size }} = '1rem';{% endif %}
+{% elif size == 'lg' %}
+    {% if not size_width %}{{ size_width }} = '56px';{% endif %}
+    {% if not size_height %}{{ size_height }} = '56px';{% endif %}
+    {% if not font_size %}{{ font_size }} = '1.2rem';{% endif %}
+{% elif size == 'xl' %}
+    {% if not size_width %}{{ size_width }} = '80px';{% endif %}
+    {% if not size_height %}{{ size_height }} = '80px';{% endif %}
+    {% if not font_size %}{{ font_size }} = '1.5rem';{% endif %}
+{% else %}
+    {% if not size_width %}{{ size_width }} = '40px';{% endif %}
+    {% if not size_height %}{{ size_height }} = '40px';{% endif %}
+    {% if not font_size %}{{ font_size }} = '1rem';{% endif %}
+{% endif %}
+</script>

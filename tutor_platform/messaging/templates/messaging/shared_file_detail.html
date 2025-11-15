@@ -1,0 +1,353 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ shared_file.filename }} - Shared File - Django Tutor Platform{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'messaging:message_list' %}">Messages</a></li>
+                    {% if shared_file.conversation %}
+                        <li class="breadcrumb-item"><a href="{% url 'messaging:message_detail' shared_file.conversation.id %}">{{ shared_file.conversation.other_user.get_full_name }}</a></li>
+                    {% endif %}
+                    <li class="breadcrumb-item active">{{ shared_file.filename }}</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- File Information -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">File Information</h5>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-three-dots"></i>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <button class="dropdown-item" 
+                                        hx-post="{% url 'messaging:shared_file_download' shared_file.id %}">
+                                    <i class="bi bi-download me-2"></i>Download
+                                </button>
+                            </li>
+                            {% if shared_file.can_edit %}
+                                <li>
+                                    <button class="dropdown-item" 
+                                            hx-get="{% url 'messaging:shared_file_edit' shared_file.id %}"
+                                            hx-target="#edit-modal"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#edit-modal">
+                                        <i class="bi bi-pencil me-2"></i>Edit Details
+                                    </button>
+                                </li>
+                            {% endif %}
+                            {% if shared_file.can_delete %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <button class="dropdown-item text-danger" 
+                                            hx-post="{% url 'messaging:shared_file_delete' shared_file.id %}"
+                                            hx-confirm="Are you sure you want to delete this file?">
+                                        <i class="bi bi-trash me-2"></i>Delete File
+                                    </button>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">File Name</label>
+                            <p>{{ shared_file.filename }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">File Size</label>
+                            <p>{{ shared_file.file_size|filesizeformat }}</p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">File Type</label>
+                            <p>{{ shared_file.get_file_type_display }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Category</label>
+                            <p>{{ shared_file.get_category_display }}</p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Subject</label>
+                            <p><a href="{% url 'accounts:subject_detail' shared_file.subject.id %}" class="text-decoration-none">{{ shared_file.subject.name }}</a></p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Uploaded By</label>
+                            <div class="d-flex align-items-center">
+                                <img src="{{ shared_file.uploaded_by.profile_picture.url|default:'/static/images/default-avatar.png' }}" 
+                                     class="rounded-circle me-2" width="30" height="30" alt="{{ shared_file.uploaded_by.get_full_name }}">
+                                <div>
+                                    <p class="mb-0">{{ shared_file.uploaded_by.get_full_name }}</p>
+                                    <small class="text-muted">{{ shared_file.uploaded_by.user_type }}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12 mb-3">
+                            <label class="form-label text-muted">Description</label>
+                            <p>{{ shared_file.description|default:"No description provided" }}</p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Upload Date</label>
+                            <p>{{ shared_file.uploaded_at|date:"M d, Y H:i" }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Last Modified</label>
+                            <p>{{ shared_file.updated_at|date:"M d, Y H:i" }}</p>
+                        </div>
+                    </div>
+                    {% if shared_file.expires_at %}
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <label class="form-label text-muted">Expires At</label>
+                                <p class="{% if shared_file.is_expired %}text-danger{% else %}text-warning{% endif %}">
+                                    {{ shared_file.expires_at|date:"M d, Y H:i" }}
+                                    {% if shared_file.is_expired %}(Expired){% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- File Preview -->
+            {% if shared_file.can_preview %}
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h6 class="mb-0">File Preview</h6>
+                    </div>
+                    <div class="card-body text-center">
+                        {% if shared_file.is_image %}
+                            <img src="{{ shared_file.file.url }}" class="img-fluid" alt="{{ shared_file.filename }}">
+                        {% elif shared_file.is_video %}
+                            <video controls class="w-100" style="max-height: 400px;">
+                                <source src="{{ shared_file.file.url }}" type="{{ shared_file.mime_type }}">
+                                Your browser does not support the video tag.
+                            </video>
+                        {% elif shared_file.is_audio %}
+                            <audio controls class="w-100">
+                                <source src="{{ shared_file.file.url }}" type="{{ shared_file.mime_type }}">
+                                Your browser does not support the audio element.
+                            </audio>
+                        {% elif shared_file.is_pdf %}
+                            <iframe src="{{ shared_file.file.url }}" class="w-100" style="height: 600px;" title="{{ shared_file.filename }}"></iframe>
+                        {% elif shared_file.is_text %}
+                            <div class="text-start p-3 bg-light" style="max-height: 400px; overflow-y: auto; white-space: pre-wrap;">
+                                <!-- Text content would be loaded here -->
+                                <em>Text file preview not available in this view</em>
+                            </div>
+                        {% else %}
+                            <div class="text-center py-5">
+                                <i class="bi bi-file-earmark text-muted" style="font-size: 3rem;"></i>
+                                <p class="text-muted mt-2">Preview not available for this file type</p>
+                                <a href="{{ shared_file.file.url }}" class="btn btn-primary" download>
+                                    <i class="bi bi-download"></i> Download File
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Download Section -->
+            {% if not shared_file.can_preview %}
+                <div class="card mt-4">
+                    <div class="card-body text-center">
+                        <i class="bi bi-download text-muted" style="font-size: 3rem;"></i>
+                        <p class="text-muted mt-2">Preview not available for this file type</p>
+                        <a href="{{ shared_file.file.url }}" class="btn btn-primary btn-lg" download>
+                            <i class="bi bi-download me-2"></i>Download File
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-md-4">
+            <!-- Access Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Access Information</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Access Level</label>
+                        <p>{{ shared_file.get_access_level_display }}</p>
+                    </div>
+                    {% if shared_file.password_protected %}
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Password Protected</label>
+                            <p><i class="bi bi-lock text-warning"></i> Yes</p>
+                        </div>
+                    {% endif %}
+                    {% if shared_file.expires_at %}
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Access Status</label>
+                            <p>
+                                {% if shared_file.is_expired %}
+                                    <span class="badge bg-danger">Expired</span>
+                                {% else %}
+                                    <span class="badge bg-success">Accessible</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    {% endif %}
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Download Count</label>
+                        <p>{{ shared_file.download_count }} downloads</p>
+                    </div>
+                    <div>
+                        <label class="form-label text-muted">Allow Download</label>
+                        <p>
+                            {% if shared_file.allow_download %}
+                                <span class="badge bg-success">Yes</span>
+                            {% else %}
+                                <span class="badge bg-danger">No</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Share Options -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Share Options</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Share Link</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" value="{{ shared_file.share_link }}" readonly>
+                            <button class="btn btn-outline-secondary" type="button" 
+                                    hx-get="{% url 'messaging:shared_file_copy_link' shared_file.id %}"
+                                    hx-trigger="click">
+                                <i class="bi bi-clipboard"></i> Copy
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">QR Code</label>
+                        <div class="text-center">
+                            <div id="qrcode-container">
+                                <!-- QR code would be generated here -->
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-primary btn-sm" 
+                                hx-get="{% url 'messaging:shared_file_email' shared_file.id %}"
+                                hx-target="#email-modal"
+                                data-bs-toggle="modal"
+                                data-bs-target="#email-modal">
+                            <i class="bi bi-envelope"></i> Email
+                        </button>
+                        <button class="btn btn-outline-primary btn-sm" 
+                                hx-get="{% url 'messaging:shared_file_social' shared_file.id %}"
+                                hx-target="#social-modal"
+                                data-bs-toggle="modal"
+                                data-bs-target="#social-modal">
+                            <i class="bi bi-share"></i> Social Media
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Related Files -->
+            {% if related_files %}
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">Related Files</h6>
+                    </div>
+                    <div class="card-body">
+                        {% for file in related_files %}
+                            <div class="mb-2">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-0"><a href="{% url 'messaging:shared_file_detail' file.id %}" class="text-decoration-none">{{ file.filename }}</a></h6>
+                                        <small class="text-muted">{{ file.uploaded_at|date:"M d, Y" }}</small>
+                                    </div>
+                                    <span class="badge bg-light text-dark">{{ file.file_size|filesizeformat }}</span>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal fade" id="edit-modal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <!-- Content will be loaded via HTMX -->
+        </div>
+    </div>
+</div>
+
+<!-- Email Modal -->
+<div class="modal fade" id="email-modal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <!-- Content will be loaded via HTMX -->
+        </div>
+    </div>
+</div>
+
+<!-- Social Modal -->
+<div class="modal fade" id="social-modal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <!-- Content will be loaded via HTMX -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Generate QR code when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        const qrcodeContainer = document.getElementById('qrcode-container');
+        if (qrcodeContainer) {
+            // QR code generation would be implemented here
+            qrcodeContainer.innerHTML = '<em>QR code generation would be implemented here</em>';
+        }
+    });
+    
+    // Copy link to clipboard
+    document.body.addEventListener('htmx:afterRequest', function(evt) {
+        if (evt.detail.successful && evt.detail.xhr.getResponseHeader('HX-Trigger') === 'copy-link') {
+            // Show success message
+            const copyButton = evt.detail.target;
+            const originalText = copyButton.innerHTML;
+            copyButton.innerHTML = '<i class="bi bi-check text-success"></i> Copied!';
+            
+            setTimeout(function() {
+                copyButton.innerHTML = originalText;
+            }, 2000);
+        }
+    });
+</script>
+{% endblock %}

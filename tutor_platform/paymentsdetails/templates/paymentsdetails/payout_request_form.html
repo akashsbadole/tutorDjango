@@ -1,0 +1,352 @@
+{% extends 'ui_components/base.html' %}
+{% load ui_tags static %}
+
+{% block title %}Request Payout - Django Tutor Platform{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            {% ui_breadcrumb %}
+                <li class="breadcrumb-item"><a href="{% url 'paymentsdetails:escrow_account' %}">Escrow Account</a></li>
+                <li class="breadcrumb-item active">Request Payout</li>
+            {% end_ui_breadcrumb %}
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 col-md-7">
+            {% ui_card "" "payout-request-form" %}
+                <div class="card-header">
+                    <h5 class="mb-0">Request Payout</h5>
+                    <p class="text-muted mb-0">Withdraw funds from your escrow account to your bank account</p>
+                </div>
+                <div class="card-body">
+                    {% ui_form "" "payout-form" %}
+                        {% csrf_token %}
+                        
+                        <!-- Available Balance -->
+                        {% ui_alert "info" "available-balance" %}
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">Available Balance</h6>
+                                    <p class="mb-0">The amount you can withdraw right now</p>
+                                </div>
+                                <h4 class="mb-0 text-primary">${{ available_balance|floatformat:2 }}</h4>
+                            </div>
+                        {% end_ui_alert %}
+                        
+                        <!-- Payout Amount -->
+                        <div class="mb-4">
+                            <label for="amount" class="form-label">Payout Amount ($)</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" id="amount" name="amount" 
+                                       min="{{ min_payout }}" max="{{ available_balance }}" step="0.01" required
+                                       x-model="payoutAmount" @input="updateFeeBreakdown">
+                                <button type="button" class="btn btn-outline-secondary" id="max-amount-btn"
+                                        @click="payoutAmount = {{ available_balance }}; updateFeeBreakdown">
+                                    Max
+                                </button>
+                            </div>
+                            <div class="form-text">
+                                Minimum payout: ${{ min_payout|floatformat:2 }} | Maximum: ${{ available_balance|floatformat:2 }}
+                            </div>
+                            {% if form.amount.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.amount.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Payout Method -->
+                        <div class="mb-4">
+                            <label for="payment_method" class="form-label">Payout Method</label>
+                            <select class="form-select" id="payment_method" name="payment_method" required>
+                                <option value="">Select Payout Method</option>
+                                {% for method in payout_methods %}
+                                    <option value="{{ method.id }}" {% if form.payment_method.value == method.id|stringformat:"s" %}selected{% endif %}>
+                                        {{ method.get_display_name }} - {{ method.card_last4 }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            {% if form.payment_method.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.payment_method.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                            {% if not payout_methods %}
+                                {% ui_alert "warning" "no-payment-methods" %}
+                                    <i class="bi bi-exclamation-triangle me-2"></i>
+                                    You don't have any payment methods that can receive payouts. 
+                                    <a href="{% url 'paymentsdetails:payment_method_list' %}">Add a payment method</a> first.
+                                {% end_ui_alert %}
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Payout Speed -->
+                        <div class="mb-4">
+                            <label class="form-label">Payout Speed</label>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    {% ui_card "" "standard-speed" "border-0 shadow-sm" %}
+                                        <div class="card-body">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="payout_speed" id="standard-speed" 
+                                                       value="STANDARD" {% if form.payout_speed.value == 'STANDARD' or not form.payout_speed.value %}checked{% endif %}
+                                                       x-model="payoutSpeed" @change="updateFeeBreakdown">
+                                                <label class="form-check-label" for="standard-speed">
+                                                    <h6 class="mb-1">Standard</h6>
+                                                    <p class="mb-0 small text-muted">3-5 business days</p>
+                                                    <p class="mb-0">Free</p>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    {% end_ui_card %}
+                                </div>
+                                <div class="col-md-6">
+                                    {% ui_card "" "express-speed" "border-0 shadow-sm" %}
+                                        <div class="card-body">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="payout_speed" id="express-speed" 
+                                                       value="EXPRESS" {% if form.payout_speed.value == 'EXPRESS' %}checked{% endif %}
+                                                       x-model="payoutSpeed" @change="updateFeeBreakdown">
+                                                <label class="form-check-label" for="express-speed">
+                                                    <h6 class="mb-1">Express</h6>
+                                                    <p class="mb-0 small text-muted">1-2 business days</p>
+                                                    <p class="mb-0">${{ express_fee|floatformat:2 }} fee</p>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    {% end_ui_card %}
+                                </div>
+                            </div>
+                            {% if form.payout_speed.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.payout_speed.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Fee Breakdown -->
+                        <div class="mb-4" id="fee-breakdown">
+                            {% ui_card "" "fee-breakdown" %}
+                                <div class="card-header">
+                                    <h6 class="mb-0">Fee Breakdown</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="d-flex justify-content-between mb-2">
+                                                <span>Payout Amount:</span>
+                                                <span x-text="'$' + (parseFloat(payoutAmount) || 0).toFixed(2)">$0.00</span>
+                                            </div>
+                                            <div class="d-flex justify-content-between mb-2">
+                                                <span>Processing Fee:</span>
+                                                <span x-text="'$' + (payoutSpeed === 'EXPRESS' ? {{ express_fee }} : 0).toFixed(2)">$0.00</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="d-flex justify-content-between mb-2">
+                                                <strong>Total Deductions:</strong>
+                                                <strong x-text="'$' + (payoutSpeed === 'EXPRESS' ? {{ express_fee }} : 0).toFixed(2)">$0.00</strong>
+                                            </div>
+                                            <div class="d-flex justify-content-between">
+                                                <strong>You'll Receive:</strong>
+                                                <strong class="text-success" x-text="'$' + ((parseFloat(payoutAmount) || 0) - (payoutSpeed === 'EXPRESS' ? {{ express_fee }} : 0)).toFixed(2)">$0.00</strong>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% end_ui_card %}
+                        </div>
+                        
+                        <!-- Reason for Payout -->
+                        <div class="mb-4">
+                            <label for="reason" class="form-label">Reason for Payout (Optional)</label>
+                            <textarea class="form-control" id="reason" name="reason" rows="3" 
+                                      placeholder="Enter a reason for this payout...">{{ form.reason.value|default:'' }}</textarea>
+                            {% if form.reason.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.reason.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Terms and Conditions -->
+                        <div class="mb-4">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="terms_accepted" name="terms_accepted" required>
+                                <label class="form-check-label" for="terms_accepted">
+                                    I agree to <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal">payout terms and conditions</a>
+                                </label>
+                            </div>
+                            {% if form.terms_accepted.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.terms_accepted.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Submit Button -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'paymentsdetails:escrow_account' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-2"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary" {% if not payout_methods %}disabled{% endif %}>
+                                <i class="bi bi-send me-2"></i>Request Payout
+                            </button>
+                        </div>
+                    {% end_ui_form %}
+                    
+                    <div id="payout-result" class="mt-3"></div>
+                </div>
+            {% end_ui_card %}
+        </div>
+        
+        <div class="col-lg-4 col-md-5">
+            <!-- Payout Information -->
+            {% ui_card "" "payout-information" %}
+                <div class="card-header">
+                    <h6 class="mb-0">Payout Information</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6><i class="bi bi-clock-history text-primary me-2"></i>Processing Time</h6>
+                        <p class="small text-muted">Standard payouts take 3-5 business days. Express payouts take 1-2 business days.</p>
+                    </div>
+                    <div class="mb-3">
+                        <h6><i class="bi bi-cash-stack text-success me-2"></i>Fees</h6>
+                        <p class="small text-muted">Standard payouts are free. Express payouts have a ${{ express_fee|floatformat:2 }} fee.</p>
+                    </div>
+                    <div class="mb-3">
+                        <h6><i class="bi bi-shield-check text-info me-2"></i>Security</h6>
+                        <p class="small text-muted">All payouts are processed securely and may be subject to verification.</p>
+                    </div>
+                    <div class="mb-3">
+                        <h6><i class="bi bi-calendar-check text-warning me-2"></i>Payout Schedule</h6>
+                        <p class="small text-muted">Payouts are processed Monday-Friday, excluding bank holidays.</p>
+                    </div>
+                </div>
+            {% end_ui_card %}
+             
+            <!-- Recent Payouts -->
+            {% if recent_payouts %}
+                {% ui_card "" "recent-payouts" %}
+                    <div class="card-header">
+                        <h6 class="mb-0">Recent Payouts</h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="list-group list-group-flush">
+                            {% for payout in recent_payouts %}
+                                <div class="list-group-item">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">${{ payout.amount|floatformat:2 }}</h6>
+                                        <small>{{ payout.created_at|date:"M d, Y" }}</small>
+                                    </div>
+                                    <p class="mb-1 text-muted small">
+                                        {{ payout.get_status_display }} - {{ payout.get_payout_speed_display }}
+                                    </p>
+                                    {% ui_badge payout.get_status_display "bg-"|add:payout.get_status_color %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% end_ui_card %}
+            {% endif %}
+             
+            <!-- Help Section -->
+            {% ui_card "" "help-section" %}
+                <div class="card-header">
+                    <h6 class="mb-0">Need Help?</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="#" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-book me-2"></i>View Help Center
+                        </a>
+                        <a href="#" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-chat-dots me-2"></i>Contact Support
+                        </a>
+                        <a href="{% url 'paymentsdetails:payment_method_list' %}" class="btn btn-outline-info btn-sm">
+                            <i class="bi bi-credit-card me-2"></i>Manage Payment Methods
+                        </a>
+                    </div>
+                </div>
+            {% end_ui_card %}
+        </div>
+    </div>
+</div>
+
+<!-- Terms Modal -->
+{% ui_modal "termsModal" "Payout Terms and Conditions" %}
+    <h6>1. Processing Time</h6>
+    <p>Standard payouts are processed within 3-5 business days. Express payouts are processed within 1-2 business days. Processing times may vary depending on your bank and holidays.</p>
+    
+    <h6>2. Fees</h6>
+    <p>Standard payouts are free of charge. Express payouts incur a fee of ${{ express_fee|floatformat:2 }}, which will be deducted from your payout amount.</p>
+    
+    <h6>3. Minimum Payout</h6>
+    <p>The minimum payout amount is ${{ min_payout|floatformat:2 }}. Requests below this amount will not be processed.</p>
+    
+    <h6>4. Verification</h6>
+    <p>All payouts may be subject to verification. We may request additional documentation to verify your identity and payment method.</p>
+    
+    <h6>5. Cancellation</h6>
+    <p>Payout requests can be cancelled before they are processed. Once processed, they cannot be cancelled.</p>
+    
+    <h6>6. Failed Payouts</h6>
+    <p>If a payout fails due to incorrect payment information, funds will be returned to your escrow account. A small processing fee may apply.</p>
+    
+    <h6>7. Taxes</h6>
+    <p>You are responsible for any taxes applicable to your earnings. We do not provide tax advice.</p>
+    
+    <h6>8. Account Suspension</h6>
+    <p>We reserve the right to suspend or cancel payouts if we suspect fraudulent activity or violation of our terms of service.</p>
+{% end_ui_modal %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Alpine.js data
+    Alpine.data('payoutForm', () => ({
+        payoutAmount: '{{ form.amount.value|default:"0" }}',
+        payoutSpeed: '{{ form.payout_speed.value|default:"STANDARD" }}',
+        
+        updateFeeBreakdown() {
+            // This function is called by Alpine.js when values change
+            // The UI updates automatically through x-text bindings
+        }
+    }));
+    
+    // Handle form submission with HTMX
+    htmx.on('htmx:afterRequest', function(evt) {
+        if (evt.detail.successful) {
+            // Show success notification
+            const notification = document.createElement('div');
+            notification.className = 'alert alert-success alert-dismissible fade show position-fixed';
+            notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            notification.innerHTML = `
+                <i class="bi bi-check-circle me-2"></i>
+                Payout request submitted successfully
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(notification);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 5000);
+            
+            // Redirect to escrow account after a short delay
+            setTimeout(() => {
+                window.location.href = '{% url "paymentsdetails:escrow_account" %}';
+            }, 2000);
+        }
+    });
+});
+</script>
+{% endblock %}

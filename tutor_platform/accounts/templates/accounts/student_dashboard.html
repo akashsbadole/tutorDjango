@@ -1,0 +1,253 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Student Dashboard - Django Tutor Platform{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3">Student Dashboard</h1>
+            <p class="text-muted">Welcome back, {{ user.first_name }}!</p>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ active_requirements }}</h4>
+                            <p class="card-text">Active Requirements</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-clipboard-check" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ ongoing_sessions }}</h4>
+                            <p class="card-text">Ongoing Sessions</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-play-circle" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ completed_sessions }}</h4>
+                            <p class="card-text">Completed Sessions</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-check-circle" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">${{ total_spent }}</h4>
+                            <p class="card-text">Total Spent</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-currency-dollar" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Requirements -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Recent Requirements</h5>
+                    <a href="{% url 'requirements:requirement_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    {% if recent_requirements %}
+                        <div class="row">
+                            {% for requirement in recent_requirements %}
+                                <div class="col-md-6 col-lg-4 mb-3">
+                                    <div class="card h-100 card-hover">
+                                        <div class="card-body">
+                                            <h6 class="card-title">{{ requirement.title }}</h6>
+                                            <p class="card-text text-muted small">{{ requirement.subject.name }}</p>
+                                            <p class="card-text">{{ requirement.description|truncatewords:20 }}</p>
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <span class="badge bg-{{ requirement.status|status_color }}">{{ requirement.get_status_display }}</span>
+                                                <small class="text-muted">{{ requirement.created_at|date:"M d, Y" }}</small>
+                                            </div>
+                                        </div>
+                                        <div class="card-footer bg-transparent">
+                                            <a href="{% url 'requirements:requirement_detail' requirement.id %}" class="btn btn-sm btn-primary">View Details</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-clipboard-x text-muted" style="font-size: 3rem;"></i>
+                            <p class="text-muted mt-2">You haven't posted any requirements yet.</p>
+                            <a href="{% url 'requirements:requirement_create' %}" class="btn btn-primary">Post Your First Requirement</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Sessions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Recent Sessions</h5>
+                    <a href="{% url 'requirements:session_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    {% if recent_sessions %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Tutor</th>
+                                        <th>Subject</th>
+                                        <th>Date</th>
+                                        <th>Duration</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for session in recent_sessions %}
+                                        <tr>
+                                            <td>{{ session.proposal.tutor.user.get_full_name }}</td>
+                                            <td>{{ session.proposal.requirement.subject.name }}</td>
+                                            <td>{{ session.scheduled_date|date:"M d, Y" }}</td>
+                                            <td>{{ session.duration }} mins</td>
+                                            <td><span class="badge bg-{{ session.status|status_color }}">{{ session.get_status_display }}</span></td>
+                                            <td>
+                                                <a href="{% url 'requirements:session_detail' session.id %}" class="btn btn-sm btn-outline-primary">View</a>
+                                                {% if session.status == 'SCHEDULED' %}
+                                                    <button class="btn btn-sm btn-success" 
+                                                            hx-get="{% url 'requirements:session_join' session.id %}"
+                                                            hx-target="#session-modal"
+                                                            hx-trigger="click">
+                                                        Join
+                                                    </button>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-calendar-x text-muted" style="font-size: 3rem;"></i>
+                            <p class="text-muted mt-2">You don't have any sessions yet.</p>
+                            <a href="{% url 'requirements:requirement_create' %}" class="btn btn-primary">Find a Tutor</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recommended Tutors -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Recommended Tutors</h5>
+                    <a href="{% url 'accounts:tutor_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for tutor in recommended_tutors %}
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <div class="card h-100 card-hover">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center mb-3">
+                                            <img src="{{ tutor.profile_picture.url|default:'/static/images/default-avatar.png' }}" 
+                                                 class="rounded-circle me-3" width="50" height="50" alt="{{ tutor.user.get_full_name }}">
+                                            <div>
+                                                <h6 class="card-title mb-0">{{ tutor.user.get_full_name }}</h6>
+                                                <div class="text-warning small">
+                                                    {% for i in tutor.average_rating|star_range %}
+                                                        <i class="bi bi-star-fill"></i>
+                                                    {% endfor %}
+                                                    <span class="text-muted">({{ tutor.total_reviews }})</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <p class="card-text small">{{ tutor.bio|truncatewords:15 }}</p>
+                                        <div class="mb-2">
+                                            {% for subject in tutor.subjects.all|slice:":3" %}
+                                                <span class="badge bg-light text-dark me-1">{{ subject.name }}</span>
+                                            {% endfor %}
+                                        </div>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span class="text-primary fw-bold">${{ tutor.hourly_rate }}/hr</span>
+                                            <a href="{% url 'accounts:tutor_detail' tutor.id %}" class="btn btn-sm btn-outline-primary">View Profile</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Session Modal -->
+<div class="modal fade" id="session-modal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <!-- Content will be loaded via HTMX -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-refresh session data every 30 seconds
+    setInterval(function() {
+        htmx.trigger(document.body, 'refreshSessions');
+    }, 30000);
+    
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,631 @@
+{% load ui_tags %}
+<!-- Enhanced Alert Component -->
+<div class="alert alert-{{ level|default:'info' }} {{ alert_class|default:'' }} 
+     {% if dismissible %}alert-dismissible fade show{% endif %}" 
+     role="alert"
+     x-data="alertComponent('{{ alert_id|default:'alert' }}', {{ dismissible|default:'false' }})"
+     x-show="visible"
+     x-transition:enter="transition ease-out duration-300"
+     x-transition:enter-start="opacity-0 transform translate-y-2"
+     x-transition:enter-end="opacity-100 transform translate-y-0"
+     x-transition:leave="transition ease-in duration-200"
+     x-transition:leave-start="opacity-100 transform translate-y-0"
+     x-transition:leave-end="opacity-0 transform translate-y-2"
+     :class="{
+         'alert-icon': icon,
+         'alert-titled': title,
+         'alert-progress': auto_dismiss && show_progress,
+         'alert-toast': toast,
+         'alert-solid': solid,
+         'alert-outline': outline
+     }">
+    
+    <div class="d-flex align-items-start">
+        <!-- Alert Icon -->
+        <div class="alert-icon-wrapper">
+            {% if icon %}
+                <i class="bi {{ icon }} alert-icon"></i>
+            {% elif level == 'success' %}
+                <i class="bi bi-check-circle-fill alert-icon"></i>
+            {% elif level == 'danger' or level == 'error' %}
+                <i class="bi bi-exclamation-triangle-fill alert-icon"></i>
+            {% elif level == 'warning' %}
+                <i class="bi bi-exclamation-circle-fill alert-icon"></i>
+            {% else %}
+                <i class="bi bi-info-circle-fill alert-icon"></i>
+            {% endif %}
+        </div>
+        
+        <!-- Alert Content -->
+        <div class="flex-grow-1">
+            {% if title %}
+            <h4 class="alert-heading">{{ title }}</h4>
+            {% endif %}
+            
+            <div class="alert-message">{{ message }}</div>
+            
+            {% block alert_content %}{% endblock %}
+            
+            <!-- Alert Actions -->
+            {% if actions %}
+            <div class="alert-actions mt-3">
+                {% for action in actions %}
+                <button type="button" 
+                        class="btn {{ action.class|default:'btn-sm btn-outline-secondary' }} me-2"
+                        @click="{{ action.action }}"
+                        {% if action.id %}id="{{ action.id }}"{% endif %}>
+                    {% if action.icon %}<i class="bi {{ action.icon }} me-1"></i>{% endif %}
+                    {{ action.label }}
+                </button>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Dismiss Button -->
+        {% if dismissible %}
+        <button type="button" 
+                class="btn-close ms-2" 
+                data-bs-dismiss="alert" 
+                aria-label="Close"
+                @click="dismiss()"></button>
+        {% endif %}
+    </div>
+    
+    <!-- Progress Bar for Auto-dismiss -->
+    {% if auto_dismiss and show_progress|default:false %}
+    <div class="alert-progress-bar">
+        <div class="progress" style="height: 3px;">
+            <div class="progress-bar" 
+                 role="progressbar" 
+                 :style="`width: ${progress}%`"
+                 x-bind:aria-valuenow="progress"
+                 aria-valuemin="0" 
+                 aria-valuemax="100"></div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Toast Container (for toast notifications) -->
+{% if toast %}
+<div class="toast-container position-fixed top-0 end-0 p-3" 
+     style="z-index: 1055;"
+     x-data="toastContainer()">
+    <div class="toast toast-{{ level|default:'info' }} {{ toast_class|default:'' }} show"
+         role="alert" 
+         aria-live="assertive" 
+         aria-atomic="true"
+         x-show="visible"
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0 transform translate-x-full"
+         x-transition:enter-end="opacity-100 transform translate-x-0"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100 transform translate-x-0"
+         x-transition:leave-end="opacity-0 transform translate-x-full">
+        <div class="toast-header">
+            {% if icon %}
+            <i class="bi {{ icon }} me-2"></i>
+            {% elif level == 'success' %}
+            <i class="bi bi-check-circle-fill me-2"></i>
+            {% elif level == 'danger' or level == 'error' %}
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            {% elif level == 'warning' %}
+            <i class="bi bi-exclamation-circle-fill me-2"></i>
+            {% else %}
+            <i class="bi bi-info-circle-fill me-2"></i>
+            {% endif %}
+            <strong class="me-auto">{{ title|default:'Notification' }}</strong>
+            <small class="text-muted">{{ timestamp|default:'just now' }}</small>
+            {% if dismissible|default:true %}
+            <button type="button" 
+                    class="btn-close" 
+                    data-bs-dismiss="toast" 
+                    aria-label="Close"
+                    @click="dismiss()"></button>
+            {% endif %}
+        </div>
+        <div class="toast-body">
+            {{ message }}
+            {% block toast_content %}{% endblock %}
+            
+            {% if actions %}
+            <div class="mt-2 pt-2 border-top">
+                {% for action in actions %}
+                <button type="button" 
+                        class="btn {{ action.class|default:'btn-sm btn-outline-secondary' }} me-2"
+                        @click="{{ action.action }}">
+                    {% if action.icon %}<i class="bi {{ action.icon }} me-1"></i>{% endif %}
+                    {{ action.label }}
+                </button>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Notification History Panel -->
+{% if show_history|default:false %}
+<div class="notification-history" 
+     x-data="notificationHistory()"
+     x-show="showHistory"
+     x-transition>
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Notification History</h5>
+            <button type="button" 
+                    class="btn-close" 
+                    @click="showHistory = false"
+                    aria-label="Close"></button>
+        </div>
+        <div class="card-body">
+            <div class="notification-list">
+                <template x-for="notification in notifications" :key="notification.id">
+                    <div class="notification-item d-flex align-items-start p-2 border-bottom"
+                         :class="`alert-${notification.level}`">
+                        <div class="notification-icon me-2">
+                            <i class="bi" :class="getNotificationIcon(notification.level)"></i>
+                        </div>
+                        <div class="notification-content flex-grow-1">
+                            <div class="notification-title" x-text="notification.title"></div>
+                            <div class="notification-message small text-muted" x-text="notification.message"></div>
+                            <div class="notification-time small text-muted" x-text="notification.time"></div>
+                        </div>
+                        <button type="button" 
+                                class="btn-close btn-sm ms-2"
+                                @click="removeNotification(notification.id)"
+                                aria-label="Remove notification"></button>
+                    </div>
+                </template>
+                
+                <div x-show="notifications.length === 0" class="text-center py-3 text-muted">
+                    No notifications
+                </div>
+            </div>
+            
+            <div class="notification-actions mt-3">
+                <button type="button" 
+                        class="btn btn-sm btn-outline-secondary"
+                        @click="clearAllNotifications()"
+                        :disabled="notifications.length === 0">
+                    Clear All
+                </button>
+                <button type="button" 
+                        class="btn btn-sm btn-outline-primary"
+                        @click="markAllAsRead()"
+                        :disabled="notifications.length === 0">
+                    Mark All as Read
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('alertComponent', (alertId, isDismissible = false) => ({
+        visible: true,
+        progress: 100,
+        progressInterval: null,
+        
+        init() {
+            // Auto-dismiss if timeout is specified
+            {% if auto_dismiss %}
+            this.startAutoDismiss({{ auto_dismiss }});
+            {% endif %}
+            
+            // Add to notification history if enabled
+            {% if show_history|default:false %}
+            this.addToHistory();
+            {% endif %}
+            
+            // Emit shown event
+            this.$dispatch('alert-shown', { 
+                alertId: alertId,
+                level: '{{ level|default:"info" }}',
+                message: '{{ message }}'
+            });
+        },
+        
+        dismiss() {
+            this.visible = false;
+            
+            // Clear auto-dismiss interval if running
+            if (this.progressInterval) {
+                clearInterval(this.progressInterval);
+            }
+            
+            // Emit custom event
+            this.$dispatch('alert-dismissed', { 
+                alertId: alertId,
+                level: '{{ level|default:"info" }}'
+            });
+        },
+        
+        startAutoDismiss(timeout) {
+            const interval = 50; // Update interval in ms
+            const decrement = (100 / timeout) * interval;
+            
+            this.progressInterval = setInterval(() => {
+                this.progress = Math.max(0, this.progress - decrement);
+                
+                if (this.progress <= 0) {
+                    this.dismiss();
+                }
+            }, interval);
+        },
+        
+        pauseAutoDismiss() {
+            if (this.progressInterval) {
+                clearInterval(this.progressInterval);
+                this.progressInterval = null;
+            }
+        },
+        
+        resumeAutoDismiss() {
+            {% if auto_dismiss %}
+            const remainingTime = (this.progress / 100) * {{ auto_dismiss }};
+            this.startAutoDismiss(remainingTime);
+            {% endif %}
+        },
+        
+        addToHistory() {
+            // Add to notification history
+            this.$dispatch('add-to-history', {
+                id: '{{ alert_id|default:"alert_" + (Date.now()) }}',
+                level: '{{ level|default:"info" }}',
+                title: '{{ title|default:"" }}',
+                message: '{{ message }}',
+                time: new Date().toLocaleString()
+            });
+        }
+    }));
+    
+    Alpine.data('toastContainer', () => ({
+        visible: true,
+        
+        init() {
+            // Auto-dismiss toast after default timeout
+            {% if auto_dismiss %}
+            setTimeout(() => {
+                this.visible = false;
+            }, {{ auto_dismiss }});
+            {% endif %}
+        },
+        
+        dismiss() {
+            this.visible = false;
+        }
+    }));
+    
+    Alpine.data('notificationHistory', () => ({
+        showHistory: false,
+        notifications: [],
+        
+        init() {
+            // Load notifications from localStorage
+            this.loadNotifications();
+            
+            // Listen for new notifications
+            this.$el.addEventListener('add-to-history', (event) => {
+                this.addNotification(event.detail);
+            });
+        },
+        
+        loadNotifications() {
+            const saved = localStorage.getItem('notificationHistory');
+            if (saved) {
+                try {
+                    this.notifications = JSON.parse(saved);
+                } catch (e) {
+                    console.error('Failed to load notification history:', e);
+                }
+            }
+        },
+        
+        saveNotifications() {
+            localStorage.setItem('notificationHistory', JSON.stringify(this.notifications));
+        },
+        
+        addNotification(notification) {
+            this.notifications.unshift(notification);
+            
+            // Keep only last 50 notifications
+            if (this.notifications.length > 50) {
+                this.notifications = this.notifications.slice(0, 50);
+            }
+            
+            this.saveNotifications();
+        },
+        
+        removeNotification(id) {
+            this.notifications = this.notifications.filter(n => n.id !== id);
+            this.saveNotifications();
+        },
+        
+        clearAllNotifications() {
+            this.notifications = [];
+            this.saveNotifications();
+        },
+        
+        markAllAsRead() {
+            this.notifications.forEach(n => n.read = true);
+            this.saveNotifications();
+        },
+        
+        getNotificationIcon(level) {
+            const icons = {
+                'success': 'bi-check-circle-fill',
+                'danger': 'bi-exclamation-triangle-fill',
+                'error': 'bi-exclamation-triangle-fill',
+                'warning': 'bi-exclamation-circle-fill',
+                'info': 'bi-info-circle-fill'
+            };
+            return icons[level] || 'bi-info-circle-fill';
+        }
+    }));
+    
+    // Global alert management
+    window.AlertManager = {
+        alerts: [],
+        
+        show(options) {
+            const alertId = options.id || 'alert_' + Date.now();
+            const alertElement = document.getElementById(alertId);
+            
+            if (alertElement) {
+                // Show existing alert
+                alertElement._x_dataStack[0].visible = true;
+            } else {
+                // Create new alert dynamically
+                this.createAlert(options);
+            }
+        },
+        
+        hide(alertId) {
+            const alertElement = document.getElementById(alertId);
+            if (alertElement) {
+                alertElement._x_dataStack[0].dismiss();
+            }
+        },
+        
+        createAlert(options) {
+            // Implementation for dynamic alert creation
+            // This would create and append a new alert element to the DOM
+            console.log('Creating alert:', options);
+        }
+    };
+});
+</script>
+
+<style>
+/* Alert Enhancements */
+.alert {
+    border-radius: var(--border-radius-md);
+    border-width: 1px;
+    position: relative;
+}
+
+.alert-icon {
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+
+.alert-icon-wrapper {
+    margin-right: 0.75rem;
+}
+
+.alert-titled {
+    padding-top: 1rem;
+}
+
+.alert-titled .alert-heading {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.alert-message {
+    line-height: 1.5;
+}
+
+.alert-actions .btn {
+    font-size: 0.875rem;
+}
+
+/* Alert Progress Bar */
+.alert-progress {
+    padding-bottom: 0;
+}
+
+.alert-progress-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    overflow: hidden;
+}
+
+.alert-progress-bar .progress {
+    height: 3px;
+    border-radius: 0;
+    margin: 0;
+}
+
+/* Solid Alert Variants */
+.alert-solid {
+    background-color: rgba(var(--color-{{ level|default:'info' }}), 0.1);
+    border-color: var(--color-{{ level|default:'info' }});
+    color: var(--color-{{ level|default:'info' }});
+}
+
+.alert-solid .alert-icon {
+    color: var(--color-{{ level|default:'info' }});
+}
+
+/* Outline Alert Variants */
+.alert-outline {
+    background-color: transparent;
+    border-color: var(--color-{{ level|default:'info' }});
+    color: var(--color-{{ level|default:'info' }});
+}
+
+.alert-outline .alert-icon {
+    color: var(--color-{{ level|default:'info' }});
+}
+
+/* Toast Styles */
+.toast-container {
+    z-index: 1055;
+}
+
+.toast {
+    border-radius: var(--border-radius-md);
+    box-shadow: var(--shadow-lg);
+    backdrop-filter: blur(10px);
+}
+
+.toast-header {
+    border-bottom: 1px solid var(--color-border-light);
+    background-color: var(--color-bg-secondary);
+}
+
+.toast-body {
+    background-color: var(--color-bg-primary);
+}
+
+/* Notification History */
+.notification-history {
+    position: fixed;
+    top: 60px;
+    right: 20px;
+    width: 350px;
+    max-height: 400px;
+    z-index: 1040;
+}
+
+.notification-list {
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+.notification-item {
+    transition: var(--transition-fast);
+}
+
+.notification-item:hover {
+    background-color: var(--color-bg-secondary);
+}
+
+.notification-icon {
+    width: 20px;
+    text-align: center;
+}
+
+.notification-title {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.notification-message {
+    margin-bottom: 0.25rem;
+}
+
+.notification-time {
+    font-size: 0.75rem;
+}
+
+/* Alert Hover Effects */
+.alert:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+/* Dark Mode Adjustments */
+[data-theme="dark"] .alert {
+    background-color: rgba(var(--color-{{ level|default:'info' }}), 0.2);
+}
+
+[data-theme="dark"] .toast-header {
+    background-color: var(--color-bg-tertiary);
+    border-color: var(--color-border-medium);
+}
+
+[data-theme="dark"] .toast-body {
+    background-color: var(--color-bg-secondary);
+}
+
+[data-theme="dark"] .notification-history .card {
+    background-color: var(--color-bg-secondary);
+    border-color: var(--color-border-medium);
+}
+
+/* Accessibility */
+.alert:focus-within {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+    .alert {
+        border-width: 2px;
+    }
+    
+    .alert-icon {
+        font-weight: bold;
+    }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+    .alert,
+    .toast {
+        transition: none;
+    }
+    
+    .alert-progress-bar .progress-bar {
+        transition: none;
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 576px) {
+    .alert {
+        padding: 0.75rem;
+    }
+    
+    .alert-icon-wrapper {
+        margin-right: 0.5rem;
+    }
+    
+    .alert-actions .btn {
+        display: block;
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+    
+    .alert-actions .btn:last-child {
+        margin-bottom: 0;
+    }
+    
+    .notification-history {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        max-height: 100%;
+    }
+    
+    .notification-history .card {
+        height: 100%;
+        border-radius: 0;
+    }
+}
+</style>

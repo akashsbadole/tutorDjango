@@ -1,0 +1,169 @@
+{% load static %}
+
+<!-- Status Badge -->
+{% if type == 'badge' %}
+    {% if status == 'ACTIVE' %}
+        <span class="badge bg-success">Active</span>
+    {% elif status == 'INACTIVE' %}
+        <span class="badge bg-secondary">Inactive</span>
+    {% elif status == 'PENDING' %}
+        <span class="badge bg-warning">Pending</span>
+    {% elif status == 'COMPLETED' %}
+        <span class="badge bg-success">Completed</span>
+    {% elif status == 'FAILED' %}
+        <span class="badge bg-danger">Failed</span>
+    {% elif status == 'CANCELLED' %}
+        <span class="badge bg-danger">Cancelled</span>
+    {% elif status == 'PROCESSING' %}
+        <span class="badge bg-info">Processing</span>
+    {% elif status == 'REFUNDED' %}
+        <span class="badge bg-warning">Refunded</span>
+    {% elif status == 'ACCEPTED' %}
+        <span class="badge bg-success">Accepted</span>
+    {% elif status == 'REJECTED' %}
+        <span class="badge bg-danger">Rejected</span>
+    {% elif status == 'OPEN' %}
+        <span class="badge bg-primary">Open</span>
+    {% elif status == 'CLOSED' %}
+        <span class="badge bg-secondary">Closed</span>
+    {% elif status == 'DRAFT' %}
+        <span class="badge bg-light text-dark">Draft</span>
+    {% else %}
+        <span class="badge bg-secondary">{{ status }}</span>
+    {% endif %}
+
+<!-- Status Icon -->
+{% elif type == 'icon' %}
+    {% if status == 'ACTIVE' or status == 'COMPLETED' or status == 'ACCEPTED' or status == 'OPEN' %}
+        <i class="bi bi-check-circle-fill text-success" title="{{ status }}"></i>
+    {% elif status == 'INACTIVE' or status == 'CLOSED' or status == 'CANCELLED' or status == 'REJECTED' or status == 'FAILED' %}
+        <i class="bi bi-x-circle-fill text-danger" title="{{ status }}"></i>
+    {% elif status == 'PENDING' or status == 'PROCESSING' or status == 'DRAFT' %}
+        <i class="bi bi-clock-fill text-warning" title="{{ status }}"></i>
+    {% elif status == 'REFUNDED' %}
+        <i class="bi bi-arrow-counterclockwise text-warning" title="{{ status }}"></i>
+    {% else %}
+        <i class="bi bi-circle-fill text-secondary" title="{{ status }}"></i>
+    {% endif %}
+
+<!-- Status Card -->
+{% elif type == 'card' %}
+    <div class="card {% if status == 'ACTIVE' or status == 'COMPLETED' or status == 'ACCEPTED' %}border-success{% elif status == 'INACTIVE' or status == 'CLOSED' or status == 'CANCELLED' or status == 'REJECTED' or status == 'FAILED' %}border-danger{% elif status == 'PENDING' or status == 'PROCESSING' or status == 'DRAFT' %}border-warning{% else %}border-secondary{% endif %}">
+        <div class="card-body text-center py-2">
+            {% if status == 'ACTIVE' or status == 'COMPLETED' or status == 'ACCEPTED' or status == 'OPEN' %}
+                <i class="bi bi-check-circle-fill text-success" style="font-size: 1.5rem;"></i>
+            {% elif status == 'INACTIVE' or status == 'CLOSED' or status == 'CANCELLED' or status == 'REJECTED' or status == 'FAILED' %}
+                <i class="bi bi-x-circle-fill text-danger" style="font-size: 1.5rem;"></i>
+            {% elif status == 'PENDING' or status == 'PROCESSING' or status == 'DRAFT' %}
+                <i class="bi bi-clock-fill text-warning" style="font-size: 1.5rem;"></i>
+            {% elif status == 'REFUNDED' %}
+                <i class="bi bi-arrow-counterclockwise text-warning" style="font-size: 1.5rem;"></i>
+            {% else %}
+                <i class="bi bi-circle-fill text-secondary" style="font-size: 1.5rem;"></i>
+            {% endif %}
+            <p class="mb-0 mt-2">{{ status }}</p>
+        </div>
+    </div>
+
+<!-- Progress Bar -->
+{% elif type == 'progress' %}
+    {% if status == 'COMPLETED' or status == 'ACCEPTED' %}
+        <div class="progress">
+            <div class="progress-bar bg-success" role="progressbar" style="width: 100%" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100">
+                Completed
+            </div>
+        </div>
+    {% elif status == 'PROCESSING' %}
+        <div class="progress">
+            <div class="progress-bar bg-info progress-bar-striped progress-bar-animated" role="progressbar" style="width: 60%" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100">
+                Processing
+            </div>
+        </div>
+    {% elif status == 'PENDING' %}
+        <div class="progress">
+            <div class="progress-bar bg-warning progress-bar-striped" role="progressbar" style="width: 30%" aria-valuenow="30" aria-valuemin="0" aria-valuemax="100">
+                Pending
+            </div>
+        </div>
+    {% elif status == 'FAILED' or status == 'CANCELLED' or status == 'REJECTED' %}
+        <div class="progress">
+            <div class="progress-bar bg-danger" role="progressbar" style="width: 100%" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100">
+                {{ status }}
+            </div>
+        </div>
+    {% else %}
+        <div class="progress">
+            <div class="progress-bar bg-secondary" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                {{ status }}
+            </div>
+        </div>
+    {% endif %}
+
+<!-- Status Toggle -->
+{% elif type == 'toggle' %}
+    <div class="form-check form-switch">
+        <input class="form-check-input" type="checkbox" id="statusToggle" 
+               {% if status == 'ACTIVE' or status == 'COMPLETED' or status == 'ACCEPTED' or status == 'OPEN' %}checked{% endif %}
+               {% if toggle_url %}hx-post="{{ toggle_url }}"{% endif %}
+               {% if toggle_target %}hx-target="{{ toggle_target }}"{% endif %}>
+        <label class="form-check-label" for="statusToggle">
+            {% if status == 'ACTIVE' or status == 'COMPLETED' or status == 'ACCEPTED' or status == 'OPEN' %}
+                Active
+            {% else %}
+                Inactive
+            {% endif %}
+        </label>
+    </div>
+
+<!-- Loading Indicator -->
+{% elif type == 'loading' %}
+    <div class="text-center py-3" id="loading-indicator">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-2 text-muted">{{ message|default:"Processing..." }}</p>
+    </div>
+
+<!-- Success Indicator -->
+{% elif type == 'success' %}
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i>
+        {{ message|default:"Operation completed successfully!" }}
+        {% if dismissible %}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>{% endif %}
+    </div>
+
+<!-- Error Indicator -->
+{% elif type == 'error' %}
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        {{ message|default:"An error occurred. Please try again." }}
+        {% if dismissible %}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>{% endif %}
+    </div>
+
+<!-- Warning Indicator -->
+{% elif type == 'warning' %}
+    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        {{ message|default:"Please review this information." }}
+        {% if dismissible %}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>{% endif %}
+    </div>
+
+<!-- Info Indicator -->
+{% elif type == 'info' %}
+    <div class="alert alert-info alert-dismissible fade show" role="alert">
+        <i class="bi bi-info-circle-fill me-2"></i>
+        {{ message|default:"Here's some information." }}
+        {% if dismissible %}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>{% endif %}
+    </div>
+
+<!-- Empty State -->
+{% elif type == 'empty' %}
+    <div class="text-center py-5">
+        <i class="bi {{ icon|default:'bi-inbox' }} text-muted" style="font-size: 3rem;"></i>
+        <h5 class="mt-3 text-muted">{{ title|default:"No Data Available" }}</h5>
+        <p class="text-muted">{{ message|default:"There's nothing to show here." }}</p>
+        {% if action_url and action_text %}
+            <a href="{{ action_url }}" class="btn btn-primary mt-3">{{ action_text }}</a>
+        {% endif %}
+    </div>
+{% endif %}

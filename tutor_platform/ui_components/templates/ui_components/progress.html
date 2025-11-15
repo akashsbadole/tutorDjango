@@ -1,0 +1,47 @@
+{% load ui_tags %}
+<div class="progress {{ progress_class|default:'' }}">
+    <div class="progress-bar 
+                {% if striped %}progress-bar-striped{% endif %} 
+                {% if animated %}progress-bar-animated{% endif %} 
+                bg-{{ level|default:'primary' }}" 
+         role="progressbar" 
+         style="width: {{ percentage|default:0 }}%"
+         aria-valuenow="{{ value|default:0 }}" 
+         aria-valuemin="0" 
+         aria-valuemax="{{ total|default:100 }}">
+        
+        {% if show_percentage %}
+            <span class="progress-bar-content">{{ percentage|default:0|floatformat:1 }}%</span>
+        {% endif %}
+    </div>
+</div>
+
+{% if show_value %}
+    <div class="text-center mt-2">
+        <small class="text-muted">
+            {{ value|default:0 }} / {{ total|default:100 }}
+            {% if percentage %}({{ percentage|floatformat:1 }}%){% endif %}
+        </small>
+    </div>
+{% endif %}
+
+<style>
+.progress-bar-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-weight: 500;
+    font-size: 0.875rem;
+}
+
+.progress {
+    position: relative;
+    min-height: 1rem;
+}
+
+.progress-bar {
+    position: relative;
+}
+</style>

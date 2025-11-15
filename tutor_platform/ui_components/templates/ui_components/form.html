@@ -1,0 +1,541 @@
+{% load ui_tags %}
+<div class="form-container {{ container_class|default:'' }}"
+     {% if form_id %}id="{{ form_id }}_container"{% endif %}
+     x-data="formComponent('{{ form_id|default:'form' }}', {{ multi_step|default:'false' }})">
+    
+    {% if title %}
+    <div class="form-header mb-4">
+        <div class="d-flex align-items-center justify-content-between">
+            <div>
+                <h4 class="{{ title_class|default:'' }}">{{ title }}</h4>
+                {% if description %}
+                    <p class="text-muted {{ description_class|default:'' }}">{{ description }}</p>
+                {% endif %}
+            </div>
+            {% if show_progress %}
+            <div class="form-progress-indicator">
+                <div class="progress" style="height: 8px; width: 120px;">
+                    <div class="progress-bar theme-bg-primary" role="progressbar"
+                         :style="`width: ${progressPercentage}%`"
+                         :aria-valuenow="progressPercentage"
+                         aria-valuemin="0"
+                         aria-valuemax="100">
+                    </div>
+                </div>
+                <small class="text-muted" x-text="`${progressPercentage}% Complete`"></small>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if multi_step %}
+    <!-- Enhanced Multi-step form progress indicator -->
+    <div class="multi-step-progress mb-4">
+        <div class="progress mb-3" style="height: 8px;">
+            <div class="progress-bar theme-bg-primary" role="progressbar"
+                 :style="`width: ${(currentStep / totalSteps) * 100}%`"
+                 :aria-valuenow="currentStep"
+                 aria-valuemin="0"
+                 aria-valuemax="totalSteps">
+            </div>
+        </div>
+        <div class="d-flex justify-content-between mt-3 position-relative">
+            <!-- Progress Line -->
+            <div class="step-progress-line position-absolute top-2 start-0 end-0"
+                 style="height: 2px; background-color: var(--color-border-light); z-index: 1;"></div>
+            <div class="step-progress-line-active position-absolute top-2 start-0"
+                 :style="`width: ${(currentStep / totalSteps) * 100}%; height: 2px; background-color: var(--color-primary); z-index: 2; transition: width 0.3s ease;`">
+            </div>
+            
+            <!-- Step Indicators -->
+            {% for step in steps %}
+                <div class="step-indicator text-center"
+                     :class="{
+                         'active': currentStep === {{ forloop.counter0 }},
+                         'completed': currentStep > {{ forloop.counter0 }}
+                     }"
+                     style="z-index: 3;">
+                    <div class="step-circle d-flex align-items-center justify-content-center mx-auto mb-2"
+                         style="width: 40px; height: 40px; border-radius: 50%; background-color: var(--color-bg-primary); border: 2px solid var(--color-border-light);">
+                        <span x-show="currentStep > {{ forloop.counter0 }}">
+                            <i class="bi bi-check text-success"></i>
+                        </span>
+                        <span x-show="currentStep <= {{ forloop.counter0 }}" x-text="{{ forloop.counter }}"></span>
+                    </div>
+                    <div class="step-label small fw-medium">{{ step.title }}</div>
+                    {% if step.description %}
+                    <div class="step-description small text-muted">{{ step.description }}</div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <form method="{{ method|default:'POST' }}"
+          action="{{ action|default:'' }}"
+          enctype="{{ enctype|default:'application/x-www-form-urlencoded' }}"
+          class="{{ form_class|default:'' }}"
+          {% if form_id %}id="{{ form_id }}"{% endif %}
+          {% if htmx %}hx-post="{{ action }}"
+                      hx-target="{{ htmx_target|default:'#form-result' }}"
+                      hx-swap="{{ htmx_swap|default:'innerHTML' }}"
+                      hx-indicator="{{ htmx_indicator|default:'.htmx-indicator' }}"
+                      {% if htmx_confirm %}hx-confirm="{{ htmx_confirm }}"{% endif %}
+                      {% if htmx_trigger %}hx-trigger="{{ htmx_trigger }}"{% endif %}{% endif %}
+          {% if autocomplete %}autocomplete="{{ autocomplete }}"{% endif %}
+          {% if multipart %}enctype="multipart/form-data"{% endif %}
+          novalidate
+          @submit="handleSubmit($event)">
+        
+        {% csrf_token %}
+        
+        {% if form %}
+            {% for field in form %}
+                <div class="mb-3 {{ field.field.widget.attrs.container_class|default:'' }} form-field-wrapper"
+                     x-data="formFieldComponent('{{ field.id_for_label }}')"
+                     :class="{
+                         'field-focused': focused,
+                         'field-touched': touched,
+                         'field-error': fieldErrors.length > 0,
+                         'field-success': isValid
+                     }">
+                     
+                    <!-- Field Label -->
+                    {% if field.field.widget.input_type != 'checkbox' and field.field.widget.input_type != 'radio' and not field.field.widget.attrs.floating_label %}
+                    <label for="{{ field.id_for_label }}" class="form-label d-flex align-items-center">
+                        {{ field.label }}
+                        {% if field.field.required %}
+                        <span class="text-danger ms-1" aria-label="Required field">*</span>
+                        {% endif %}
+                        {% if field.help_text and field.field.widget.attrs.show_help_icon %}
+                        <button type="button"
+                                class="btn btn-sm btn-link text-muted p-0 ms-1"
+                                @click="showHelp = !showHelp"
+                                aria-label="Help for {{ field.label }}">
+                            <i class="bi bi-question-circle"></i>
+                        </button>
+                        {% endif %}
+                    </label>
+                    {% endif %}
+                    
+                    <!-- Checkbox Field -->
+                    {% if field.field.widget.input_type == 'checkbox' %}
+                        <div class="form-check form-switch">
+                            {{ field|add_class:'form-check-input' }}
+                            <label class="form-check-label d-flex align-items-center" for="{{ field.id_for_label }}">
+                                {{ field.label }}
+                                {% if field.field.required %}
+                                <span class="text-danger ms-1" aria-label="Required field">*</span>
+                                {% endif %}
+                            </label>
+                        </div>
+                    {% elif field.field.widget.input_type == 'radio' %}
+                        <div class="{{ field.field.widget.attrs.radio_class|default:'form-check' }}">
+                            {% for choice in field %}
+                                <div class="form-check">
+                                    {{ choice.tag|add_class:'form-check-input' }}
+                                    <label class="form-check-label d-flex align-items-center" for="{{ choice.id_for_label }}">
+                                        {{ choice.choice_label }}
+                                    </label>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% elif field.field.widget.input_type == 'select' or field.field.widget.input_type == 'selectmultiple' %}
+                        {{ field|add_class:'form-select theme-input' }}
+                    {% elif field.field.widget.input_type == 'textarea' %}
+                        {% if field.field.widget.attrs.floating_label %}
+                            <!-- Floating label textarea -->
+                            <div class="form-floating mb-3">
+                                {{ field|add_class:'form-control theme-input' }}
+                                <label for="{{ field.id_for_label }}">
+                                    {{ field.label }}
+                                    {% if field.field.required %}
+                                    <span class="text-danger ms-1" aria-label="Required field">*</span>
+                                    {% endif %}
+                                </label>
+                            </div>
+                        {% else %}
+                            {{ field|add_class:'form-control theme-input' }}
+                        {% endif %}
+                        {% if field.field.widget.attrs.auto_resize %}
+                        <script>
+                            document.addEventListener('DOMContentLoaded', function() {
+                                const textarea = document.getElementById('{{ field.id_for_label }}');
+                                if (textarea) {
+                                    textarea.addEventListener('input', function() {
+                                        this.style.height = 'auto';
+                                        this.style.height = this.scrollHeight + 'px';
+                                    });
+                                    // Initial resize
+                                    textarea.dispatchEvent(new Event('input'));
+                                }
+                            });
+                        </script>
+                        {% endif %}
+                    {% else %}
+                        {% if field.field.widget.attrs.floating_label %}
+                            <!-- Floating label input -->
+                            <div class="form-floating mb-3">
+                                {% if field.field.widget.attrs.addon_before or field.field.widget.attrs.addon_after %}
+                                    <div class="input-group">
+                                        {% if field.field.widget.attrs.addon_before %}
+                                            <span class="input-group-text">{{ field.field.widget.attrs.addon_before }}</span>
+                                        {% endif %}
+                                        {{ field|add_class:'form-control theme-input' }}
+                                        {% if field.field.widget.attrs.addon_after %}
+                                            <span class="input-group-text">{{ field.field.widget.attrs.addon_after }}</span>
+                                        {% endif %}
+                                    </div>
+                                {% else %}
+                                    {{ field|add_class:'form-control theme-input' }}
+                                {% endif %}
+                                <label for="{{ field.id_for_label }}">
+                                    {{ field.label }}
+                                    {% if field.field.required %}
+                                    <span class="text-danger ms-1" aria-label="Required field">*</span>
+                                    {% endif %}
+                                </label>
+                            </div>
+                        {% else %}
+                            <div class="input-group">
+                                {% if field.field.widget.attrs.addon_before %}
+                                    <span class="input-group-text">{{ field.field.widget.attrs.addon_before }}</span>
+                                {% endif %}
+                                
+                                {{ field|add_class:'form-control theme-input' }}
+                                
+                                {% if field.field.widget.attrs.addon_after %}
+                                    <span class="input-group-text">{{ field.field.widget.attrs.addon_after }}</span>
+                                {% endif %}
+                                
+                                {% if field.field.widget.attrs.button_after %}
+                                    <button class="btn {{ field.field.widget.attrs.button_class|default:'btn-outline-secondary' }}"
+                                            type="{{ field.field.widget.attrs.button_type|default:'button' }}"
+                                            {% if field.field.widget.attrs.button_action %}@click="{{ field.field.widget.attrs.button_action }}"{% endif %}>
+                                        {{ field.field.widget.attrs.button_after }}
+                                    </button>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    {% endif %}
+                    
+                    <!-- Field Help Text -->
+                    {% if field.help_text %}
+                        <div class="form-text {{ field.field.widget.attrs.help_class|default:'text-muted' }}"
+                             x-show="!showHelp"
+                             x-transition>
+                            {{ field.help_text }}
+                        </div>
+                        
+                        <!-- Expandable Help (if help icon is shown) -->
+                        {% if field.field.widget.attrs.show_help_icon %}
+                        <div class="form-text help-expandable bg-light p-2 rounded mt-2"
+                             x-show="showHelp"
+                             x-transition>
+                            {{ field.help_text }}
+                        </div>
+                        {% endif %}
+                    {% endif %}
+                    
+                    <!-- Field Validation Messages -->
+                    {% if field.errors %}
+                        <div class="invalid-feedback d-block" x-show="showErrors || touched">
+                            {% for error in field.errors %}
+                                <div class="d-flex align-items-start">
+                                    <i class="bi bi-exclamation-circle-fill me-2 mt-0.5"></i>
+                                    <span>{{ error }}</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Field Success Message -->
+                    {% if field.field.widget.attrs.success_message %}
+                    <div class="valid-feedback d-block" x-show="isValid && touched">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-check-circle-fill me-2 mt-0.5"></i>
+                            <span>{{ field.field.widget.attrs.success_message }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if field.field.widget.attrs.char_counter %}
+                        <div class="form-text text-end">
+                            <span id="{{ field.id_for_label }}_counter">0</span> / {{ field.field.max_length|default:field.field.widget.attrs.max_length }}
+                        </div>
+                        <script>
+                            document.addEventListener('DOMContentLoaded', function() {
+                                const field = document.getElementById('{{ field.id_for_label }}');
+                                const counter = document.getElementById('{{ field.id_for_label }}_counter');
+                                if (field && counter) {
+                                    function updateCounter() {
+                                        counter.textContent = field.value.length;
+                                        if (field.value.length > {{ field.field.max_length|default:field.field.widget.attrs.max_length|default:255 }}) {
+                                            counter.classList.add('text-danger');
+                                        } else if (field.value.length > {{ field.field.max_length|default:field.field.widget.attrs.max_length|default:255 }} * 0.8) {
+                                            counter.classList.add('text-warning');
+                                        } else {
+                                            counter.classList.remove('text-danger', 'text-warning');
+                                        }
+                                    }
+                                    
+                                    field.addEventListener('input', updateCounter);
+                                    updateCounter();
+                                }
+                            });
+                        </script>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        {% endif %}
+        
+        <!-- Enhanced File upload component with progress indicator -->
+        {% if file_upload %}
+        <div class="file-upload-container mb-3" x-data="fileUploadComponent()">
+            <label for="{{ file_upload.field_id }}" class="form-label d-flex align-items-center">
+                {{ file_upload.label }}
+                {% if file_upload.required %}
+                <span class="text-danger ms-1" aria-label="Required field">*</span>
+                {% endif %}
+            </label>
+            
+            <!-- Upload Area -->
+            <div class="file-upload-area border-2 border-dashed rounded p-4 text-center"
+                 :class="{
+                     'drag-over': dragOver,
+                     'has-files': files.length > 0
+                 }"
+                 @dragover.prevent="dragOver = true"
+                 @dragleave.prevent="dragOver = false"
+                 @drop.prevent="handleDrop($event)">
+                
+                <input type="file"
+                       id="{{ file_upload.field_id }}"
+                       name="{{ file_upload.field_name }}"
+                       class="form-control d-none"
+                       {% if file_upload.multiple %}multiple{% endif %}
+                       {% if file_upload.accept %}accept="{{ file_upload.accept }}"{% endif %}
+                       @change="handleFileSelect($event)">
+                
+                <!-- Upload Prompt -->
+                <div x-show="files.length === 0" class="upload-prompt">
+                    <i class="bi bi-cloud-upload fs-1 text-muted mb-3 d-block"></i>
+                    <p class="mb-2">Drag and drop files here or</p>
+                    <button type="button" class="btn btn-outline-primary" @click="document.getElementById('{{ file_upload.field_id }}').click()">
+                        <i class="bi bi-folder2-open me-1"></i> Browse Files
+                    </button>
+                    {% if file_upload.accept %}
+                    <small class="text-muted d-block mt-2">Accepted formats: {{ file_upload.accept }}</small>
+                    {% endif %}
+                    {% if file_upload.max_size %}
+                    <small class="text-muted d-block">Maximum file size: {{ file_upload.max_size }}</small>
+                    {% endif %}
+                </div>
+                
+                <!-- File List -->
+                <div x-show="files.length > 0" class="file-list">
+                    <template x-for="(file, index) in files" :key="index">
+                        <div class="file-item d-flex align-items-center justify-content-between p-3 border rounded mb-2">
+                            <div class="d-flex align-items-center flex-grow-1">
+                                <div class="file-icon me-3">
+                                    <i class="bi fs-4"
+                                       :class="getFileIcon(file.type)"></i>
+                                </div>
+                                <div class="file-info">
+                                    <div class="file-name fw-medium" x-text="file.name"></div>
+                                    <div class="file-details small text-muted">
+                                        <span x-text="formatFileSize(file.size)"></span>
+                                        {% if file_upload.show_preview %}
+                                        <span class="ms-2">
+                                            <button type="button"
+                                                    class="btn btn-sm btn-link p-0"
+                                                    @click="previewFile(file)">
+                                                <i class="bi bi-eye"></i> Preview
+                                            </button>
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="file-actions d-flex align-items-center">
+                                <!-- Upload Progress -->
+                                <div x-show="file.uploading" class="upload-progress me-3" style="width: 100px;">
+                                    <div class="progress" style="height: 4px;">
+                                        <div class="progress-bar theme-bg-primary" role="progressbar"
+                                             :style="`width: ${file.progress}%`"
+                                             :aria-valuenow="file.progress"
+                                             aria-valuemin="0"
+                                             aria-valuemax="100">
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Remove Button -->
+                                <button type="button"
+                                        class="btn btn-sm btn-outline-danger"
+                                        @click="removeFile(index)"
+                                        :disabled="file.uploading">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+            
+            <!-- Overall Upload Progress -->
+            <div x-show="uploading" class="mt-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="small fw-medium">Uploading files...</span>
+                    <span class="small text-muted" x-text="`${uploadProgress}% Complete`"></span>
+                </div>
+                <div class="progress" style="height: 8px;">
+                    <div class="progress-bar theme-bg-primary" role="progressbar"
+                         :style="`width: ${uploadProgress}%`"
+                         :aria-valuenow="uploadProgress"
+                         aria-valuemin="0"
+                         aria-valuemax="100">
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% block form_fields %}{% endblock %}
+        
+        {% if form_action_buttons|default:true %}
+        <div class="form-actions {{ actions_class|default:'d-flex justify-content-end gap-2' }}">
+            {% if cancel_url %}
+                <a href="{{ cancel_url }}"
+                   class="btn {{ cancel_class|default:'btn-secondary' }}"
+                   {% if cancel_id %}id="{{ cancel_id }}"{% endif %}>
+                    {% if cancel_icon %}<i class="bi {{ cancel_icon }} me-1"></i>{% endif %}
+                    {{ cancel_text|default:'Cancel' }}
+                </a>
+            {% endif %}
+            
+            {% if reset_button|default:false %}
+                <button type="reset"
+                        class="btn {{ reset_class|default:'btn-outline-secondary' }}"
+                        {% if reset_id %}id="{{ reset_id }}"{% endif %}>
+                    {% if reset_icon %}<i class="bi {{ reset_icon }} me-1"></i>{% endif %}
+                    {{ reset_text|default:'Reset' }}
+                </button>
+            {% endif %}
+            
+            <button type="submit"
+                    class="btn {{ submit_class|default:'btn-primary' }}"
+                    {% if submit_id %}id="{{ submit_id }}"{% endif %}
+                    :disabled="submitting">
+                <span x-show="!submitting">
+                    {% if submit_icon %}<i class="bi {{ submit_icon }} me-1"></i>{% endif %}
+                    {{ submit_text|default:'Submit' }}
+                </span>
+                
+                <span x-show="submitting" class="d-flex align-items-center">
+                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    {{ submitting_text|default:'Submitting...' }}
+                </span>
+            </button>
+        </div>
+        {% endif %}
+    </form>
+    
+    {% if htmx_result_container|default:true %}
+    <div id="{{ form_id|default:'form' }}-result" class="mt-3"></div>
+    {% endif %}
+    
+    {% if htmx %}
+    <div class="htmx-indicator text-center mt-3">
+        <div class="spinner-border spinner-border-sm" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Auto-save indicator -->
+    {% if auto_save %}
+    <div class="auto-save-indicator position-fixed bottom-0 end-0 p-3"
+         x-data="{
+             saved: true,
+             lastSave: '{{ last_save_time|default:"Never" }}'
+         }"
+         x-show="!saved"
+         x-transition>
+        <div class="alert alert-info d-flex align-items-center">
+            <i class="bi bi-hourglass-split me-2"></i>
+            <div>
+                <div>Saving...</div>
+                <small>Last saved: <span x-text="lastSave"></span></small>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('formComponent', (formId) => ({
+        submitting: false,
+        showErrors: false,
+        
+        init() {
+            const form = document.getElementById(formId);
+            if (form) {
+                // Handle form submission
+                form.addEventListener('submit', () => {
+                    this.submitting = true;
+                    this.showErrors = true;
+                });
+                
+                // Handle HTMX events
+                {% if htmx %}
+                form.addEventListener('htmx:beforeRequest', () => {
+                    this.submitting = true;
+                });
+                
+                form.addEventListener('htmx:afterRequest', () => {
+                    this.submitting = false;
+                });
+                
+                form.addEventListener('htmx:responseError', () => {
+                    this.submitting = false;
+                    this.showErrors = true;
+                });
+                {% endif %}
+                
+                // Handle form reset
+                form.addEventListener('reset', () => {
+                    this.showErrors = false;
+                });
+            }
+        }
+    }));
+    
+    Alpine.data('formFieldComponent', (fieldId) => ({
+        focused: false,
+        touched: false,
+        
+        init() {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                field.addEventListener('focus', () => {
+                    this.focused = true;
+                });
+                
+                field.addEventListener('blur', () => {
+                    this.focused = false;
+                    this.touched = true;
+                });
+                
+                field.addEventListener('change', () => {
+                    this.touched = true;
+                });
+            }
+        }
+    }));
+});
+</script>

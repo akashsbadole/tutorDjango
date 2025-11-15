@@ -1,0 +1,344 @@
+{% extends 'ui_components/base.html' %}
+{% load ui_tags static %}
+
+{% block title %}Sign Up - Django Tutor Platform{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10 col-lg-8">
+        <div class="card shadow-lg border-0" x-data="{ submitting: false, userType: 'STUDENT' }">
+            <div class="card-body p-4 p-md-5">
+                <div class="text-center mb-4">
+                    <i class="bi bi-person-plus-fill text-primary" style="font-size: 3rem;"></i>
+                    <h3 class="mt-2">Create Account</h3>
+                    <p class="text-muted">Join our learning community</p>
+                </div>
+
+                <form method="post" 
+                      hx-post="{% url 'accounts:signup' %}" 
+                      hx-target="#form-result" 
+                      hx-swap="innerHTML"
+                      hx-indicator=".htmx-indicator"
+                      @submit="submitting = true">
+                    {% csrf_token %}
+                    
+                    <div id="form-result"></div>
+                    
+                    <!-- User Type Selection -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">I want to</label>
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" 
+                                   class="btn-check" 
+                                   name="user_type" 
+                                   id="student-type" 
+                                   value="STUDENT" 
+                                   checked
+                                   @change="userType = $el.value">
+                            <label class="btn btn-outline-primary" for="student-type">
+                                <i class="bi bi-mortarboard me-2"></i>Learn as a Student
+                            </label>
+                            
+                            <input type="radio" 
+                                   class="btn-check" 
+                                   name="user_type" 
+                                   id="tutor-type" 
+                                   value="TUTOR"
+                                   @change="userType = $el.value">
+                            <label class="btn btn-outline-primary" for="tutor-type">
+                                <i class="bi bi-award me-2"></i>Teach as a Tutor
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Basic Information -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="first_name" class="form-label">First Name</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-person"></i>
+                                </span>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="first_name" 
+                                       name="first_name" 
+                                       placeholder="Enter your first name"
+                                       required
+                                       autocomplete="given-name">
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="last_name" class="form-label">Last Name</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-person"></i>
+                                </span>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="last_name" 
+                                       name="last_name" 
+                                       placeholder="Enter your last name"
+                                       required
+                                       autocomplete="family-name">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username</label>
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="bi bi-person-badge"></i>
+                            </span>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="username" 
+                                   name="username" 
+                                   placeholder="Choose a unique username"
+                                   required
+                                   autocomplete="username"
+                                   hx-get="{% url 'accounts:validate_username' %}"
+                                   hx-trigger="keyup changed delay:500ms"
+                                   hx-target="#username-validation"
+                                   hx-swap="innerHTML">
+                        </div>
+                        <div id="username-validation" class="form-text"></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="bi bi-envelope"></i>
+                            </span>
+                            <input type="email" 
+                                   class="form-control" 
+                                   id="email" 
+                                   name="email" 
+                                   placeholder="Enter your email address"
+                                   required
+                                   autocomplete="email"
+                                   hx-get="{% url 'accounts:validate_email' %}"
+                                   hx-trigger="keyup changed delay:500ms"
+                                   hx-target="#email-validation"
+                                   hx-swap="innerHTML">
+                        </div>
+                        <div id="email-validation" class="form-text"></div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-lock"></i>
+                                </span>
+                                <input type="password" 
+                                       class="form-control" 
+                                       id="password" 
+                                       name="password" 
+                                       placeholder="Create a strong password"
+                                       required
+                                       autocomplete="new-password"
+                                       hx-get="{% url 'accounts:validate_password' %}"
+                                       hx-trigger="keyup changed delay:500ms"
+                                       hx-target="#password-validation"
+                                       hx-swap="innerHTML">
+                                <button type="button" 
+                                        class="btn btn-outline-secondary" 
+                                        @click="$el.previousElementSibling.type = $el.previousElementSibling.type === 'password' ? 'text' : 'password'">
+                                    <i class="bi" :class="$el.previousElementSibling.type === 'password' ? 'bi-eye' : 'bi-eye-slash'"></i>
+                                </button>
+                            </div>
+                            <div id="password-validation" class="form-text"></div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="confirm_password" class="form-label">Confirm Password</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-lock-fill"></i>
+                                </span>
+                                <input type="password" 
+                                       class="form-control" 
+                                       id="confirm_password" 
+                                       name="confirm_password" 
+                                       placeholder="Confirm your password"
+                                       required
+                                       autocomplete="new-password">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tutor-specific fields -->
+                    <div x-show="userType === 'TUTOR'" x-transition>
+                        <div class="card border-secondary mb-3">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0">
+                                    <i class="bi bi-award me-2"></i>Tutor Information
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="bio" class="form-label">Bio</label>
+                                    <textarea class="form-control" 
+                                              id="bio" 
+                                              name="bio" 
+                                              rows="3" 
+                                              placeholder="Tell us about your teaching experience and expertise..."
+                                              data-auto-resize
+                                              data-char-counter="bio-counter"
+                                              maxlength="500"></textarea>
+                                    <div class="form-text">
+                                        <small id="bio-counter">0 / 500</small>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="hourly_rate" class="form-label">Hourly Rate ($)</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">$</span>
+                                            <input type="number" 
+                                                   class="form-control" 
+                                                   id="hourly_rate" 
+                                                   name="hourly_rate" 
+                                                   min="0" 
+                                                   step="0.01"
+                                                   placeholder="25.00">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="experience_years" class="form-label">Years of Experience</label>
+                                        <input type="number" 
+                                               class="form-control" 
+                                               id="experience_years" 
+                                               name="experience_years" 
+                                               min="0"
+                                               placeholder="5">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Terms and Conditions -->
+                    <div class="mb-4">
+                        <div class="card border-0 bg-light">
+                            <div class="card-body">
+                                <div class="form-check">
+                                    <input type="checkbox" 
+                                           class="form-check-input" 
+                                           id="terms" 
+                                           name="terms" 
+                                           required>
+                                    <label class="form-check-label" for="terms">
+                                        I agree to the <a href="#" class="text-decoration-none">Terms of Service</a> and 
+                                        <a href="#" class="text-decoration-none">Privacy Policy</a>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" 
+                                class="btn btn-primary btn-lg"
+                                :disabled="submitting">
+                            <span class="htmx-indicator spinner-border spinner-border-sm me-2" role="status"></span>
+                            <span x-show="!submitting">Create Account</span>
+                            <span x-show="submitting" class="d-flex align-items-center">
+                                <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                Creating account...
+                            </span>
+                        </button>
+                    </div>
+
+                    <div class="text-center mt-4">
+                        <p class="mb-0">Already have an account? 
+                            <a href="{% url 'accounts:login' %}" class="text-decoration-none fw-bold">
+                                <i class="bi bi-box-arrow-in-right me-1"></i>Sign in
+                            </a>
+                        </p>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Benefits Section -->
+<div class="row mt-5">
+    <div class="col-12">
+        <div class="row text-center">
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body">
+                        <i class="bi bi-shield-check text-success fs-1 mb-3"></i>
+                        <h5>Secure Platform</h5>
+                        <p class="text-muted">Your data is protected with industry-standard encryption</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body">
+                        <i class="bi bi-cash-stack text-primary fs-1 mb-3"></i>
+                        <h5>Flexible Payments</h5>
+                        <p class="text-muted">Secure payment processing with multiple payment options</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body">
+                        <i class="bi bi-headset text-info fs-1 mb-3"></i>
+                        <h5>24/7 Support</h5>
+                        <p class="text-muted">Get help whenever you need it from our support team</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('htmx:afterRequest', function(evt) {
+    // Handle signup response
+    if (evt.detail.successful) {
+        try {
+            const response = JSON.parse(evt.detail.xhr.response);
+            if (response.redirect) {
+                window.location.href = response.redirect;
+            } else if (response.error) {
+                // Show error message
+                const formResult = document.getElementById('form-result');
+                if (formResult) {
+                    formResult.innerHTML = `
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                <div>${response.error}</div>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+        } catch (e) {
+            // If response is not JSON, check if it's a redirect
+            if (evt.detail.xhr.responseURL && evt.detail.xhr.status === 200) {
+                window.location.href = '{% url "accounts:home" %}';
+            }
+        }
+    }
+    
+    // Reset submitting state
+    if (evt.detail.target && evt.detail.target.tagName === 'FORM') {
+        evt.detail.target._x_dataStack && evt.detail.target._x_dataStack[0].submitting = false;
+    }
+});
+</script>
+{% endblock %}

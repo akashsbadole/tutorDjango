@@ -1,0 +1,593 @@
+// =============================================================================
+// Django Tutor Platform - Layout System
+// =============================================================================
+// This file contains the layout system including containers, grid system,
+// responsive spacing utilities, and layout components.
+// =============================================================================
+
+// Import variables first
+@import 'variables';
+
+// -----------------------------------------------------------------------------
+// CONTAINER SYSTEM
+// -----------------------------------------------------------------------------
+
+.container,
+.container-fluid,
+.container-sm,
+.container-md,
+.container-lg,
+.container-xl,
+.container-2xl {
+  width: 100%;
+  padding-right: $space-4;
+  padding-left: $space-4;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+// Responsive containers
+@each $breakpoint, $container-max-width in $container-max-widths {
+  .container-#{$breakpoint} {
+    @media (min-width: $breakpoint) {
+      max-width: $container-max-width;
+    }
+  }
+}
+
+// Fixed container
+.container {
+  @media (min-width: $breakpoint-sm) {
+    max-width: map-get($container-max-widths, sm);
+  }
+  
+  @media (min-width: $breakpoint-md) {
+    max-width: map-get($container-max-widths, md);
+  }
+  
+  @media (min-width: $breakpoint-lg) {
+    max-width: map-get($container-max-widths, lg);
+  }
+  
+  @media (min-width: $breakpoint-xl) {
+    max-width: map-get($container-max-widths, xl);
+  }
+  
+  @media (min-width: $breakpoint-2xl) {
+    max-width: map-get($container-max-widths, 2xl);
+  }
+}
+
+// -----------------------------------------------------------------------------
+// GRID SYSTEM
+// -----------------------------------------------------------------------------
+
+// Grid container
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  margin-right: -$grid-gutter-width / 2;
+  margin-left: -$grid-gutter-width / 2;
+}
+
+// Grid columns
+.col {
+  flex-basis: 0;
+  flex-grow: 1;
+  max-width: 100%;
+  padding-right: $grid-gutter-width / 2;
+  padding-left: $grid-gutter-width / 2;
+}
+
+// Generate grid columns
+@each $breakpoint in map-keys($grid-gutter-widths) {
+  @include media-breakpoint-up($breakpoint) {
+    $gutter: map-get($grid-gutter-widths, $breakpoint);
+    
+    .row {
+      margin-right: -$gutter / 2;
+      margin-left: -$gutter / 2;
+    }
+    
+    .col,
+    [class*="col-"] {
+      padding-right: $gutter / 2;
+      padding-left: $gutter / 2;
+    }
+  }
+}
+
+// Responsive grid columns
+@each $breakpoint in map-keys($grid-gutter-widths) {
+  @include media-breakpoint-up($breakpoint) {
+    // Provide common `.col-{bp}` classes for equal-width flexbox columns
+    .col-#{$breakpoint} {
+      flex-basis: 0;
+      flex-grow: 1;
+      max-width: 100%;
+    }
+    
+    @for $i from 1 through $grid-columns {
+      .col-#{$breakpoint}-#{$i} {
+        flex: 0 0 percentage($i / $grid-columns);
+        max-width: percentage($i / $grid-columns);
+      }
+    }
+    
+    @for $i from 1 through $grid-columns {
+      .offset-#{$breakpoint}-#{$i} {
+        margin-left: percentage($i / $grid-columns);
+      }
+    }
+  }
+}
+
+// -----------------------------------------------------------------------------
+// LAYOUT COMPONENTS
+// -----------------------------------------------------------------------------
+
+// Page layout wrapper
+.page-wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+// Main content area
+.main-content {
+  flex: 1;
+  padding: $space-6 0;
+}
+
+// Header layout
+.header {
+  position: sticky;
+  top: 0;
+  z-index: $z-index-sticky;
+  background-color: $color-bg-primary;
+  border-bottom: 1px solid $color-border-light;
+  box-shadow: $shadow-sm;
+  
+  &-fluid {
+    padding: 0;
+  }
+  
+  &-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: $header-height-mobile;
+    padding: 0 $space-4;
+    
+    @media (min-width: $breakpoint-md) {
+      height: $header-height;
+      padding: 0 $space-6;
+    }
+  }
+  
+  &-brand {
+    display: flex;
+    align-items: center;
+    font-size: $font-size-xl;
+    font-weight: $font-weight-bold;
+    color: $color-primary;
+    text-decoration: none;
+    
+    &:hover {
+      color: darken($color-primary, 10%);
+      text-decoration: none;
+    }
+    
+    img {
+      height: 2rem;
+      margin-right: $space-2;
+    }
+  }
+  
+  &-nav {
+    display: none;
+    
+    @media (min-width: $breakpoint-lg) {
+      display: flex;
+      align-items: center;
+      gap: $space-6;
+    }
+  }
+  
+  &-actions {
+    display: flex;
+    align-items: center;
+    gap: $space-4;
+  }
+}
+
+// Sidebar layout
+.sidebar {
+  position: fixed;
+  top: $header-height-mobile;
+  left: 0;
+  height: calc(100vh - #{$header-height-mobile});
+  width: $sidebar-width;
+  background-color: $color-bg-secondary;
+  border-right: 1px solid $color-border-light;
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
+  z-index: $z-index-fixed;
+  overflow-y: auto;
+  
+  @media (min-width: $breakpoint-md) {
+    top: $header-height;
+    height: calc(100vh - #{$header-height});
+  }
+  
+  &.open {
+    transform: translateX(0);
+  }
+  
+  @media (min-width: $breakpoint-lg) {
+    transform: translateX(0);
+  }
+  
+  &-header {
+    padding: $space-4;
+    border-bottom: 1px solid $color-border-light;
+  }
+  
+  &-content {
+    padding: $space-4;
+  }
+  
+  &-nav {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    
+    li {
+      margin-bottom: $space-2;
+    }
+    
+    a {
+      display: flex;
+      align-items: center;
+      padding: $space-3 $space-4;
+      color: $color-text-secondary;
+      text-decoration: none;
+      border-radius: $border-radius-md;
+      transition: $transition-fast;
+      
+      &:hover {
+        color: $color-primary;
+        background-color: $color-bg-tertiary;
+      }
+      
+      &.active {
+        color: $color-primary;
+        background-color: rgba($color-primary, 0.1);
+      }
+      
+      i {
+        width: 1.25rem;
+        margin-right: $space-3;
+      }
+    }
+  }
+  
+  &-footer {
+    padding: $space-4;
+    border-top: 1px solid $color-border-light;
+    margin-top: auto;
+  }
+}
+
+// Content layout with sidebar
+.content-with-sidebar {
+  display: flex;
+  flex-direction: column;
+  
+  @media (min-width: $breakpoint-lg) {
+    flex-direction: row;
+    margin-left: $sidebar-width;
+  }
+  
+  .content-area {
+    flex: 1;
+    padding: $space-6;
+    
+    @media (min-width: $breakpoint-lg) {
+      padding: $space-8;
+    }
+  }
+}
+
+// Footer layout
+.footer {
+  background-color: $color-bg-secondary;
+  border-top: 1px solid $color-border-light;
+  padding: $space-6 0;
+  margin-top: auto;
+  
+  &-content {
+    display: flex;
+    flex-direction: column;
+    gap: $space-6;
+    
+    @media (min-width: $breakpoint-md) {
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+    }
+  }
+  
+  &-section {
+    flex: 1;
+  }
+  
+  &-title {
+    font-size: $font-size-lg;
+    font-weight: $font-weight-semibold;
+    margin-bottom: $space-3;
+    color: $color-text-primary;
+  }
+  
+  &-links {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    
+    li {
+      margin-bottom: $space-2;
+    }
+    
+    a {
+      color: $color-text-secondary;
+      text-decoration: none;
+      
+      &:hover {
+        color: $color-primary;
+      }
+    }
+  }
+}
+
+// -----------------------------------------------------------------------------
+// RESPONSIVE SPACING UTILITIES
+// -----------------------------------------------------------------------------
+
+// Generate responsive spacing utilities
+@each $prop, $abbrev in (margin: m, padding: p) {
+  @each $size, $length in $spacers {
+    .#{$abbrev}-#{$size} { #{$prop}: $length !important; }
+    .#{$abbrev}t-#{$size} { #{$prop}-top: $length !important; }
+    .#{$abbrev}r-#{$size} { #{$prop}-right: $length !important; }
+    .#{$abbrev}b-#{$size} { #{$prop}-bottom: $length !important; }
+    .#{$abbrev}l-#{$size} { #{$prop}-left: $length !important; }
+    .#{$abbrev}x-#{$size} {
+      #{$prop}-left: $length !important;
+      #{$prop}-right: $length !important;
+    }
+    .#{$abbrev}y-#{$size} {
+      #{$prop}-top: $length !important;
+      #{$prop}-bottom: $length !important;
+    }
+  }
+}
+
+// Generate responsive margin utilities
+@each $breakpoint in map-keys($grid-gutter-widths) {
+  @include media-breakpoint-up($breakpoint) {
+    $infix: "-#{$breakpoint}";
+    
+    @each $prop, $abbrev in (margin: m, padding: p) {
+      @each $size, $length in $spacers {
+        .#{$abbrev}#{$infix}-#{$size} { #{$prop}: $length !important; }
+        .#{$abbrev}t#{$infix}-#{$size} { #{$prop}-top: $length !important; }
+        .#{$abbrev}r#{$infix}-#{$size} { #{$prop}-right: $length !important; }
+        .#{$abbrev}b#{$infix}-#{$size} { #{$prop}-bottom: $length !important; }
+        .#{$abbrev}l#{$infix}-#{$size} { #{$prop}-left: $length !important; }
+        .#{$abbrev}x#{$infix}-#{$size} {
+          #{$prop}-left: $length !important;
+          #{$prop}-right: $length !important;
+        }
+        .#{$abbrev}y#{$infix}-#{$size} {
+          #{$prop}-top: $length !important;
+          #{$prop}-bottom: $length !important;
+        }
+      }
+    }
+  }
+}
+
+// -----------------------------------------------------------------------------
+// FLEXBOX UTILITIES
+// -----------------------------------------------------------------------------
+
+.d-flex { display: flex !important; }
+.d-inline-flex { display: inline-flex !important; }
+.d-none { display: none !important; }
+
+// Flex direction
+.flex-row { flex-direction: row !important; }
+.flex-column { flex-direction: column !important; }
+.flex-row-reverse { flex-direction: row-reverse !important; }
+.flex-column-reverse { flex-direction: column-reverse !important; }
+
+// Flex wrap
+.flex-wrap { flex-wrap: wrap !important; }
+.flex-nowrap { flex-wrap: nowrap !important; }
+.flex-wrap-reverse { flex-wrap: wrap-reverse !important; }
+
+// Justify content
+.justify-content-start { justify-content: flex-start !important; }
+.justify-content-end { justify-content: flex-end !important; }
+.justify-content-center { justify-content: center !important; }
+.justify-content-between { justify-content: space-between !important; }
+.justify-content-around { justify-content: space-around !important; }
+.justify-content-evenly { justify-content: space-evenly !important; }
+
+// Align items
+.align-items-start { align-items: flex-start !important; }
+.align-items-end { align-items: flex-end !important; }
+.align-items-center { align-items: center !important; }
+.align-items-baseline { align-items: baseline !important; }
+.align-items-stretch { align-items: stretch !important; }
+
+// Align content
+.align-content-start { align-content: flex-start !important; }
+.align-content-end { align-content: flex-end !important; }
+.align-content-center { align-content: center !important; }
+.align-content-between { align-content: space-between !important; }
+.align-content-around { align-content: space-around !important; }
+.align-content-stretch { align-content: stretch !important; }
+
+// Align self
+.align-self-auto { align-self: auto !important; }
+.align-self-start { align-self: flex-start !important; }
+.align-self-end { align-self: flex-end !important; }
+.align-self-center { align-self: center !important; }
+.align-self-baseline { align-self: baseline !important; }
+.align-self-stretch { align-self: stretch !important; }
+
+// Flex grow and shrink
+.flex-fill { flex: 1 1 auto !important; }
+.flex-grow-0 { flex-grow: 0 !important; }
+.flex-grow-1 { flex-grow: 1 !important; }
+.flex-shrink-0 { flex-shrink: 0 !important; }
+.flex-shrink-1 { flex-shrink: 1 !important; }
+
+// -----------------------------------------------------------------------------
+// POSITION UTILITIES
+// -----------------------------------------------------------------------------
+
+.position-static { position: static !important; }
+.position-relative { position: relative !important; }
+.position-absolute { position: absolute !important; }
+.position-fixed { position: fixed !important; }
+.position-sticky { position: sticky !important; }
+
+// -----------------------------------------------------------------------------
+// VISIBILITY UTILITIES
+// -----------------------------------------------------------------------------
+
+.visible { visibility: visible !important; }
+.invisible { visibility: hidden !important; }
+
+// -----------------------------------------------------------------------------
+// RESPONSIVE DISPLAY UTILITIES
+// -----------------------------------------------------------------------------
+
+@each $breakpoint in map-keys($grid-gutter-widths) {
+  @include media-breakpoint-up($breakpoint) {
+    $infix: "-#{$breakpoint}";
+    
+    .d#{$infix}-none { display: none !important; }
+    .d#{$infix}-inline { display: inline !important; }
+    .d#{$infix}-inline-block { display: inline-block !important; }
+    .d#{$infix}-block { display: block !important; }
+    .d#{$infix}-grid { display: grid !important; }
+    .d#{$infix}-table { display: table !important; }
+    .d#{$infix}-table-row { display: table-row !important; }
+    .d#{$infix}-table-cell { display: table-cell !important; }
+    .d#{$infix}-flex { display: flex !important; }
+    .d#{$infix}-inline-flex { display: inline-flex !important; }
+  }
+}
+
+// -----------------------------------------------------------------------------
+// MIXINS
+// -----------------------------------------------------------------------------
+
+// Media query mixin
+@mixin media-breakpoint-up($name) {
+  @if $name == sm {
+    @media (min-width: $breakpoint-sm) { @content; }
+  }
+  @else if $name == md {
+    @media (min-width: $breakpoint-md) { @content; }
+  }
+  @else if $name == lg {
+    @media (min-width: $breakpoint-lg) { @content; }
+  }
+  @else if $name == xl {
+    @media (min-width: $breakpoint-xl) { @content; }
+  }
+  @else if $name == 2xl {
+    @media (min-width: $breakpoint-2xl) { @content; }
+  }
+}
+
+// -----------------------------------------------------------------------------
+// MOBILE-FIRST RESPONSIVE PATTERNS
+// -----------------------------------------------------------------------------
+
+// Mobile-first card grid
+.card-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: $space-6;
+  
+  @media (min-width: $breakpoint-md) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  @media (min-width: $breakpoint-lg) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  @media (min-width: $breakpoint-xl) {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+// Responsive section spacing
+.section {
+  padding: $space-8 0;
+  
+  @media (min-width: $breakpoint-md) {
+    padding: $space-12 0;
+  }
+  
+  @media (min-width: $breakpoint-lg) {
+    padding: $space-16 0;
+  }
+}
+
+// Mobile navigation toggle
+.mobile-nav-toggle {
+  display: block;
+  background: none;
+  border: none;
+  padding: $space-2;
+  cursor: pointer;
+  
+  @media (min-width: $breakpoint-lg) {
+    display: none;
+  }
+  
+  &:focus {
+    outline: 2px solid $color-primary;
+    outline-offset: 2px;
+  }
+}
+
+// Mobile overlay for sidebar
+.mobile-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: $z-index-modal-backdrop - 1;
+  opacity: 0;
+  visibility: hidden;
+  transition: $transition-fast;
+  
+  &.active {
+    opacity: 1;
+    visibility: visible;
+  }
+  
+  @media (min-width: $breakpoint-lg) {
+    display: none;
+  }
+}

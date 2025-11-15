@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Notifications{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'notifications/css/notifications.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Notification Menu</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        <a href="{% url 'notifications:list' %}" class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'notifications:list' %}active{% endif %}">
+                            <i class="fas fa-bell me-2"></i>
+                            All Notifications
+                            {% if unread_count > 0 %}
+                                <span class="badge bg-danger rounded-pill float-end">{{ unread_count }}</span>
+                            {% endif %}
+                        </a>
+                        <a href="{% url 'notifications:system_list' %}" class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'notifications:system_list' %}active{% endif %}">
+                            <i class="fas fa-bullhorn me-2"></i>
+                            System Notifications
+                        </a>
+                        <a href="{% url 'notifications:preferences' %}" class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'notifications:preferences' %}active{% endif %}">
+                            <i class="fas fa-cog me-2"></i>
+                            Preferences
+                        </a>
+                        <a href="{% url 'notifications:device_list' %}" class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'notifications:device_list' %}active{% endif %}">
+                            <i class="fas fa-mobile-alt me-2"></i>
+                            My Devices
+                        </a>
+                        <a href="{% url 'notifications:analytics' %}" class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'notifications:analytics' %}active{% endif %}">
+                            <i class="fas fa-chart-bar me-2"></i>
+                            Analytics
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-primary" id="mark-all-read-btn">
+                            <i class="fas fa-check-double me-1"></i>
+                            Mark All Read
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-danger" id="delete-read-btn">
+                            <i class="fas fa-trash me-1"></i>
+                            Delete Read
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="col-md-9">
+            {% block notification_content %}
+            <!-- Content will be inserted here -->
+            {% endblock %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'notifications/js/notifications.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,325 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Proposals - Django Tutor Platform{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3">My Proposals</h1>
+            <p class="text-muted">Track and manage all your tutoring proposals</p>
+        </div>
+    </div>
+
+    <!-- Filter Tabs -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <ul class="nav nav-tabs" id="proposalTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all" type="button" role="tab">
+                                All Proposals <span class="badge bg-secondary ms-1">{{ all_proposals.count }}</span>
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending" type="button" role="tab">
+                                Pending <span class="badge bg-warning ms-1">{{ pending_proposals.count }}</span>
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="accepted-tab" data-bs-toggle="tab" data-bs-target="#accepted" type="button" role="tab">
+                                Accepted <span class="badge bg-success ms-1">{{ accepted_proposals.count }}</span>
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="rejected-tab" data-bs-toggle="tab" data-bs-target="#rejected" type="button" role="tab">
+                                Rejected <span class="badge bg-danger ms-1">{{ rejected_proposals.count }}</span>
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filter -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form hx-get="{% url 'requirements:proposal_list' %}" hx-target="#proposal-list" hx-push-url="true">
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                    <input type="text" class="form-control" name="search" placeholder="Search proposals..." value="{{ request.GET.search }}">
+                                </div>
+                            </div>
+                            <div class="col-md-2 mb-3">
+                                <select class="form-select" name="subject">
+                                    <option value="">All Subjects</option>
+                                    {% for subject in subjects %}
+                                        <option value="{{ subject.id }}" {% if request.GET.subject == subject.id|stringformat:"s" %}selected{% endif %}>
+                                            {{ subject.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-2 mb-3">
+                                <select class="form-select" name="status">
+                                    <option value="">All Status</option>
+                                    <option value="PENDING" {% if request.GET.status == 'PENDING' %}selected{% endif %}>Pending</option>
+                                    <option value="ACCEPTED" {% if request.GET.status == 'ACCEPTED' %}selected{% endif %}>Accepted</option>
+                                    <option value="REJECTED" {% if request.GET.status == 'REJECTED' %}selected{% endif %}>Rejected</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2 mb-3">
+                                <select class="form-select" name="sort">
+                                    <option value="newest">Newest First</option>
+                                    <option value="oldest">Oldest First</option>
+                                    <option value="rate_high">Highest Rate</option>
+                                    <option value="rate_low">Lowest Rate</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2 mb-3">
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="bi bi-search"></i> Search
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Proposal List -->
+    <div id="proposal-list">
+        <div class="tab-content" id="proposalTabContent">
+            <!-- All Proposals Tab -->
+            <div class="tab-pane fade show active" id="all" role="tabpanel">
+                <div class="row">
+                    {% for proposal in all_proposals %}
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card h-100 card-hover">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="card-title">{{ proposal.requirement.title }}</h6>
+                                        <span class="badge bg-{{ proposal.status|status_color }}">{{ proposal.get_status_display }}</span>
+                                    </div>
+                                    <p class="card-text text-muted small">{{ proposal.requirement.subject.name }}</p>
+                                    <p class="card-text">{{ proposal.proposal_text|truncatewords:15 }}</p>
+                                    <div class="mb-2">
+                                        <small class="text-muted">Posted by {{ proposal.requirement.student.user.get_full_name }}</small>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="text-primary fw-bold">${{ proposal.proposed_rate }}/hr</span>
+                                        <small class="text-muted">{{ proposal.created_at|date:"M d, Y" }}</small>
+                                    </div>
+                                </div>
+                                <div class="card-footer bg-transparent">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <small class="text-muted">{{ proposal.requirement.created_at|timesince }} ago</small>
+                                        <a href="{% url 'requirements:proposal_detail' proposal.id %}" class="btn btn-sm btn-primary">View Details</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% empty %}
+                        <div class="col-12">
+                            <div class="text-center py-4">
+                                <i class="bi bi-clipboard-x text-muted" style="font-size: 3rem;"></i>
+                                <p class="text-muted mt-2">You haven't submitted any proposals yet.</p>
+                                <a href="{% url 'requirements:requirement_list' %}" class="btn btn-primary">Find Requirements</a>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Pending Proposals Tab -->
+            <div class="tab-pane fade" id="pending" role="tabpanel">
+                <div class="row">
+                    {% for proposal in pending_proposals %}
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card h-100 card-hover">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="card-title">{{ proposal.requirement.title }}</h6>
+                                        <span class="badge bg-warning">Pending</span>
+                                    </div>
+                                    <p class="card-text text-muted small">{{ proposal.requirement.subject.name }}</p>
+                                    <p class="card-text">{{ proposal.proposal_text|truncatewords:15 }}</p>
+                                    <div class="mb-2">
+                                        <small class="text-muted">Posted by {{ proposal.requirement.student.user.get_full_name }}</small>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="text-primary fw-bold">${{ proposal.proposed_rate }}/hr</span>
+                                        <small class="text-muted">{{ proposal.created_at|date:"M d, Y" }}</small>
+                                    </div>
+                                </div>
+                                <div class="card-footer bg-transparent">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <small class="text-muted">{{ proposal.requirement.created_at|timesince }} ago</small>
+                                        <a href="{% url 'requirements:proposal_detail' proposal.id %}" class="btn btn-sm btn-primary">View Details</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% empty %}
+                        <div class="col-12">
+                            <div class="text-center py-4">
+                                <i class="bi bi-hourglass-split text-muted" style="font-size: 3rem;"></i>
+                                <p class="text-muted mt-2">No pending proposals.</p>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Accepted Proposals Tab -->
+            <div class="tab-pane fade" id="accepted" role="tabpanel">
+                <div class="row">
+                    {% for proposal in accepted_proposals %}
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card h-100 card-hover">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="card-title">{{ proposal.requirement.title }}</h6>
+                                        <span class="badge bg-success">Accepted</span>
+                                    </div>
+                                    <p class="card-text text-muted small">{{ proposal.requirement.subject.name }}</p>
+                                    <p class="card-text">{{ proposal.proposal_text|truncatewords:15 }}</p>
+                                    <div class="mb-2">
+                                        <small class="text-muted">Posted by {{ proposal.requirement.student.user.get_full_name }}</small>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="text-primary fw-bold">${{ proposal.proposed_rate }}/hr</span>
+                                        <small class="text-muted">{{ proposal.created_at|date:"M d, Y" }}</small>
+                                    </div>
+                                </div>
+                                <div class="card-footer bg-transparent">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <small class="text-muted">Accepted {{ proposal.updated_at|timesince }} ago</small>
+                                        <div>
+                                            <a href="{% url 'requirements:proposal_detail' proposal.id %}" class="btn btn-sm btn-outline-primary">View Details</a>
+                                            {% if proposal.sessions.exists %}
+                                                <a href="{% url 'requirements:session_list' %}" class="btn btn-sm btn-success">Sessions</a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% empty %}
+                        <div class="col-12">
+                            <div class="text-center py-4">
+                                <i class="bi bi-check-circle text-muted" style="font-size: 3rem;"></i>
+                                <p class="text-muted mt-2">No accepted proposals yet.</p>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Rejected Proposals Tab -->
+            <div class="tab-pane fade" id="rejected" role="tabpanel">
+                <div class="row">
+                    {% for proposal in rejected_proposals %}
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card h-100 card-hover">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="card-title">{{ proposal.requirement.title }}</h6>
+                                        <span class="badge bg-danger">Rejected</span>
+                                    </div>
+                                    <p class="card-text text-muted small">{{ proposal.requirement.subject.name }}</p>
+                                    <p class="card-text">{{ proposal.proposal_text|truncatewords:15 }}</p>
+                                    <div class="mb-2">
+                                        <small class="text-muted">Posted by {{ proposal.requirement.student.user.get_full_name }}</small>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="text-primary fw-bold">${{ proposal.proposed_rate }}/hr</span>
+                                        <small class="text-muted">{{ proposal.created_at|date:"M d, Y" }}</small>
+                                    </div>
+                                </div>
+                                <div class="card-footer bg-transparent">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <small class="text-muted">Rejected {{ proposal.updated_at|timesince }} ago</small>
+                                        <a href="{% url 'requirements:proposal_detail' proposal.id %}" class="btn btn-sm btn-outline-primary">View Details</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% empty %}
+                        <div class="col-12">
+                            <div class="text-center py-4">
+                                <i class="bi bi-x-circle text-muted" style="font-size: 3rem;"></i>
+                                <p class="text-muted mt-2">No rejected proposals.</p>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        {% if is_paginated %}
+            <nav aria-label="Proposal pagination">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">First</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Previous</a>
+                        </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Next</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Last</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-submit search form on keyup with delay
+    let searchTimeout;
+    document.querySelector('input[name="search"]').addEventListener('keyup', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(function() {
+            document.querySelector('form').dispatchEvent(new Event('submit'));
+        }, 500);
+    });
+    
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    });
+</script>
+{% endblock %}

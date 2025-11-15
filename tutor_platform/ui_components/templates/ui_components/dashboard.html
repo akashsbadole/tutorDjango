@@ -1,0 +1,886 @@
+{% load ui_tags %}
+<div class="dashboard-container {{ container_class|default:'' }}" 
+     {% if dashboard_id %}id="{{ dashboard_id }}"{% endif %}
+     x-data="dashboardComponent('{{ dashboard_id|default:'dashboard' }}', {{ editable|default:'false' }})">
+    
+    <!-- Dashboard Header -->
+    <div class="dashboard-header d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1">{{ title|default:'Dashboard' }}</h1>
+            {% if subtitle %}
+            <p class="text-muted mb-0">{{ subtitle }}</p>
+            {% endif %}
+        </div>
+        
+        <div class="dashboard-actions d-flex align-items-center">
+            {% if date_range_selector %}
+            <div class="date-range-selector me-3">
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary dropdown-toggle" 
+                            type="button" 
+                            @click="dateRangeOpen = !dateRangeOpen"
+                            aria-expanded="false">
+                        <i class="bi bi-calendar3 me-1"></i>
+                        <span x-text="selectedDateRange.text"></span>
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-end p-3" 
+                         style="min-width: 300px; display: none;"
+                         x-show="dateRangeOpen"
+                         x-transition
+                         @click.outside="dateRangeOpen = false">
+                        <div class="date-range-options">
+                            <template x-for="range in dateRanges" :key="range.value">
+                                <button type="button" 
+                                        class="dropdown-item d-flex justify-content-between align-items-center"
+                                        @click="selectDateRange(range)"
+                                        :class="{ 'active': selectedDateRange.value === range.value }">
+                                    <span x-text="range.text"></span>
+                                    <i class="bi bi-check text-primary" x-show="selectedDateRange.value === range.value"></i>
+                                </button>
+                            </template>
+                        </div>
+                        
+                        <div class="custom-range mt-3 pt-3 border-top">
+                            <label class="form-label">Custom Range</label>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <input type="date" class="form-control form-control-sm" x-model="customStartDate">
+                                </div>
+                                <div class="col-6">
+                                    <input type="date" class="form-control form-control-sm" x-model="customEndDate">
+                                </div>
+                            </div>
+                            <button class="btn btn-sm btn-primary w-100 mt-2" 
+                                    @click="applyCustomDateRange()"
+                                    :disabled="!customStartDate || !customEndDate">
+                                Apply Custom Range
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if refresh_enabled %}
+            <div class="refresh-control me-3">
+                <button class="btn btn-outline-secondary" 
+                        @click="refreshDashboard()"
+                        :disabled="refreshing"
+                        type="button"
+                        :title="refreshing ? 'Refreshing...' : 'Refresh Dashboard'">
+                    <i class="bi bi-arrow-clockwise" :class="{ 'spin': refreshing }" aria-hidden="true"></i>
+                    <span class="d-none d-md-inline ms-1">Refresh</span>
+                </button>
+            </div>
+            {% endif %}
+            
+            {% if editable %}
+            <div class="layout-controls me-3">
+                <div class="btn-group" role="group">
+                    <button type="button" 
+                            class="btn btn-outline-secondary"
+                            @click="toggleEditMode()"
+                            :class="{ 'active': editMode }"
+                            title="Edit Layout">
+                        <i class="bi bi-gear" aria-hidden="true"></i>
+                    </button>
+                    <button type="button" 
+                            class="btn btn-outline-secondary"
+                            @click="resetLayout()"
+                            title="Reset Layout">
+                        <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
+                    </button>
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if export_enabled %}
+            <div class="export-control">
+                <div class="dropdown">
+                    <button class="btn btn-primary dropdown-toggle" 
+                            type="button" 
+                            data-bs-toggle="dropdown"
+                            aria-expanded="false">
+                        <i class="bi bi-download me-1" aria-hidden="true"></i> Export
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#" @click="exportDashboard('pdf')">Export as PDF</a></li>
+                        <li><a class="dropdown-item" href="#" @click="exportDashboard('png')">Export as Image</a></li>
+                        <li><a class="dropdown-item" href="#" @click="exportDashboard('csv')">Export Data as CSV</a></li>
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Dashboard Content -->
+    <div class="dashboard-content">
+        <!-- Stats Overview -->
+        {% if show_stats_overview %}
+        <div class="stats-overview mb-4">
+            <div class="row g-3">
+                {% for stat in stats_overview %}
+                <div class="col-12 col-sm-6 col-lg-3">
+                    <div class="stat-card card h-100 {{ stat.variant|default:'stat-primary' }}"
+                         :class="{ 'stat-loading': loadingStats }">
+                        <div class="card-body d-flex flex-column">
+                            <div class="stat-header d-flex justify-content-between align-items-start mb-2">
+                                <div class="stat-icon">
+                                    {% if stat.icon %}
+                                    <i class="bi {{ stat.icon }}"></i>
+                                    {% endif %}
+                                </div>
+                                {% if stat.trend %}
+                                <div class="stat-trend d-flex align-items-center"
+                                     :class="{ 'trend-positive': '{{ stat.trend.value|default:0 }}' > 0, 'trend-negative': '{{ stat.trend.value|default:0 }}' < 0 }">
+                                    <i class="bi bi-arrow-{{ stat.trend.value|default:0 > 0 and 'up' or 'down' }} me-1"></i>
+                                    <span>{{ stat.trend.value|default:0|abs }}%</span>
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="stat-value mb-1">
+                                {% if stat.format == 'currency' %}
+                                    <span class="stat-number">{{ stat.value|default:0|currency }}</span>
+                                {% elif stat.format == 'percentage' %}
+                                    <span class="stat-number">{{ stat.value|default:0 }}%</span>
+                                {% else %}
+                                    <span class="stat-number">{{ stat.value|default:0 }}</span>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="stat-label text-muted small">{{ stat.label|default:'Stat' }}</div>
+                            
+                            {% if stat.description %}
+                            <div class="stat-description mt-auto pt-2">
+                                <small class="text-muted">{{ stat.description }}</small>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Widget Grid -->
+        <div class="widget-grid" 
+             :class="{
+                 'edit-mode': editMode,
+                 'grid-cols-{{ widget_columns|default:3 }}': true
+             }"
+             x-sortable>
+            
+            {% for widget in widgets %}
+            <div class="widget-container {{ widget.size|default:'widget-medium' }} {{ widget.class|default:'' }}"
+                 :data-widget-id="'{{ widget.id|default:forloop.counter0 }}'"
+                 :class="{ 'widget-selected': selectedWidget === '{{ widget.id|default:forloop.counter0 }}' }"
+                 @click="selectWidget('{{ widget.id|default:forloop.counter0 }}', $event)">
+                
+                <!-- Widget Header -->
+                <div class="widget-header d-flex justify-content-between align-items-center">
+                    <div class="widget-title">
+                        {% if widget.icon %}
+                        <i class="bi {{ widget.icon }} me-2"></i>
+                        {% endif %}
+                        <h5 class="mb-0">{{ widget.title|default:'Widget' }}</h5>
+                    </div>
+                    
+                    <div class="widget-actions">
+                        {% if widget.actions %}
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-link text-muted" 
+                                    type="button" 
+                                    data-bs-toggle="dropdown"
+                                    aria-expanded="false">
+                                <i class="bi bi-three-dots-vertical"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                {% for action in widget.actions %}
+                                <li>
+                                    <a class="dropdown-item" 
+                                       href="{{ action.url|default:'#' }}" 
+                                       {% if action.action %}@click="{{ action.action }}"{% endif %}>
+                                        {% if action.icon %}<i class="bi {{ action.icon }} me-2"></i>{% endif %}
+                                        {{ action.label }}
+                                    </a>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+                        
+                        {% if editable %}
+                        <button class="btn btn-sm btn-link text-muted widget-drag-handle"
+                                :class="{ 'd-none': !editMode }"
+                                title="Drag to reorder">
+                            <i class="bi bi-grip-vertical"></i>
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Widget Content -->
+                <div class="widget-content">
+                    {% if widget.type == 'chart' %}
+                        {% include 'ui_components/widgets/chart.html' with widget=widget %}
+                    {% elif widget.type == 'table' %}
+                        {% include 'ui_components/widgets/table.html' with widget=widget %}
+                    {% elif widget.type == 'activity_feed' %}
+                        {% include 'ui_components/widgets/activity_feed.html' with widget=widget %}
+                    {% elif widget.type == 'notification_panel' %}
+                        {% include 'ui_components/widgets/notification_panel.html' with widget=widget %}
+                    {% elif widget.type == 'quick_actions' %}
+                        {% include 'ui_components/widgets/quick_actions.html' with widget=widget %}
+                    {% elif widget.type == 'calendar' %}
+                        {% include 'ui_components/widgets/calendar.html' with widget=widget %}
+                    {% elif widget.type == 'list' %}
+                        {% include 'ui_components/widgets/list.html' with widget=widget %}
+                    {% else %}
+                        {% include 'ui_components/widgets/custom.html' with widget=widget %}
+                    {% endif %}
+                </div>
+                
+                <!-- Widget Footer -->
+                {% if widget.footer %}
+                <div class="widget-footer">
+                    {% if widget.footer.link %}
+                    <a href="{{ widget.footer.link }}" class="btn btn-sm btn-outline-secondary w-100">
+                        {{ widget.footer.text|default:'View All' }}
+                        <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                    {% else %}
+                    <div class="text-muted small">{{ widget.footer.text|default:'' }}</div>
+                    {% endif %}
+                </div>
+                {% endif %}
+                
+                <!-- Loading Overlay -->
+                <div class="widget-loading-overlay" x-show="widgetLoading['{{ widget.id|default:forloop.counter0 }}']">
+                    <div class="spinner-border spinner-border-sm" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            
+            <!-- Add Widget Button (in edit mode) -->
+            {% if editable %}
+            <div class="widget-container widget-add-new" x-show="editMode">
+                <div class="widget-add-content d-flex flex-column align-items-center justify-content-center h-100">
+                    <i class="bi bi-plus-circle fs-1 text-muted mb-3"></i>
+                    <h6>Add Widget</h6>
+                    <button class="btn btn-primary btn-sm mt-2" @click="openWidgetSelector()">
+                        Choose Widget
+                    </button>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Widget Selector Modal -->
+    {% if editable %}
+    <div class="modal fade" id="widgetSelectorModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Widget to Dashboard</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        {% for widget_type in available_widget_types %}
+                        <div class="col-md-4">
+                            <div class="widget-type-card card h-100 text-center p-3" 
+                                 @click="addWidget('{{ widget_type.id }}')"
+                                 style="cursor: pointer;">
+                                <div class="widget-type-icon mb-2">
+                                    <i class="bi {{ widget_type.icon }} fs-1 text-primary"></i>
+                                </div>
+                                <h6 class="widget-type-title">{{ widget_type.title }}</h6>
+                                <p class="widget-type-description text-muted small">{{ widget_type.description }}</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('dashboardComponent', (dashboardId, isEditable = false) =>({
+        editMode: false,
+        selectedWidget: null,
+        dateRangeOpen: false,
+        refreshing: false,
+        loadingStats: false,
+        widgetLoading: {},
+        
+        selectedDateRange: {
+            value: '{{ default_date_range|default:"7d" }}',
+            text: '{{ default_date_range_text|default:"Last 7 days" }}'
+        },
+        
+        customStartDate: '',
+        customEndDate: '',
+        
+        dateRanges: [
+            { value: '1d', text: 'Today' },
+            { value: '7d', text: 'Last 7 days' },
+            { value: '30d', text: 'Last 30 days' },
+            { value: '90d', text: 'Last 90 days' },
+            { value: '1y', text: 'Last year' }
+        ],
+        
+        init() {
+            // Initialize dashboard
+            this.loadDashboardLayout();
+            
+            // Initialize sortable if editable
+            if (isEditable) {
+                this.initSortable();
+            }
+            
+            // Load initial data
+            this.refreshDashboard();
+        },
+        
+        loadDashboardLayout() {
+            // Load saved layout from localStorage or server
+            const savedLayout = localStorage.getItem(`dashboard_${dashboardId}_layout`);
+            if (savedLayout) {
+                try {
+                    const layout = JSON.parse(savedLayout);
+                    // Apply layout logic here
+                } catch (e) {
+                    console.error('Failed to load dashboard layout:', e);
+                }
+            }
+        },
+        
+        saveDashboardLayout() {
+            // Save current layout to localStorage or server
+            const layout = this.getCurrentLayout();
+            localStorage.setItem(`dashboard_${dashboardId}_layout`, JSON.stringify(layout));
+            
+            // Emit layout change event
+            this.$dispatch('dashboard-layout-changed', {
+                dashboardId: dashboardId,
+                layout: layout
+            });
+        },
+        
+        getCurrentLayout() {
+            // Extract current widget positions and sizes
+            const widgets = document.querySelectorAll('.widget-container:not(.widget-add-new)');
+            const layout = [];
+            
+            widgets.forEach(widget => {
+                layout.push({
+                    id: widget.dataset.widgetId,
+                    position: Array.from(widget.parentNode.children).indexOf(widget),
+                    size: widget.className.match(/widget-\w+/)?.[0] || 'widget-medium'
+                });
+            });
+            
+            return layout;
+        },
+        
+        initSortable() {
+            // Initialize sortable functionality
+            const grid = document.querySelector('.widget-grid');
+            if (grid && typeof Sortable !== 'undefined') {
+                Sortable.create(grid, {
+                    animation: 150,
+                    handle: '.widget-drag-handle',
+                    onEnd: () => {
+                        this.saveDashboardLayout();
+                    }
+                });
+            }
+        },
+        
+        toggleEditMode() {
+            this.editMode = !this.editMode;
+            
+            if (this.editMode) {
+                this.$dispatch('dashboard-edit-mode-enabled', {
+                    dashboardId: dashboardId
+                });
+            } else {
+                this.$dispatch('dashboard-edit-mode-disabled', {
+                    dashboardId: dashboardId
+                });
+                this.saveDashboardLayout();
+            }
+        },
+        
+        selectWidget(widgetId, event) {
+            if (!this.editMode) return;
+            
+            // Don't select if clicking on actions or dropdown
+            if (event.target.closest('.widget-actions, .dropdown')) return;
+            
+            this.selectedWidget = this.selectedWidget === widgetId ? null : widgetId;
+            
+            this.$dispatch('dashboard-widget-selected', {
+                dashboardId: dashboardId,
+                widgetId: widgetId,
+                selected: this.selectedWidget !== null
+            });
+        },
+        
+        resetLayout() {
+            if (confirm('Are you sure you want to reset the dashboard layout to default?')) {
+                localStorage.removeItem(`dashboard_${dashboardId}_layout`);
+                location.reload();
+            }
+        },
+        
+        selectDateRange(range) {
+            this.selectedDateRange = range;
+            this.dateRangeOpen = false;
+            this.refreshDashboard();
+        },
+        
+        applyCustomDateRange() {
+            if (!this.customStartDate || !this.customEndDate) return;
+            
+            this.selectedDateRange = {
+                value: 'custom',
+                text: `${this.customStartDate} - ${this.customEndDate}`
+            };
+            
+            this.dateRangeOpen = false;
+            this.refreshDashboard();
+        },
+        
+        refreshDashboard() {
+            this.refreshing = true;
+            this.loadingStats = true;
+            
+            // Simulate API call
+            setTimeout(() => {
+                this.refreshing = false;
+                this.loadingStats = false;
+                
+                this.$dispatch('dashboard-refreshed', {
+                    dashboardId: dashboardId,
+                    dateRange: this.selectedDateRange
+                });
+            }, 1000);
+        },
+        
+        openWidgetSelector() {
+            const modal = new bootstrap.Modal(document.getElementById('widgetSelectorModal'));
+            modal.show();
+        },
+        
+        addWidget(widgetType) {
+            // Add widget logic here
+            console.log('Adding widget:', widgetType);
+            
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('widgetSelectorModal'));
+            modal.hide();
+            
+            // Refresh dashboard
+            this.refreshDashboard();
+            
+            this.$dispatch('dashboard-widget-added', {
+                dashboardId: dashboardId,
+                widgetType: widgetType
+            });
+        },
+        
+        exportDashboard(format) {
+            // Export logic here
+            console.log('Exporting dashboard as:', format);
+            
+            this.$dispatch('dashboard-exported', {
+                dashboardId: dashboardId,
+                format: format
+            });
+        }
+    }));
+});
+</script>
+
+<style>
+/* Dashboard Container */
+.dashboard-container {
+    background-color: var(--color-bg-primary);
+    min-height: 100vh;
+}
+
+/* Dashboard Header */
+.dashboard-header {
+    padding: var(--space-4) 0;
+    border-bottom: 1px solid var(--color-border-light);
+    margin-bottom: var(--space-4);
+}
+
+/* Stats Overview */
+.stats-overview .stat-card {
+    border: none;
+    border-radius: var(--border-radius-lg);
+    transition: var(--transition-fast);
+    box-shadow: var(--shadow-sm);
+}
+
+.stats-overview .stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.stats-overview .stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--border-radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--font-size-xl);
+}
+
+.stat-primary .stat-icon {
+    background-color: rgba(var(--color-primary), 0.1);
+    color: var(--color-primary);
+}
+
+.stat-success .stat-icon {
+    background-color: rgba(var(--color-success), 0.1);
+    color: var(--color-success);
+}
+
+.stat-warning .stat-icon {
+    background-color: rgba(var(--color-warning), 0.1);
+    color: var(--color-warning);
+}
+
+.stat-danger .stat-icon {
+    background-color: rgba(var(--color-danger), 0.1);
+    color: var(--color-danger);
+}
+
+.stat-number {
+    font-size: var(--font-size-2xl);
+    font-weight: 700;
+    line-height: 1;
+}
+
+.stat-trend {
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+}
+
+.trend-positive {
+    color: var(--color-success);
+}
+
+.trend-negative {
+    color: var(--color-danger);
+}
+
+/* Widget Grid */
+.widget-grid {
+    display: grid;
+    gap: var(--space-4);
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.widget-grid.grid-cols-2 {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.widget-grid.grid-cols-3 {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.widget-grid.grid-cols-4 {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+/* Widget Container */
+.widget-container {
+    background-color: var(--color-bg-primary);
+    border: 1px solid var(--color-border-light);
+    border-radius: var(--border-radius-lg);
+    overflow: hidden;
+    transition: var(--transition-fast);
+    position: relative;
+}
+
+.widget-container:hover {
+    box-shadow: var(--shadow-md);
+}
+
+.widget-container.widget-selected {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(var(--color-primary), 0.2);
+}
+
+.widget-grid.edit-mode .widget-container {
+    cursor: move;
+}
+
+.widget-grid.edit-mode .widget-container:hover {
+    border-color: var(--color-primary);
+}
+
+/* Widget Sizes */
+.widget-small {
+    grid-column: span 1;
+    grid-row: span 1;
+}
+
+.widget-medium {
+    grid-column: span 1;
+    grid-row: span 1;
+}
+
+.widget-large {
+    grid-column: span 2;
+    grid-row: span 1;
+}
+
+.widget-wide {
+    grid-column: span 2;
+    grid-row: span 2;
+}
+
+.widget-tall {
+    grid-column: span 1;
+    grid-row: span 2;
+}
+
+.widget-full {
+    grid-column: span 3;
+    grid-row: span 1;
+}
+
+/* Widget Header */
+.widget-header {
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--color-border-light);
+    background-color: var(--color-bg-secondary);
+}
+
+.widget-title h5 {
+    font-size: var(--font-size-base);
+    font-weight: 600;
+}
+
+.widget-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+.widget-drag-handle {
+    cursor: grab;
+}
+
+.widget-drag-handle:active {
+    cursor: grabbing;
+}
+
+/* Widget Content */
+.widget-content {
+    padding: var(--space-4);
+    min-height: 200px;
+}
+
+/* Widget Footer */
+.widget-footer {
+    padding: var(--space-3) var(--space-4);
+    border-top: 1px solid var(--color-border-light);
+    background-color: var(--color-bg-secondary);
+}
+
+/* Widget Loading Overlay */
+.widget-loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(var(--color-bg-primary), 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+/* Add New Widget */
+.widget-add-new {
+    border: 2px dashed var(--color-border-medium);
+    background-color: var(--color-bg-secondary);
+    min-height: 300px;
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.widget-add-new:hover {
+    border-color: var(--color-primary);
+    background-color: rgba(var(--color-primary), 0.05);
+}
+
+.widget-add-content {
+    padding: var(--space-4);
+}
+
+/* Widget Type Cards */
+.widget-type-card {
+    border: 1px solid var(--color-border-light);
+    transition: var(--transition-fast);
+}
+
+.widget-type-card:hover {
+    border-color: var(--color-primary);
+    box-shadow: var(--shadow-md);
+}
+
+/* Date Range Selector */
+.date-range-selector .dropdown-menu {
+    border: none;
+    box-shadow: var(--shadow-lg);
+    border-radius: var(--border-radius-lg);
+}
+
+/* Refresh Animation */
+.spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Loading State */
+.stat-loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.stat-loading .stat-value::after {
+    content: '';
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--color-border-medium);
+    border-top-color: var(--color-primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-left: var(--space-2);
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+    .widget-grid.grid-cols-4 {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    
+    .widget-full {
+        grid-column: span 2;
+    }
+}
+
+@media (max-width: 992px) {
+    .widget-grid.grid-cols-3,
+    .widget-grid.grid-cols-4 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .widget-large,
+    .widget-wide {
+        grid-column: span 2;
+    }
+    
+    .widget-full {
+        grid-column: span 1;
+    }
+}
+
+@media (max-width: 768px) {
+    .widget-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .widget-grid.grid-cols-2,
+    .widget-grid.grid-cols-3,
+    .widget-grid.grid-cols-4 {
+        grid-template-columns: 1fr;
+    }
+    
+    .widget-large,
+    .widget-wide,
+    .widget-tall,
+    .widget-full {
+        grid-column: span 1;
+        grid-row: span 1;
+    }
+    
+    .dashboard-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--space-3);
+    }
+    
+    .dashboard-actions {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .date-range-selector,
+    .refresh-control,
+    .layout-controls,
+    .export-control {
+        width: 100%;
+    }
+}
+
+/* Dark Mode Adjustments */
+[data-theme="dark"] .widget-container {
+    background-color: var(--color-bg-secondary);
+    border-color: var(--color-border-medium);
+}
+
+[data-theme="dark"] .widget-header,
+[data-theme="dark"] .widget-footer {
+    background-color: var(--color-bg-tertiary);
+    border-color: var(--color-border-medium);
+}
+
+[data-theme="dark"] .widget-add-new {
+    background-color: var(--color-bg-tertiary);
+    border-color: var(--color-border-dark);
+}
+
+/* Accessibility */
+.widget-container:focus-within {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .widget-container,
+    .stat-card,
+    .widget-type-card,
+    .widget-add-new {
+        transition: none;
+    }
+    
+    .spin {
+        animation: none;
+    }
+}
+</style>

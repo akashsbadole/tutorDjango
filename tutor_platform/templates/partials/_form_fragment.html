@@ -1,0 +1,86 @@
+<div class="form-fragment" hx-swap-oob="true">
+    {% if form_title %}
+        <h5 class="mb-3">{{ form_title }}</h5>
+    {% endif %}
+    
+    {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+            {% for error in form.non_field_errors %}
+                {{ error }}
+            {% endfor %}
+        </div>
+    {% endif %}
+    
+    {% if success_message %}
+        <div class="alert alert-success">
+            {{ success_message }}
+        </div>
+    {% endif %}
+    
+    <form method="post" {% if form_id %}id="{{ form_id }}"{% endif %} 
+          {% if form_action %}action="{{ form_action }}"{% endif %}
+          {% if hx_post %}hx-post="{{ hx_post }}"{% endif %}
+          {% if hx_target %}hx-target="{{ hx_target }}"{% endif %}
+          {% if hx_trigger %}hx-trigger="{{ hx_trigger }}"{% endif %}
+          {% if hx_swap %}hx-swap="{{ hx_swap }}"{% endif %}>
+        {% csrf_token %}
+        
+        {% for field in form %}
+            <div class="mb-3">
+                <label for="{{ field.id_for_label }}" class="form-label">
+                    {{ field.label }}
+                    {% if field.field.required %}<span class="text-danger">*</span>{% endif %}
+                </label>
+                
+                {% if field.field.widget.input_type == 'select' %}
+                    {{ field|add_class:"form-select" }}
+                {% elif field.field.widget.input_type == 'textarea' %}
+                    {{ field|add_class:"form-control" }}
+                {% elif field.field.widget.input_type == 'checkbox' %}
+                    <div class="form-check">
+                        {{ field|add_class:"form-check-input" }}
+                        <label class="form-check-label" for="{{ field.id_for_label }}">
+                            {{ field.label }}
+                        </label>
+                    </div>
+                {% elif field.field.widget.input_type == 'radio' %}
+                    <div>
+                        {% for choice in field %}
+                            <div class="form-check">
+                                {{ choice.tag|add_class:"form-check-input" }}
+                                <label class="form-check-label" for="{{ choice.id_for_label }}">
+                                    {{ choice.choice_label }}
+                                </label>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    {{ field|add_class:"form-control" }}
+                {% endif %}
+                
+                {% if field.help_text %}
+                    <div class="form-text">{{ field.help_text }}</div>
+                {% endif %}
+                
+                {% if field.errors %}
+                    <div class="text-danger small mt-1">
+                        {% for error in field.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        {% endfor %}
+        
+        {% if submit_text %}
+            <div class="d-flex justify-content-between">
+                <a href="{{ cancel_url }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-2"></i>Cancel
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-save me-2"></i>{{ submit_text }}
+                </button>
+            </div>
+        {% endif %}
+    </form>
+</div>

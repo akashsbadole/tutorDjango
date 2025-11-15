@@ -1,0 +1,4 @@
+{% load ui_tags %}
+<span class="badge {% if pill %}rounded-pill{% endif %} bg-{{ level|default:'secondary' }} {{ badge_class|default:'' }}">
+    {{ text }}
+</span>

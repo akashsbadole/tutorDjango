@@ -1,0 +1,364 @@
+{% extends 'ui_components/base.html' %}
+{% load ui_tags static %}
+
+{% block title %}Escrow Account - Django Tutor Platform{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3">Escrow Account</h1>
+            <p class="text-muted">Manage your escrow balance and transactions</p>
+        </div>
+    </div>
+
+    <!-- Account Overview -->
+    <div class="row mb-4">
+        <div class="col-md-4 col-sm-6 mb-3">
+            {% ui_card "bg-primary text-white" "available-balance" %}
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Available Balance</h6>
+                            <h2 class="mb-0">${{ escrow_account.available_balance|floatformat:2 }}</h2>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-wallet2" style="font-size: 2.5rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            {% end_ui_card %}
+        </div>
+        <div class="col-md-4 col-sm-6 mb-3">
+            {% ui_card "bg-warning text-white" "pending-balance" %}
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Pending Balance</h6>
+                            <h2 class="mb-0">${{ escrow_account.pending_balance|floatformat:2 }}</h2>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-clock-history" style="font-size: 2.5rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            {% end_ui_card %}
+        </div>
+        <div class="col-md-4 col-sm-6 mb-3">
+            {% ui_card "bg-success text-white" "total-earned" %}
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Total Earned</h6>
+                            <h2 class="mb-0">${{ escrow_account.total_earned|floatformat:2 }}</h2>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-graph-up" style="font-size: 2.5rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            {% end_ui_card %}
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 col-md-7">
+            <!-- Recent Transactions -->
+            {% ui_card "" "recent-transactions" %}
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Recent Transactions</h5>
+                    <a href="{% url 'paymentsdetails:transaction_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        {% ui_table "transactions-table" "table table-hover" %}
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Description</th>
+                                    <th>Type</th>
+                                    <th class="text-end">Amount</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for transaction in recent_transactions %}
+                                    <tr>
+                                        <td>{{ transaction.created_at|date:"M d, Y" }}</td>
+                                        <td>{{ transaction.description }}</td>
+                                        <td>
+                                            {% if transaction.transaction_type == 'DEPOSIT' %}
+                                                {% ui_badge "Deposit" "bg-success" %}
+                                            {% elif transaction.transaction_type == 'WITHDRAWAL' %}
+                                                {% ui_badge "Withdrawal" "bg-danger" %}
+                                            {% elif transaction.transaction_type == 'PAYMENT' %}
+                                                {% ui_badge "Payment" "bg-primary" %}
+                                            {% elif transaction.transaction_type == 'REFUND' %}
+                                                {% ui_badge "Refund" "bg-warning" %}
+                                            {% else %}
+                                                {% ui_badge transaction.get_transaction_type_display "bg-secondary" %}
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-end {% if transaction.amount > 0 %}text-success{% else %}text-danger{% endif %}">
+                                            {% if transaction.amount > 0 %}+{% endif %}${{ transaction.amount|floatformat:2 }}
+                                        </td>
+                                        <td>
+                                            {% if transaction.status == 'COMPLETED' %}
+                                                {% ui_badge "Completed" "bg-success" %}
+                                            {% elif transaction.status == 'PENDING' %}
+                                                {% ui_badge "Pending" "bg-warning" %}
+                                            {% elif transaction.status == 'FAILED' %}
+                                                {% ui_badge "Failed" "bg-danger" %}
+                                            {% else %}
+                                                {% ui_badge transaction.get_status_display "bg-secondary" %}
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="5" class="text-center text-muted py-4">
+                                            <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                                            <p class="mt-2">No transactions found</p>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        {% end_ui_table %}
+                    </div>
+                </div>
+            {% end_ui_card %}
+
+            <!-- Quick Actions -->
+            {% ui_card "" "quick-actions" %}
+                <div class="card-header">
+                    <h5 class="mb-0">Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-2">
+                            <button class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#depositModal">
+                                <i class="bi bi-plus-circle me-2"></i>Deposit Funds
+                            </button>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <button class="btn btn-outline-primary w-100" data-bs-toggle="modal" data-bs-target="#withdrawModal">
+                                <i class="bi bi-dash-circle me-2"></i>Withdraw Funds
+                            </button>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <a href="{% url 'paymentsdetails:payment_method_list' %}" class="btn btn-outline-secondary w-100">
+                                <i class="bi bi-credit-card me-2"></i>Payment Methods
+                            </a>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <a href="{% url 'paymentsdetails:payout_request' %}" class="btn btn-outline-success w-100">
+                                <i class="bi bi-cash-stack me-2"></i>Request Payout
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% end_ui_card %}
+        </div>
+
+        <div class="col-lg-4 col-md-5">
+            <!-- Account Information -->
+            {% ui_card "" "account-information" %}
+                <div class="card-header">
+                    <h5 class="mb-0">Account Information</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm table-borderless">
+                        <tr>
+                            <td class="text-muted" style="width: 40%;">Account ID:</td>
+                            <td><strong>{{ escrow_account.account_id }}</strong></td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Account Status:</td>
+                            <td>
+                                {% if escrow_account.is_active %}
+                                    {% ui_badge "Active" "bg-success" %}
+                                {% else %}
+                                    {% ui_badge "Inactive" "bg-danger" %}
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Created:</td>
+                            <td>{{ escrow_account.created_at|date:"M d, Y" }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Last Updated:</td>
+                            <td>{{ escrow_account.updated_at|date:"M d, Y" }}</td>
+                        </tr>
+                    </table>
+                </div>
+            {% end_ui_card %}
+
+            <!-- Account Statistics -->
+            {% ui_card "" "account-statistics" %}
+                <div class="card-header">
+                    <h5 class="mb-0">Account Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <h4 class="text-primary">{{ total_deposits }}</h4>
+                            <small class="text-muted">Total Deposits</small>
+                        </div>
+                        <div class="col-6">
+                            <h4 class="text-danger">{{ total_withdrawals }}</h4>
+                            <small class="text-muted">Total Withdrawals</small>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <h4 class="text-info">{{ total_payments }}</h4>
+                            <small class="text-muted">Total Payments</small>
+                        </div>
+                        <div class="col-6">
+                            <h4 class="text-warning">{{ total_refunds }}</h4>
+                            <small class="text-muted">Total Refunds</small>
+                        </div>
+                    </div>
+                </div>
+            {% end_ui_card %}
+
+            <!-- Security Notice -->
+            {% ui_card "" "security-notice" %}
+                <div class="card-header">
+                    <h5 class="mb-0">Security Notice</h5>
+                </div>
+                <div class="card-body">
+                    {% ui_alert "info" "funds-protected" %}
+                        <i class="bi bi-shield-check me-2"></i>
+                        <strong>Your funds are protected:</strong> All payments are held in escrow until services are completed to your satisfaction.
+                    {% end_ui_alert %}
+                    
+                    {% ui_alert "warning" "withdrawal-processing" %}
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <strong>Withdrawal processing:</strong> Withdrawals may take 3-5 business days to process depending on your payment method.
+                    {% end_ui_alert %}
+                </div>
+            {% end_ui_card %}
+        </div>
+    </div>
+</div>
+
+<!-- Deposit Modal -->
+{% ui_modal "depositModal" "Deposit Funds" %}
+    <form hx-post="{% url 'paymentsdetails:deposit_funds' %}" hx-target="#deposit-result">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="deposit_amount" class="form-label">Amount ($)</label>
+            <div class="input-group">
+                <span class="input-group-text">$</span>
+                <input type="number" class="form-control" id="deposit_amount" name="amount" 
+                       min="10" step="0.01" required>
+            </div>
+            <div class="form-text">Minimum deposit: $10.00</div>
+        </div>
+        <div class="mb-3">
+            <label for="deposit_method" class="form-label">Payment Method</label>
+            <select class="form-select" id="deposit_method" name="payment_method" required>
+                <option value="">Select Payment Method</option>
+                {% for method in payment_methods %}
+                    <option value="{{ method.id }}">{{ method.get_display_name }} ({{ method.card_last4 }})</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="mb-3">
+            <label for="deposit_description" class="form-label">Description (Optional)</label>
+            <textarea class="form-control" id="deposit_description" name="description" rows="2"></textarea>
+        </div>
+        <div class="d-grid gap-2">
+            <button type="submit" class="btn btn-primary">Deposit Funds</button>
+        </div>
+    </form>
+    <div id="deposit-result" class="mt-3"></div>
+{% end_ui_modal %}
+
+<!-- Withdraw Modal -->
+{% ui_modal "withdrawModal" "Withdraw Funds" %}
+    <form hx-post="{% url 'paymentsdetails:withdraw_funds' %}" hx-target="#withdraw-result">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="withdraw_amount" class="form-label">Amount ($)</label>
+            <div class="input-group">
+                <span class="input-group-text">$</span>
+                <input type="number" class="form-control" id="withdraw_amount" name="amount" 
+                       max="{{ escrow_account.available_balance }}" step="0.01" required>
+            </div>
+            <div class="form-text">Available: ${{ escrow_account.available_balance|floatformat:2 }}</div>
+        </div>
+        <div class="mb-3">
+            <label for="withdraw_method" class="form-label">Withdrawal Method</label>
+            <select class="form-select" id="withdraw_method" name="payment_method" required>
+                <option value="">Select Withdrawal Method</option>
+                {% for method in payment_methods %}
+                    {% if method.can_withdraw %}
+                        <option value="{{ method.id }}">{{ method.get_display_name }} ({{ method.card_last4 }})</option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+        </div>
+        <div class="mb-3">
+            <label for="withdraw_description" class="form-label">Description (Optional)</label>
+            <textarea class="form-control" id="withdraw_description" name="description" rows="2"></textarea>
+        </div>
+        {% ui_alert "info" "withdrawal-info" %}
+            <i class="bi bi-info-circle me-2"></i>
+            Withdrawals typically take 3-5 business days to process.
+        {% end_ui_alert %}
+        <div class="d-grid gap-2">
+            <button type="submit" class="btn btn-primary">Withdraw Funds</button>
+        </div>
+    </form>
+    <div id="withdraw-result" class="mt-3"></div>
+{% end_ui_modal %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set max withdrawal amount
+    const withdrawAmountInput = document.getElementById('withdraw_amount');
+    if (withdrawAmountInput) {
+        withdrawAmountInput.max = {{ escrow_account.available_balance }};
+    }
+    
+    // Handle form submissions with HTMX
+    htmx.on('htmx:afterRequest', function(evt) {
+        if (evt.detail.successful) {
+            // Show success notification
+            const notification = document.createElement('div');
+            notification.className = 'alert alert-success alert-dismissible fade show position-fixed';
+            notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            notification.innerHTML = `
+                <i class="bi bi-check-circle me-2"></i>
+                Transaction completed successfully
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(notification);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 5000);
+            
+            // Close modal and refresh page after a short delay
+            const modal = bootstrap.Modal.getInstance(evt.detail.target.closest('.modal'));
+            if (modal) {
+                modal.hide();
+            }
+            
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        }
+    });
+});
+</script>
+{% endblock %}

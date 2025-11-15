@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en"
+     x-data="{
+         theme: localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
+         userRole: '{{ user.user_type|default:"guest" }}'
+     }"
+     x-bind:class="theme"
+     x-bind:data-role="userRole.toLowerCase()"
+     {% if user.is_authenticated %}data-user="{{ user.username }}"{% endif %}>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, initial-scale=1, maximum-scale=5, user-scalable=yes">
+    <meta name="description" content="{% block meta_description %}Django Tutor Platform - Connecting students with qualified tutors for personalized learning experiences.{% endblock %}">
+    <meta name="keywords" content="{% block meta_keywords %}tutoring, education, online learning, django, python{% endblock %}">
+    <meta name="author" content="Django Tutor Platform">
+    
+    <!-- Enhanced PWA Meta Tags -->
+    <meta name="theme-color" content="#6366f1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Django Tutor">
+    <meta name="application-name" content="Django Tutor">
+    <meta name="msapplication-TileColor" content="#6366f1">
+    <meta name="msapplication-config" content="{% static 'ui_components/browserconfig.xml' %}">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-touch-fullscreen" content="yes">
+    
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="{% block og_title %}Django Tutor Platform{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}Connecting students with qualified tutors for personalized learning experiences.{% endblock %}">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{% block og_url %}{{ request.build_absolute_uri }}{% endblock %}">
+    <meta property="og:image" content="{% block og_image %}{% static 'ui_components/images/og-default.jpg' %}{% endblock %}">
+    <meta property="og:site_name" content="Django Tutor Platform">
+    <meta property="og:locale" content="en_US">
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{% block twitter_title %}Django Tutor Platform{% endblock %}">
+    <meta name="twitter:description" content="{% block twitter_description %}Connecting students with qualified tutors for personalized learning experiences.{% endblock %}">
+    <meta name="twitter:image" content="{% block twitter_image %}{% static 'ui_components/images/twitter-default.jpg' %}{% endblock %}">
+    <meta name="twitter:site" content="@DjangoTutor">
+    
+    <title>{% block title %}Django Tutor Platform{% endblock %}</title>
+    
+    <!-- Preconnect to external domains for performance -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    <!-- DNS Prefetch for faster loading -->
+    <link rel="dns-prefetch" href="//fonts.googleapis.com">
+    <link rel="dns-prefetch" href="//cdn.jsdelivr.net">
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <!-- Google Fonts - Inter with proper font-display -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Custom CSS with new design system -->
+    <link rel="stylesheet" href="{% static 'ui_components/css/main.css' %}">
+    
+    <!-- Favicon and App Icons -->
+    <link rel="icon" type="image/x-icon" href="{% static 'ui_components/favicon.ico' %}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'ui_components/apple-touch-icon.png' %}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{% static 'ui_components/favicon-32x32.png' %}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{% static 'ui_components/favicon-16x16.png' %}">
+    
+    <!-- Manifest for PWA -->
+    <link rel="manifest" href="{% static 'ui_components/manifest.json' %}">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="theme-aware"
+      x-data="{
+          mobileMenuOpen: false,
+          searchOpen: false,
+          notificationsOpen: false,
+          userMenuOpen: false
+      }"
+      x-bind:class="{
+          'overflow-hidden': mobileMenuOpen,
+          'theme-transitioning': $store.themeTransition
+      }"
+      role="document">
+    <!-- Skip to main content for accessibility -->
+    <a href="#main-content" class="skip-link" role="navigation" aria-label="Skip to main content">Skip to main content</a>
+    
+    <!-- Screen reader announcements -->
+    <div aria-live="polite" aria-atomic="true" class="sr-only" id="screen-reader-announcements"></div>
+    
+    <!-- Loading overlay for page transitions -->
+    <div id="page-loading-overlay" class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-white bg-opacity-90" style="z-index: 9999; display: none;">
+        <div class="text-center">
+            <div class="spinner-border text-primary mb-3" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mb-0">Loading content...</p>
+        </div>
+    </div>
+    
+    <!-- Top Banner for announcements -->
+    {% if show_announcement_banner %}
+    <div class="announcement-banner bg-info text-dark py-2 text-center theme-alert-info" role="alert" aria-live="polite">
+        <div class="container">
+            <div class="d-flex align-items-center justify-content-between">
+                <small class="d-flex align-items-center">
+                    <i class="bi bi-megaphone-fill me-2" aria-hidden="true"></i>
+                    {{ announcement_text }}
+                </small>
+                <button type="button" class="btn-close btn-close-dark"
+                        aria-label="Dismiss announcement"
+                        @click="this.parentElement.parentElement.style.display='none'"></button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Navigation -->
+    <nav class="platform-header navbar navbar-expand-lg navbar-dark sticky-top shadow-sm"
+         role="navigation"
+         aria-label="Main navigation"
+         x-data="{
+             searchQuery: '',
+             searchResults: [],
+             searchOpen: false
+         }">
+        <div class="container-fluid">
+            <!-- Brand -->
+            <a class="navbar-brand d-flex align-items-center fw-bold"
+               href="{% url 'accounts:home' %}"
+               aria-label="Django Tutor Platform Home">
+                <i class="bi bi-mortarboard-fill me-2" aria-hidden="true"></i>
+                <span class="d-none d-sm-inline">Tutor Platform</span>
+                <span class="d-sm-none">TP</span>
+            </a>
+            
+            <!-- Mobile menu toggle -->
+            <button class="navbar-toggler border-0 theme-btn-ghost" type="button"
+                    @click="mobileMenuOpen = !mobileMenuOpen"
+                    aria-label="Toggle navigation menu"
+                    aria-expanded="false"
+                    aria-controls="navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <!-- Mobile search toggle -->
+            <button class="navbar-toggler border-0 theme-btn-ghost ms-2" type="button"
+                    @click="searchOpen = !searchOpen"
+                    aria-label="Toggle search">
+                <i class="bi bi-search"></i>
+            </button>
+            
+            <!-- Collapsible content -->
+            <div class="collapse navbar-collapse" :class="{ 'show': mobileMenuOpen }" id="navbarNav">
+                <!-- Mobile Search Bar -->
+                <div class="d-lg-none my-3" x-show="searchOpen" x-transition>
+                    <form class="d-flex" action="{% url 'search:global' %}" method="get" role="search">
+                        <div class="input-group">
+                            <input class="form-control theme-input" type="search" name="query"
+                                   placeholder="Search tutors, requirements..."
+                                   aria-label="Search">
+                            <button class="btn theme-btn-outline-light" type="submit">
+                                <i class="bi bi-search" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
+                <!-- Desktop Search Bar -->
+                <form class="d-none d-lg-flex me-3 flex-grow-1"
+                      action="{% url 'search:global' %}" method="get"
+                      role="search">
+                    <div class="input-group">
+                        <input class="form-control theme-input" type="search" name="query"
+                               placeholder="Search tutors, requirements..."
+                               aria-label="Search"
+                               x-model="searchQuery"
+                               @input.debounce.300ms="
+                                   if (searchQuery.length > 2) {
+                                       $refs.searchResults.classList.add('show');
+                                   } else {
+                                       $refs.searchResults.classList.remove('show');
+                                   }
+                               "
+                               @focus="$refs.searchResults.classList.add('show')"
+                               @blur.debounce.200ms="$refs.searchResults.classList.remove('show')">
+                        <button class="btn theme-btn-outline-light" type="submit">
+                            <i class="bi bi-search" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Search Results Dropdown -->
+                    <div class="dropdown-menu w-100 theme-card"
+                         x-ref="searchResults"
+                         style="max-height: 400px; overflow-y: auto; display: none;">
+                        <div class="dropdown-item"
+                             hx-get="{% url 'search:autocomplete' %}?q={{ searchQuery }}"
+                             hx-trigger="load"
+                             hx-target="this">
+                            <div class="htmx-indicator text-center py-3">
+                                <div class="spinner-border spinner-border-sm" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+                
+                {% if user.is_authenticated %}
+                    <!-- Student Navigation -->
+                    {% if user.user_type == 'STUDENT' %}
+                        <ul class="navbar-nav me-auto">
+                            <li class="nav-item">
+                                <a class="nav-link d-flex align-items-center" href="{% url 'accounts:student_dashboard' %}">
+                                    <i class="bi bi-speedometer2 me-1"></i>
+                                    <span class="d-none d-md-inline">Dashboard</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link d-flex align-items-center" href="{% url 'requirements:requirement_list' %}">
+                                    <i class="bi bi-clipboard-check me-1"></i>
+                                    <span class="d-none d-md-inline">My Requirements</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link d-flex align-items-center" href="{% url 'requirements:requirement_create' %}">
+                                    <i class="bi bi-plus-circle me-1"></i>
+                                    <span class="d-none d-md-inline">Post</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link d-flex align-items-center" href="{% url 'accounts:tutor_list' %}">
+                                    <i class="bi bi-people me-1"></i>
+                                    <span class="d-none d-md-inline">Find Tutors</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link d-flex align-items-center position-relative" href="{% url 'messaging:message_list' %}">
+                                    <i class="bi bi-envelope me-1"></i>
+                                    <span class="d-none d-md-inline">Messages</span>
+                                    <span class="notification-badge" 
+                                          hx-get="{% url 'messaging:unread_count' %}" 
+                                          hx-trigger="load, every 30s"
+                                          hx-target="this">0</span>
+                                </a>
+                            </li>
+                        </ul>
+                    {% endif %}
+                    
+                    <!-- Tutor Navigation -->
+                    {% if user.user_type == 'TUTOR' %}
+                        <ul class="navbar-nav me-auto">
+                            <li class="nav-item">
+                                <a class="nav-link d-flex align-items-center" href="{% url 'accounts:tutor_dashboard' %}">
+                                    <i class="bi bi-speedometer2 me-1"></i>
+                                    <span class="d-none d-md-inline">Dashboard</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link d-flex align-items-center" href="{% url 'requirements:proposal_list' %}">
+                                    <i class="bi bi-clipboard-data me-1"></i>
+                                    <span class="d-none d-md-inline">Proposals</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link d-flex align-items-center" href="{% url 'requirements:requirement_list' %}">
+                                    <i class="bi bi-search me-1"></i>
+                                    <span class="d-none d-md-inline">Find Jobs</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link d-flex align-items-center position-relative" href="{% url 'messaging:message_list' %}">
+                                    <i class="bi bi-envelope me-1"></i>
+                                    <span class="d-none d-md-inline">Messages</span>
+                                    <span class="notification-badge" 
+                                          hx-get="{% url 'messaging:unread_count' %}" 
+                                          hx-trigger="load, every 30s"
+                                          hx-target="this">0</span>
+                                </a>
+                            </li>
+                        </ul>
+                    {% endif %}
+                    
+                    <!-- Admin Navigation -->
+                    {% if user.is_staff %}
+                        <ul class="navbar-nav me-auto">
+                            <li class="nav-item">
+                                <a class="nav-link d-flex align-items-center" href="{% url 'accounts:admin_dashboard' %}">
+                                    <i class="bi bi-speedometer2 me-1"></i>
+                                    <span class="d-none d-md-inline">Admin</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link d-flex align-items-center" href="{% url 'admin:index' %}">
+                                    <i class="bi bi-gear me-1"></i>
+                                    <span class="d-none d-md-inline">Admin Panel</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link d-flex align-items-center" href="{% url 'paymentsdetails:admin_dashboard' %}">
+                                    <i class="bi bi-currency-dollar me-1"></i>
+                                    <span class="d-none d-md-inline">Financial</span>
+                                </a>
+                            </li>
+                        </ul>
+                    {% endif %}
+                {% else %}
+                    <!-- Guest Navigation -->
+                    <ul class="navbar-nav me-auto">
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'accounts:home' %}">Home</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'accounts:tutor_list' %}">Find Tutors</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">How It Works</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">About</a>
+                        </li>
+                    </ul>
+                {% endif %}
+                
+                <!-- Right Navigation -->
+                <ul class="navbar-nav align-items-center">
+                    <!-- Theme Toggle -->
+                    <li class="nav-item dropdown">
+                        <button class="theme-toggle btn btn-link nav-link py-2 px-1 px-lg-2"
+                                type="button"
+                                @click="
+                                    $store.themeTransition = true;
+                                    theme = theme === 'dark' ? 'light' : 'dark';
+                                    localStorage.setItem('theme', theme);
+                                    setTimeout(() => $store.themeTransition = false, 300);
+                                "
+                                aria-label="Toggle theme"
+                                title="Toggle between light and dark theme">
+                            <i class="bi" :class="theme === 'dark' ? 'bi-sun-fill' : 'bi-moon-fill'" aria-hidden="true"></i>
+                        </button>
+                    </li>
+                    
+                    {% if user.is_authenticated %}
+                        <!-- Notifications Dropdown -->
+                        <li class="nav-item dropdown" x-data="{ open: false }">
+                            <button class="nav-link dropdown-toggle position-relative btn btn-link"
+                                    id="notificationDropdown"
+                                    type="button"
+                                    @click="open = !open; notificationsOpen = open"
+                                    @click.outside="open = false; notificationsOpen = false"
+                                    aria-expanded="false"
+                                    aria-haspopup="true"
+                                    aria-label="Notifications">
+                                <i class="bi bi-bell" aria-hidden="true"></i>
+                                <span class="notification-badge"
+                                      hx-get="{% url 'notifications:unread_count' %}"
+                                      hx-trigger="load, every 30s"
+                                      hx-target="this"
+                                      aria-label="Unread notifications count">0</span>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end notification-dropdown theme-card"
+                                x-show="open"
+                                x-transition
+                                style="display: none; min-width: 320px;"
+                                role="menu">
+                                <li><h6 class="dropdown-header" role="presentation">Notifications</h6></li>
+                                <li role="none">
+                                    <div hx-get="{% url 'notifications:recent' %}"
+                                         hx-trigger="load, every 30s"
+                                         hx-target="this"
+                                         role="menuitem">
+                                        <div class="dropdown-item text-center py-3" role="none">
+                                            <div class="htmx-indicator spinner-border spinner-border-sm" role="status">
+                                                <span class="visually-hidden">Loading notifications...</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </li>
+                                <li role="none"><hr class="dropdown-divider" role="separator"></li>
+                                <li role="none">
+                                    <a class="dropdown-item" href="{% url 'notifications:notification_list' %}" role="menuitem">
+                                        View All Notifications
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                        
+                        <!-- User Dropdown -->
+                        <li class="nav-item dropdown" x-data="{ open: false }">
+                            <button class="nav-link dropdown-toggle d-flex align-items-center btn btn-link"
+                                    id="userDropdown"
+                                    type="button"
+                                    @click="open = !open; userMenuOpen = open"
+                                    @click.outside="open = false; userMenuOpen = false"
+                                    aria-expanded="false"
+                                    aria-haspopup="true"
+                                    aria-label="User menu">
+                                <i class="bi bi-person-circle me-1" aria-hidden="true"></i>
+                                <span class="d-none d-md-inline">{{ user.username }}</span>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end theme-card"
+                                x-show="open"
+                                x-transition
+                                style="display: none;"
+                                role="menu">
+                                <li role="none">
+                                    <a class="dropdown-item" href="{% url 'accounts:profile' %}" role="menuitem">
+                                        <i class="bi bi-person me-2" aria-hidden="true"></i> Profile
+                                    </a>
+                                </li>
+                                {% if user.user_type == 'STUDENT' %}
+                                    <li role="none">
+                                        <a class="dropdown-item" href="{% url 'accounts:student_profile' %}" role="menuitem">
+                                            <i class="bi bi-mortarboard me-2" aria-hidden="true"></i> Student Profile
+                                        </a>
+                                    </li>
+                                {% endif %}
+                                {% if user.user_type == 'TUTOR' %}
+                                    <li role="none">
+                                        <a class="dropdown-item" href="{% url 'accounts:tutor_profile' %}" role="menuitem">
+                                            <i class="bi bi-award me-2" aria-hidden="true"></i> Tutor Profile
+                                        </a>
+                                    </li>
+                                {% endif %}
+                                <li role="none">
+                                    <a class="dropdown-item" href="{% url 'paymentsdetails:escrow_account' %}" role="menuitem">
+                                        <i class="bi bi-wallet2 me-2" aria-hidden="true"></i> Wallet
+                                    </a>
+                                </li>
+                                <li role="none">
+                                    <a class="dropdown-item" href="{% url 'notifications:preferences' %}" role="menuitem">
+                                        <i class="bi bi-gear me-2" aria-hidden="true"></i> Preferences
+                                    </a>
+                                </li>
+                                <li role="none"><hr class="dropdown-divider" role="separator"></li>
+                                <li role="none">
+                                    <a class="dropdown-item" href="{% url 'accounts:logout' %}" role="menuitem">
+                                        <i class="bi bi-box-arrow-right me-2" aria-hidden="true"></i> Logout
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'accounts:login' %}">Login</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="btn theme-btn-outline-light ms-2" href="{% url 'accounts:signup' %}">Sign Up</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Flash Messages -->
+    {% if messages %}
+        <div class="container-fluid mt-3">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show fade-in" role="alert">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-{% if message.tags == 'error' %}exclamation-triangle{% elif message.tags == 'success' %}check-circle{% elif message.tags == 'warning' %}exclamation-circle{% else %}info-circle{% endif %} me-2"></i>
+                        <div class="flex-grow-1">{{ message }}</div>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Main Content -->
+    <main id="main-content" class="main-content" role="main">
+        {% block content %}
+            <!-- Page content will go here -->
+        {% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="platform-footer" role="contentinfo">
+        <div class="container py-4">
+            <div class="row">
+                <div class="col-lg-4 col-md-6 mb-4 mb-md-0">
+                    <h5 class="footer-title">Django Tutor Platform</h5>
+                    <p class="footer-text">
+                        Connecting students with qualified tutors for personalized learning experiences.
+                    </p>
+                    <div class="social-links">
+                        <a href="#" class="text-light me-3" aria-label="Facebook">
+                            <i class="bi bi-facebook fs-5" aria-hidden="true"></i>
+                        </a>
+                        <a href="#" class="text-light me-3" aria-label="Twitter">
+                            <i class="bi bi-twitter fs-5" aria-hidden="true"></i>
+                        </a>
+                        <a href="#" class="text-light me-3" aria-label="LinkedIn">
+                            <i class="bi bi-linkedin fs-5" aria-hidden="true"></i>
+                        </a>
+                        <a href="#" class="text-light" aria-label="Instagram">
+                            <i class="bi bi-instagram fs-5" aria-hidden="true"></i>
+                        </a>
+                    </div>
+                </div>
+                <div class="col-lg-2 col-md-6 mb-4 mb-md-0">
+                    <h6 class="footer-title">Platform</h6>
+                    <ul class="footer-links">
+                        <li class="mb-2"><a href="#" class="footer-link">How It Works</a></li>
+                        <li class="mb-2"><a href="#" class="footer-link">Become a Tutor</a></li>
+                        <li class="mb-2"><a href="#" class="footer-link">Pricing</a></li>
+                        <li class="mb-2"><a href="#" class="footer-link">Success Stories</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-2 col-md-6 mb-4 mb-md-0">
+                    <h6 class="footer-title">Company</h6>
+                    <ul class="footer-links">
+                        <li class="mb-2"><a href="#" class="footer-link">About Us</a></li>
+                        <li class="mb-2"><a href="#" class="footer-link">Careers</a></li>
+                        <li class="mb-2"><a href="#" class="footer-link">Press</a></li>
+                        <li class="mb-2"><a href="#" class="footer-link">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-2 col-md-6 mb-4 mb-md-0">
+                    <h6 class="footer-title">Legal</h6>
+                    <ul class="footer-links">
+                        <li class="mb-2"><a href="#" class="footer-link">Terms of Service</a></li>
+                        <li class="mb-2"><a href="#" class="footer-link">Privacy Policy</a></li>
+                        <li class="mb-2"><a href="#" class="footer-link">Cookie Policy</a></li>
+                        <li class="mb-2"><a href="#" class="footer-link">GDPR</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-2 col-md-6 mb-4 mb-md-0">
+                    <h6 class="footer-title">Support</h6>
+                    <ul class="footer-links">
+                        <li class="mb-2"><a href="#" class="footer-link">Help Center</a></li>
+                        <li class="mb-2"><a href="#" class="footer-link">Safety Center</a></li>
+                        <li class="mb-2"><a href="#" class="footer-link">Community Guidelines</a></li>
+                        <li class="mb-2"><a href="#" class="footer-link">FAQs</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom text-center py-3 bg-primary">
+            <small class="text-light">© {% now "Y" %} Django Tutor Platform. All rights reserved.</small>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <!-- Custom JS -->
+    <script src="{% static 'ui_components/js/main.js' %}"></script>
+    
+    <!-- Alpine.js Store for Theme Management -->
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.store('themeTransition', false);
+        });
+        
+        // Enhanced accessibility announcements
+        function announceToScreenReader(message) {
+            const announcer = document.getElementById('screen-reader-announcements');
+            if (announcer) {
+                announcer.textContent = message;
+                // Clear after announcement to allow repeated announcements
+                setTimeout(() => {
+                    announcer.textContent = '';
+                }, 1000);
+            }
+        }
+        
+        // Page loading overlay management
+        function showPageLoading() {
+            const overlay = document.getElementById('page-loading-overlay');
+            if (overlay) {
+                overlay.style.display = 'flex';
+            }
+        }
+        
+        function hidePageLoading() {
+            const overlay = document.getElementById('page-loading-overlay');
+            if (overlay) {
+                overlay.style.display = 'none';
+            }
+        }
+        
+        // HTMX event listeners for loading states
+        document.addEventListener('htmx:beforeRequest', function(evt) {
+            showPageLoading();
+            announceToScreenReader('Loading content...');
+        });
+        
+        document.addEventListener('htmx:afterRequest', function(evt) {
+            hidePageLoading();
+            announceToScreenReader('Content loaded');
+        });
+        
+        // Enhanced theme management with system preference detection
+        function initializeTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            
+            if (!savedTheme) {
+                // Use system preference if no saved theme
+                const theme = systemPrefersDark ? 'dark' : 'light';
+                localStorage.setItem('theme', theme);
+                document.documentElement.setAttribute('data-theme', theme);
+            }
+            
+            // Listen for system theme changes
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+                if (!localStorage.getItem('theme')) {
+                    const newTheme = e.matches ? 'dark' : 'light';
+                    document.documentElement.setAttribute('data-theme', newTheme);
+                }
+            });
+        }
+        
+        // Initialize theme on page load
+        document.addEventListener('DOMContentLoaded', initializeTheme);
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

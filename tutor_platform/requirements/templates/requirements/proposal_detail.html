@@ -1,0 +1,326 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ proposal.requirement.title }} - Proposal - Django Tutor Platform{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'accounts:home' %}">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'requirements:requirement_list' %}">Requirements</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'requirements:requirement_detail' proposal.requirement.id %}">{{ proposal.requirement.title }}</a></li>
+                    <li class="breadcrumb-item active">Proposal</li>
+                </ol>
+            </nav>
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3">Proposal Details</h1>
+                    <p class="text-muted">Submitted by {{ proposal.tutor.user.get_full_name }} on {{ proposal.created_at|date:"M d, Y" }}</p>
+                </div>
+                <span class="badge bg-{{ proposal.status|status_color }} fs-6">{{ proposal.get_status_display }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-md-8">
+            <!-- Proposal Details -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Proposal Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Requirement</label>
+                            <p><a href="{% url 'requirements:requirement_detail' proposal.requirement.id %}" class="text-decoration-none">{{ proposal.requirement.title }}</a></p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Subject</label>
+                            <p>{{ proposal.requirement.subject.name }}</p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Proposed Rate</label>
+                            <p class="fw-bold text-primary">${{ proposal.proposed_rate }}/hour</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Estimated Duration</label>
+                            <p>{{ proposal.estimated_duration|default:"Not specified" }}</p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12 mb-3">
+                            <label class="form-label text-muted">Proposal Text</label>
+                            <p>{{ proposal.proposal_text }}</p>
+                        </div>
+                    </div>
+                    {% if proposal.teaching_approach %}
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <label class="form-label text-muted">Teaching Approach</label>
+                                <p>{{ proposal.teaching_approach }}</p>
+                            </div>
+                        </div>
+                    {% endif %}
+                    {% if proposal.availability %}
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <label class="form-label text-muted">Availability</label>
+                                <p>{{ proposal.availability }}</p>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Tutor Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">About the Tutor</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <img src="{{ proposal.tutor.profile_picture.url|default:'/static/images/default-avatar.png' }}" 
+                             class="rounded-circle me-3" width="80" height="80" alt="{{ proposal.tutor.user.get_full_name }}">
+                        <div>
+                            <h5 class="mb-0">{{ proposal.tutor.user.get_full_name }}</h5>
+                            <div class="text-warning">
+                                {% for i in proposal.tutor.average_rating|star_range %}
+                                    <i class="bi bi-star-fill"></i>
+                                {% endfor %}
+                                <span class="text-muted">({{ proposal.tutor.average_rating }}/5.0, {{ proposal.tutor.total_reviews }} reviews)</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="card-text">{{ proposal.tutor.bio|default:"No bio provided." }}</p>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Experience</label>
+                            <p>{{ proposal.tutor.experience_years }} years</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Education</label>
+                            <p>{{ proposal.tutor.get_education_level_display|default:"Not specified" }}</p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Sessions Completed</label>
+                            <p>{{ proposal.tutor.session_count }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Students Taught</label>
+                            <p>{{ proposal.tutor.student_count }}</p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12 mb-3">
+                            <label class="form-label text-muted">Subjects</label>
+                            <div>
+                                {% for subject in proposal.tutor.subjects.all %}
+                                    <span class="badge bg-light text-dark me-1">{{ subject.name }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <label class="form-label text-muted">Qualifications</label>
+                            <p>{{ proposal.tutor.qualifications|default:"No qualifications specified" }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sessions (if accepted) -->
+            {% if proposal.status == 'ACCEPTED' and proposal.sessions.exists %}
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Learning Sessions</h5>
+                        <a href="{% url 'requirements:session_create' %}?proposal={{ proposal.id }}" class="btn btn-sm btn-primary">
+                            <i class="bi bi-plus-circle"></i> Schedule Session
+                        </a>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Duration</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for session in proposal.sessions.all %}
+                                        <tr>
+                                            <td>{{ session.scheduled_date|date:"M d, Y H:i" }}</td>
+                                            <td>{{ session.duration }} minutes</td>
+                                            <td><span class="badge bg-{{ session.status|status_color }}">{{ session.get_status_display }}</span></td>
+                                            <td>
+                                                <a href="{% url 'requirements:session_detail' session.id %}" class="btn btn-sm btn-outline-primary">View</a>
+                                                {% if session.status == 'SCHEDULED' %}
+                                                    <button class="btn btn-sm btn-success">Join</button>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-md-4">
+            <!-- Action Buttons -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        {% if proposal.status == 'PENDING' and user.is_authenticated and user.user_type == 'STUDENT' %}
+                            <button class="btn btn-success" 
+                                    hx-get="{% url 'requirements:proposal_accept' proposal.id %}"
+                                    hx-target="#accept-modal"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#accept-modal">
+                                <i class="bi bi-check-circle"></i> Accept Proposal
+                            </button>
+                            <button class="btn btn-outline-danger" 
+                                    hx-get="{% url 'requirements:proposal_reject' proposal.id %}"
+                                    hx-target="#reject-modal"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#reject-modal">
+                                <i class="bi bi-x-circle"></i> Reject Proposal
+                            </button>
+                        {% endif %}
+                        
+                        {% if user.is_authenticated and user.user_type == 'STUDENT' %}
+                            <button class="btn btn-outline-primary" 
+                                    hx-get="{% url 'messaging:conversation_create' %}?tutor={{ proposal.tutor.id }}"
+                                    hx-target="#message-modal"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#message-modal">
+                                <i class="bi bi-envelope"></i> Message Tutor
+                            </button>
+                        {% endif %}
+                        
+                        <a href="{% url 'requirements:requirement_detail' proposal.requirement.id %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Back to Requirement
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Proposal Stats -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Proposal Stats</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center mb-3">
+                        <div class="col-6">
+                            <h5 class="text-primary">${{ proposal.proposed_rate }}</h5>
+                            <small class="text-muted">Hourly Rate</small>
+                        </div>
+                        <div class="col-6">
+                            <h5 class="text-success">{{ proposal.requirement.proposal_count }}</h5>
+                            <small class="text-muted">Total Proposals</small>
+                        </div>
+                    </div>
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <h5 class="text-info">{{ proposal.requirement.views }}</h5>
+                            <small class="text-muted">Requirement Views</small>
+                        </div>
+                        <div class="col-6">
+                            <h5 class="text-warning">{{ proposal.requirement.days_active }}</h5>
+                            <small class="text-muted">Days Active</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Other Proposals -->
+            {% if other_proposals %}
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">Other Proposals</h6>
+                    </div>
+                    <div class="card-body">
+                        {% for other_proposal in other_proposals %}
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="mb-0">{{ other_proposal.tutor.user.get_full_name }}</h6>
+                                        <div class="text-warning small">
+                                            {% for i in other_proposal.tutor.average_rating|star_range %}
+                                                <i class="bi bi-star-fill"></i>
+                                            {% endfor %}
+                                            <span class="text-muted">({{ other_proposal.tutor.total_reviews }})</span>
+                                        </div>
+                                    </div>
+                                    <span class="badge bg-{{ other_proposal.status|status_color }}">{{ other_proposal.get_status_display }}</span>
+                                </div>
+                                <p class="card-text small">{{ other_proposal.proposal_text|truncatewords:10 }}</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="text-primary fw-bold">${{ other_proposal.proposed_rate }}/hr</span>
+                                    <a href="{% url 'requirements:proposal_detail' other_proposal.id %}" class="btn btn-sm btn-outline-primary">View</a>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Accept Modal -->
+<div class="modal fade" id="accept-modal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <!-- Content will be loaded via HTMX -->
+        </div>
+    </div>
+</div>
+
+<!-- Reject Modal -->
+<div class="modal fade" id="reject-modal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <!-- Content will be loaded via HTMX -->
+        </div>
+    </div>
+</div>
+
+<!-- Message Modal -->
+<div class="modal fade" id="message-modal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <!-- Content will be loaded via HTMX -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,255 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Student Profile - Django Tutor Platform{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3">Student Profile</h1>
+            <p class="text-muted">Manage your student information and preferences</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Profile Information -->
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <img src="{{ student.profile_picture.url|default:'/static/images/default-avatar.png' }}" 
+                         class="rounded-circle mb-3" width="150" height="150" alt="Profile Picture">
+                    <h4>{{ student.user.get_full_name }}</h4>
+                    <p class="text-muted">{{ student.user.email }}</p>
+                    <div class="mb-3">
+                        <span class="badge bg-primary">Student</span>
+                        {% if student.is_verified %}
+                            <span class="badge bg-success">Verified</span>
+                        {% endif %}
+                    </div>
+                    <button class="btn btn-primary" 
+                            hx-get="{% url 'accounts:edit_student_profile' %}"
+                            hx-target="#profile-edit-modal"
+                            data-bs-toggle="modal"
+                            data-bs-target="#profile-edit-modal">
+                        <i class="bi bi-pencil"></i> Edit Profile
+                    </button>
+                </div>
+            </div>
+
+            <!-- Profile Completion -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0">Profile Completion</h6>
+                </div>
+                <div class="card-body">
+                    <div class="progress mb-2">
+                        <div class="progress-bar bg-success" role="progressbar" 
+                             style="width: {{ profile_completion }}%"
+                             aria-valuenow="{{ profile_completion }}" 
+                             aria-valuemin="0" aria-valuemax="100">
+                            {{ profile_completion }}%
+                        </div>
+                    </div>
+                    <small class="text-muted">Complete your profile to get better matches</small>
+                </div>
+            </div>
+
+            <!-- Learning Stats -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0">Learning Statistics</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <h5 class="text-primary">{{ total_sessions }}</h5>
+                            <small class="text-muted">Sessions</small>
+                        </div>
+                        <div class="col-6">
+                            <h5 class="text-success">{{ subjects_learned }}</h5>
+                            <small class="text-muted">Subjects</small>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <h5 class="text-info">{{ total_hours }}</h5>
+                            <small class="text-muted">Hours Learned</small>
+                        </div>
+                        <div class="col-6">
+                            <h5 class="text-warning">{{ average_rating }}</h5>
+                            <small class="text-muted">Avg Rating</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-8">
+            <!-- Personal Information -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Personal Information</h5>
+                    <button class="btn btn-sm btn-outline-primary" 
+                            hx-get="{% url 'accounts:edit_personal_info' %}"
+                            hx-target="#personal-info-edit"
+                            hx-swap="innerHTML">
+                        <i class="bi bi-pencil"></i> Edit
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="personal-info-display">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label text-muted">First Name</label>
+                                <p>{{ student.user.first_name }}</p>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label text-muted">Last Name</label>
+                                <p>{{ student.user.last_name }}</p>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label text-muted">Email</label>
+                                <p>{{ student.user.email }}</p>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label text-muted">Phone</label>
+                                <p>{{ student.phone_number|default:"Not provided" }}</p>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label text-muted">Date of Birth</label>
+                                <p>{{ student.date_of_birth|default:"Not provided" }}</p>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label text-muted">Location</label>
+                                <p>{{ student.location|default:"Not provided" }}</p>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12">
+                                <label class="form-label text-muted">Bio</label>
+                                <p>{{ student.bio|default:"No bio provided" }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="personal-info-edit"></div>
+                </div>
+            </div>
+
+            <!-- Learning Preferences -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Learning Preferences</h5>
+                    <button class="btn btn-sm btn-outline-primary" 
+                            hx-get="{% url 'accounts:edit_learning_preferences' %}"
+                            hx-target="#learning-preferences-edit"
+                            hx-swap="innerHTML">
+                        <i class="bi bi-pencil"></i> Edit
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="learning-preferences-display">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label text-muted">Preferred Learning Style</label>
+                                <p>{{ student.get_learning_style_display|default:"Not specified" }}</p>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label text-muted">Availability</label>
+                                <p>{{ student.get_availability_display|default:"Not specified" }}</p>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label text-muted">Preferred Session Duration</label>
+                                <p>{{ student.preferred_session_duration|default:"Not specified" }} minutes</p>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label text-muted">Budget Range</label>
+                                <p>${{ student.min_budget|default:"0" }} - ${{ student.max_budget|default:"Not specified" }}/hour</p>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12">
+                                <label class="form-label text-muted">Subjects of Interest</label>
+                                <div>
+                                    {% for subject in student.interested_subjects.all %}
+                                        <span class="badge bg-light text-dark me-1">{{ subject.name }}</span>
+                                    {% empty %}
+                                        <span class="text-muted">No subjects specified</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="learning-preferences-edit"></div>
+                </div>
+            </div>
+
+            <!-- Recent Reviews -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Recent Reviews</h5>
+                    <a href="#" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    {% if recent_reviews %}
+                        <div class="row">
+                            {% for review in recent_reviews %}
+                                <div class="col-md-6 mb-3">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                                <div>
+                                                    <h6 class="card-title mb-0">{{ review.tutor.user.get_full_name }}</h6>
+                                                    <div class="text-warning small">
+                                                        {% for i in review.rating|star_range %}
+                                                            <i class="bi bi-star-fill"></i>
+                                                        {% endfor %}
+                                                    </div>
+                                                </div>
+                                                <small class="text-muted">{{ review.created_at|date:"M d, Y" }}</small>
+                                            </div>
+                                            <p class="card-text">{{ review.comment }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-star text-muted" style="font-size: 3rem;"></i>
+                            <p class="text-muted mt-2">No reviews yet.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Profile Edit Modal -->
+<div class="modal fade" id="profile-edit-modal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <!-- Content will be loaded via HTMX -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    });
+</script>
+{% endblock %}

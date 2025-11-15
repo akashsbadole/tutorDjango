@@ -1,0 +1,381 @@
+{% extends 'ui_components/base.html' %}
+{% load ui_tags static %}
+
+{% block title %}Payments - Django Tutor Platform{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3">Payments</h1>
+            <p class="text-muted">Manage and track all your payment transactions</p>
+        </div>
+    </div>
+
+    <!-- Payment Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3 col-sm-6 mb-3">
+            {% ui_card "bg-primary text-white" %}
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Total Paid</h6>
+                        <h4 class="mb-0">${{ total_paid|floatformat:2 }}</h4>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-cash-stack" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            {% end_ui_card %}
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            {% ui_card "bg-success text-white" %}
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Total Received</h6>
+                        <h4 class="mb-0">${{ total_received|floatformat:2 }}</h4>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-wallet2" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            {% end_ui_card %}
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            {% ui_card "bg-warning text-white" %}
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Pending</h6>
+                        <h4 class="mb-0">${{ total_pending|floatformat:2 }}</h4>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-clock-history" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            {% end_ui_card %}
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            {% ui_card "bg-info text-white" %}
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">This Month</h6>
+                        <h4 class="mb-0">${{ this_month_total|floatformat:2 }}</h4>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-calendar-month" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            {% end_ui_card %}
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-3 col-md-4">
+            <!-- Filters Sidebar -->
+            {% ui_card "" "filter-sidebar" %}
+                <div class="card-header">
+                    <h6 class="mb-0">Filter Payments</h6>
+                </div>
+                <div class="card-body">
+                    {% ui_form "" "payments-filter" %}
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="payment_status" class="form-label">Status</label>
+                            <select class="form-select" id="payment_status" name="status"
+                                    hx-get="{% url 'paymentsdetails:payment_list' %}" 
+                                    hx-target="#payment-list" 
+                                    hx-trigger="change"
+                                    hx-push-url="true">
+                                <option value="">All Status</option>
+                                <option value="PENDING" {% if request.GET.status == 'PENDING' %}selected{% endif %}>Pending</option>
+                                <option value="PROCESSING" {% if request.GET.status == 'PROCESSING' %}selected{% endif %}>Processing</option>
+                                <option value="COMPLETED" {% if request.GET.status == 'COMPLETED' %}selected{% endif %}>Completed</option>
+                                <option value="FAILED" {% if request.GET.status == 'FAILED' %}selected{% endif %}>Failed</option>
+                                <option value="REFUNDED" {% if request.GET.status == 'REFUNDED' %}selected{% endif %}>Refunded</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="payment_type" class="form-label">Type</label>
+                            <select class="form-select" id="payment_type" name="payment_type"
+                                    hx-get="{% url 'paymentsdetails:payment_list' %}" 
+                                    hx-target="#payment-list" 
+                                    hx-trigger="change"
+                                    hx-push-url="true">
+                                <option value="">All Types</option>
+                                <option value="SESSION_PAYMENT" {% if request.GET.payment_type == 'SESSION_PAYMENT' %}selected{% endif %}>Session Payment</option>
+                                <option value="ESCROW_DEPOSIT" {% if request.GET.payment_type == 'ESCROW_DEPOSIT' %}selected{% endif %}>Escrow Deposit</option>
+                                <option value="ESCROW_RELEASE" {% if request.GET.payment_type == 'ESCROW_RELEASE' %}selected{% endif %}>Escrow Release</option>
+                                <option value="REFUND" {% if request.GET.payment_type == 'REFUND' %}selected{% endif %}>Refund</option>
+                                <option value="WITHDRAWAL" {% if request.GET.payment_type == 'WITHDRAWAL' %}selected{% endif %}>Withdrawal</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="date_range" class="form-label">Date Range</label>
+                            <select class="form-select" id="date_range" name="date_range"
+                                    hx-get="{% url 'paymentsdetails:payment_list' %}" 
+                                    hx-target="#payment-list" 
+                                    hx-trigger="change"
+                                    hx-push-url="true">
+                                <option value="">All Time</option>
+                                <option value="today" {% if request.GET.date_range == 'today' %}selected{% endif %}>Today</option>
+                                <option value="week" {% if request.GET.date_range == 'week' %}selected{% endif %}>This Week</option>
+                                <option value="month" {% if request.GET.date_range == 'month' %}selected{% endif %}>This Month</option>
+                                <option value="quarter" {% if request.GET.date_range == 'quarter' %}selected{% endif %}>This Quarter</option>
+                                <option value="year" {% if request.GET.date_range == 'year' %}selected{% endif %}>This Year</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="amount_min" class="form-label">Min Amount ($)</label>
+                            <input type="number" class="form-control" id="amount_min" name="amount_min" 
+                                   value="{{ request.GET.amount_min }}" step="0.01" min="0">
+                        </div>
+                        <div class="mb-3">
+                            <label for="amount_max" class="form-label">Max Amount ($)</label>
+                            <input type="number" class="form-control" id="amount_max" name="amount_max" 
+                                   value="{{ request.GET.amount_max }}" step="0.01" min="0">
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-sm"
+                                    hx-get="{% url 'paymentsdetails:payment_list' %}" 
+                                    hx-target="#payment-list" 
+                                    hx-push-url="true">
+                                <i class="bi bi-funnel"></i> Apply Filters
+                            </button>
+                            <a href="{% url 'paymentsdetails:payment_list' %}" class="btn btn-outline-secondary btn-sm">
+                                <i class="bi bi-x-circle"></i> Clear
+                            </a>
+                        </div>
+                    {% end_ui_form %}
+                </div>
+            {% end_ui_card %}
+
+            <!-- Quick Actions -->
+            {% ui_card "" "quick-actions" %}
+                <div class="card-header">
+                    <h6 class="mb-0">Quick Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'paymentsdetails:escrow_account' %}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-wallet2"></i> Escrow Account
+                        </a>
+                        <a href="{% url 'paymentsdetails:payment_method_list' %}" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-credit-card"></i> Payment Methods
+                        </a>
+                        <a href="{% url 'paymentsdetails:transaction_list' %}" class="btn btn-outline-info btn-sm">
+                            <i class="bi bi-list-ul"></i> All Transactions
+                        </a>
+                        <button class="btn btn-outline-success btn-sm" hx-post="{% url 'paymentsdetails:export_payments' %}">
+                            <i class="bi bi-download"></i> Export CSV
+                        </button>
+                    </div>
+                </div>
+            {% end_ui_card %}
+        </div>
+
+        <div class="col-lg-9 col-md-8">
+            <!-- Payment List -->
+            {% ui_card "" "payment-list-container" %}
+                <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
+                    <h6 class="mb-0">Payment History</h6>
+                    <div class="d-flex align-items-center flex-wrap">
+                        <div class="input-group me-2" style="width: 250px;">
+                            <input type="text" class="form-control form-control-sm" placeholder="Search payments..."
+                                   hx-get="{% url 'paymentsdetails:payment_list' %}" 
+                                   hx-trigger="keyup changed delay:300ms"
+                                   hx-target="#payment-list" 
+                                   name="q" 
+                                   value="{{ request.GET.q }}">
+                            <button class="btn btn-sm btn-outline-secondary" type="button">
+                                <i class="bi bi-search"></i>
+                            </button>
+                        </div>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button class="btn btn-outline-secondary active" 
+                                    x-data="{ view: 'list' }"
+                                    @click="$el.classList.add('active'); $el.nextElementSibling.classList.remove('active'); view = 'list'"
+                                    data-bs-toggle="tooltip" title="List View">
+                                <i class="bi bi-list"></i>
+                            </button>
+                            <button class="btn btn-outline-secondary" 
+                                    @click="$el.classList.add('active'); $el.previousElementSibling.classList.remove('active'); view = 'grid'"
+                                    data-bs-toggle="tooltip" title="Grid View">
+                                <i class="bi bi-grid"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div id="payment-list">
+                        {% if is_search %}
+                            {% ui_alert "info" "search-results" %}
+                                <i class="bi bi-info-circle me-2"></i>
+                                Search results for "{{ search_query }}" - Found {{ total_count }} payments
+                            {% end_ui_alert %}
+                        {% endif %}
+                        
+                        <div class="table-responsive">
+                            {% ui_table "payments-table" "table table-hover mb-0" %}
+                                <thead>
+                                    <tr>
+                                        <th>
+                                            <a href="?sort=date{% for key, value in request.GET.items %}{% if key != 'sort' and key != 'order' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                                               class="text-decoration-none">
+                                                Date {% if request.GET.sort == 'date' %}{% if request.GET.order == 'desc' %}↑{% else %}↓{% endif %}{% endif %}
+                                            </a>
+                                        </th>
+                                        <th>Description</th>
+                                        <th>Type</th>
+                                        <th>Method</th>
+                                        <th class="text-end">
+                                            <a href="?sort=amount{% for key, value in request.GET.items %}{% if key != 'sort' and key != 'order' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                                               class="text-decoration-none">
+                                                Amount {% if request.GET.sort == 'amount' %}{% if request.GET.order == 'desc' %}↑{% else %}↓{% endif %}{% endif %}
+                                            </a>
+                                        </th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for payment in payments %}
+                                        <tr>
+                                            <td>{{ payment.created_at|date:"M d, Y" }}</td>
+                                            <td>
+                                                <div>
+                                                    <strong>{{ payment.description }}</strong>
+                                                    {% if payment.proposal %}
+                                                        <br><small class="text-muted">Proposal #{{ payment.proposal.id }}</small>
+                                                    {% endif %}
+                                                </div>
+                                            </td>
+                                            <td>
+                                                {% ui_badge payment.get_payment_type_display "bg-"|add:payment.get_type_color %}
+                                            </td>
+                                            <td>
+                                                {% if payment.payment_method %}
+                                                    {{ payment.payment_method.get_display_name }}
+                                                    <br><small class="text-muted">{{ payment.payment_method.card_last4 }}</small>
+                                                {% else %}
+                                                    <span class="text-muted">N/A</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-end">
+                                                {% if payment.amount > 0 %}
+                                                    <span class="text-success">+${{ payment.amount|floatformat:2 }}</span>
+                                                {% else %}
+                                                    <span class="text-danger">${{ payment.amount|floatformat:2 }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% ui_badge payment.get_status_display "bg-"|add:payment.get_status_color %}
+                                            </td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm">
+                                                    <a href="{% url 'paymentsdetails:payment_detail' payment.id %}" 
+                                                       class="btn btn-outline-primary" 
+                                                       data-bs-toggle="tooltip" 
+                                                       title="View Details">
+                                                        <i class="bi bi-eye"></i>
+                                                    </a>
+                                                    {% if payment.can_refund %}
+                                                        <button class="btn btn-outline-warning" 
+                                                                hx-post="{% url 'paymentsdetails:refund_payment' payment.id %}"
+                                                                hx-confirm="Refund this payment?"
+                                                                data-bs-toggle="tooltip" 
+                                                                title="Refund">
+                                                            <i class="bi bi-arrow-counterclockwise"></i>
+                                                        </button>
+                                                    {% endif %}
+                                                    {% if payment.status == 'PENDING' %}
+                                                        <button class="btn btn-outline-success" 
+                                                                hx-post="{% url 'paymentsdetails:process_payment' payment.id %}"
+                                                                data-bs-toggle="tooltip" 
+                                                                title="Process">
+                                                            <i class="bi bi-play-circle"></i>
+                                                        </button>
+                                                    {% endif %}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% empty %}
+                                        <tr>
+                                            <td colspan="7" class="text-center py-4">
+                                                {% if is_search %}
+                                                    <i class="bi bi-search text-muted" style="font-size: 3rem;"></i>
+                                                    <p class="text-muted mt-2">No payments found matching "{{ search_query }}"</p>
+                                                    <a href="{% url 'paymentsdetails:payment_list' %}" class="btn btn-outline-secondary">Clear Search</a>
+                                                {% else %}
+                                                    <i class="bi bi-cash-stack text-muted" style="font-size: 3rem;"></i>
+                                                    <p class="text-muted mt-2">No payments found</p>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            {% end_ui_table %}
+                        </div>
+                    </div>
+                </div>
+                {% if is_paginated %}
+                    <div class="card-footer">
+                        {% ui_pagination page_obj request.GET %}
+                    {% end_ui_pagination %}
+                    </div>
+                {% endif %}
+            {% end_ui_card %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
+    // Add autocomplete functionality for payment search
+    const searchInput = document.querySelector('input[name="q"]');
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            const query = this.value.trim();
+            if (query.length >= 2) {
+                fetch(`/search/autocomplete/?q=${encodeURIComponent(query)}&type=payment`)
+                    .then(response => response.json())
+                    .then(data => {
+                        // Display autocomplete suggestions if needed
+                        console.log('Autocomplete suggestions:', data.suggestions);
+                    })
+                    .catch(error => console.error('Error fetching autocomplete:', error));
+            }
+        });
+    }
+    
+    // Add real-time updates for payment status
+    htmx.on('htmx:afterRequest', function(evt) {
+        if (evt.detail.successful) {
+            // Show success notification
+            const notification = document.createElement('div');
+            notification.className = 'alert alert-success alert-dismissible fade show position-fixed';
+            notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            notification.innerHTML = `
+                <i class="bi bi-check-circle me-2"></i>
+                Payment action completed successfully
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(notification);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 5000);
+        }
+    });
+});
+</script>
+{% endblock %}

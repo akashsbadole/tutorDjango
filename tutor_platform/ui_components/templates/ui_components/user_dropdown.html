@@ -1,0 +1,287 @@
+{% load ui_tags %}
+<div class="dropdown" x-data="userDropdown()">
+    <button class="btn btn-link nav-link dropdown-toggle d-flex align-items-center" 
+            type="button" 
+            @click="toggle()"
+            aria-expanded="false"
+            aria-haspopup="true">
+        
+        {% if show_avatar %}
+            {% if user.avatar %}
+                <img src="{{ user.avatar.url }}" 
+                     alt="{{ user.username }}" 
+                     class="user-avatar me-2 rounded-circle"
+                     style="width: 28px; height: 28px; object-fit: cover;">
+            {% else %}
+                <div class="user-avatar-placeholder me-2 rounded-circle bg-primary text-white d-flex align-items-center justify-content-center"
+                     style="width: 28px; height: 28px; font-size: 0.8rem; font-weight: bold;">
+                    {{ user.username|slice:":2"|upper }}
+                </div>
+            {% endif %}
+        {% else %}
+            <i class="bi bi-person-circle me-1"></i>
+        {% endif %}
+        
+        <span class="d-none d-md-inline">{{ user.username }}</span>
+    </button>
+    
+    <div class="dropdown-menu dropdown-menu-end user-dropdown" 
+         x-show="open" 
+         x-transition
+         @click.outside="close()"
+         style="display: none; min-width: 280px;">
+        
+        <!-- User Info Header -->
+        <div class="dropdown-header d-flex align-items-center py-3">
+            {% if user.avatar %}
+                <img src="{{ user.avatar.url }}" 
+                     alt="{{ user.username }}" 
+                     class="user-avatar-large rounded-circle me-3"
+                     style="width: 48px; height: 48px; object-fit: cover;">
+            {% else %}
+                <div class="user-avatar-placeholder-large rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3"
+                     style="width: 48px; height: 48px; font-size: 1.2rem; font-weight: bold;">
+                    {{ user.username|slice:":2"|upper }}
+                </div>
+            {% endif %}
+            
+            <div class="flex-grow-1">
+                <div class="fw-bold">{{ user.get_full_name|default:user.username }}</div>
+                <div class="text-muted small">{{ user.email }}</div>
+                {% if user.user_type %}
+                    <div class="mt-1">
+                        <span class="badge bg-primary">{{ user.get_user_type_display }}</span>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="dropdown-divider"></div>
+        
+        <!-- Profile Links -->
+        <div class="py-2">
+            {% if profile_url %}
+                <a class="dropdown-item" href="{{ profile_url }}">
+                    <i class="bi bi-person me-2"></i> Profile
+                </a>
+            {% endif %}
+            
+            {% if user.user_type == 'STUDENT' and student_profile_url %}
+                <a class="dropdown-item" href="{{ student_profile_url }}">
+                    <i class="bi bi-mortarboard me-2"></i> Student Profile
+                </a>
+            {% endif %}
+            
+            {% if user.user_type == 'TUTOR' and tutor_profile_url %}
+                <a class="dropdown-item" href="{{ tutor_profile_url }}">
+                    <i class="bi bi-award me-2"></i> Tutor Profile
+                </a>
+            {% endif %}
+            
+            {% if settings_url %}
+                <a class="dropdown-item" href="{{ settings_url }}">
+                    <i class="bi bi-gear me-2"></i> Settings
+                </a>
+            {% endif %}
+            
+            {% if wallet_url %}
+                <a class="dropdown-item" href="{{ wallet_url }}">
+                    <i class="bi bi-wallet2 me-2"></i> Wallet
+                    {% if wallet_balance %}
+                        <span class="badge bg-success ms-auto">{{ wallet_balance }}</span>
+                    {% endif %}
+                </a>
+            {% endif %}
+            
+            {% if notifications_url %}
+                <a class="dropdown-item" href="{{ notifications_url }}">
+                    <i class="bi bi-bell me-2"></i> Notifications
+                    {% if unread_count %}
+                        <span class="badge bg-danger ms-auto">{{ unread_count }}</span>
+                    {% endif %}
+                </a>
+            {% endif %}
+        </div>
+        
+        <div class="dropdown-divider"></div>
+        
+        <!-- Additional Links -->
+        <div class="py-2">
+            {% if help_url %}
+                <a class="dropdown-item" href="{{ help_url }}">
+                    <i class="bi bi-question-circle me-2"></i> Help & Support
+                </a>
+            {% endif %}
+            
+            {% if terms_url %}
+                <a class="dropdown-item" href="{{ terms_url }}">
+                    <i class="bi bi-file-text me-2"></i> Terms of Service
+                </a>
+            {% endif %}
+            
+            {% if privacy_url %}
+                <a class="dropdown-item" href="{{ privacy_url }}">
+                    <i class="bi bi-shield-check me-2"></i> Privacy Policy
+                </a>
+            {% endif %}
+        </div>
+        
+        <div class="dropdown-divider"></div>
+        
+        <!-- Theme Toggle -->
+        <div class="px-3 py-2">
+            <div class="form-check form-switch d-flex align-items-center justify-content-between">
+                <label class="form-check-label" for="theme-toggle">
+                    <i class="bi bi-moon-stars me-2"></i> Dark Mode
+                </label>
+                <input class="form-check-input" type="checkbox" id="theme-toggle" 
+                       x-model="$store.themeManager.theme === 'dark'"
+                       @change="$store.themeManager.toggle()">
+            </div>
+        </div>
+        
+        <div class="dropdown-divider"></div>
+        
+        <!-- Logout -->
+        {% if logout_url %}
+            <a class="dropdown-item text-danger" href="{{ logout_url }}">
+                <i class="bi bi-box-arrow-right me-2"></i> Logout
+            </a>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('userDropdown', () => ({
+        open: false,
+        
+        toggle() {
+            this.open = !this.open;
+        },
+        
+        close() {
+            this.open = false;
+        },
+        
+        init() {
+            // Close dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.user-dropdown') && !e.target.closest('.dropdown-toggle')) {
+                    this.close();
+                }
+            });
+            
+            // Close dropdown on escape key
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    this.close();
+                }
+            });
+        }
+    }));
+});
+</script>
+
+<style>
+.user-dropdown {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    border: none;
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.user-avatar,
+.user-avatar-placeholder {
+    transition: transform 0.2s;
+}
+
+.dropdown-toggle:hover .user-avatar,
+.dropdown-toggle:hover .user-avatar-placeholder {
+    transform: scale(1.05);
+}
+
+.user-dropdown .dropdown-item {
+    padding: 0.5rem 1rem;
+    transition: background-color 0.2s;
+    border-radius: 0;
+}
+
+.user-dropdown .dropdown-item:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.user-dropdown .dropdown-item i {
+    width: 16px;
+    text-align: center;
+}
+
+.user-dropdown .dropdown-header {
+    background-color: rgba(0, 0, 0, 0.02);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.user-dropdown .dropdown-divider {
+    margin: 0.5rem 0;
+}
+
+.dark .user-dropdown {
+    background-color: var(--dark-color);
+    color: var(--light-color);
+}
+
+.dark .user-dropdown .dropdown-item {
+    color: var(--light-color);
+}
+
+.dark .user-dropdown .dropdown-item:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.dark .user-dropdown .dropdown-header {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-bottom-color: rgba(255, 255, 255, 0.125);
+}
+
+.dark .user-dropdown .dropdown-divider {
+    border-color: rgba(255, 255, 255, 0.125);
+}
+
+/* Animation for dropdown */
+.user-dropdown[x-transition] {
+    transition: all 0.2s ease-out;
+    transform-origin: top right;
+}
+
+.user-dropdown[x-show="true"] {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+}
+
+.user-dropdown[x-show="false"] {
+    transform: scale(0.95) translateY(-10px);
+    opacity: 0;
+}
+
+/* Badge positioning */
+.user-dropdown .badge {
+    font-size: 0.7rem;
+    padding: 0.25rem 0.4rem;
+}
+
+/* Form switch styling */
+.form-switch .form-check-input {
+    width: 2.5rem;
+    height: 1.25rem;
+    cursor: pointer;
+}
+
+.form-switch .form-check-input:checked {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.form-switch .form-check-input:focus {
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+</style>

@@ -1,0 +1,288 @@
+{% extends 'ui_components/base.html' %}
+{% load ui_tags static %}
+
+{% block title %}Requirements - Django Tutor Platform{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0">Learning Requirements</h1>
+                    <p class="text-muted mb-0">Find students looking for tutors in various subjects</p>
+                </div>
+                
+                {% if user.is_authenticated and user.user_type == 'STUDENT' %}
+                    <a href="{% url 'requirements:requirement_create' %}" 
+                       class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-2"></i>Post New Requirement
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filter -->
+    <div class="row mb-4">
+        <div class="col-12">
+            {% include 'ui_components/search_bar.html' with 
+                action='search:requirement_search'
+                placeholder='Search requirements...'
+                show_filters=True
+                show_suggestions=True
+                show_recent_searches=True
+                button_text='Search'
+                button_icon='bi-search'
+                addon_before='bi bi-search'
+            %}
+            
+            <div class="mt-3" x-data="{ filtersOpen: false }">
+                <button type="button" 
+                        class="btn btn-outline-secondary"
+                        @click="filtersOpen = !filtersOpen">
+                    <i class="bi bi-funnel me-2"></i>
+                    Advanced Filters
+                    <i class="bi bi-chevron-down ms-2" 
+                       :class="filtersOpen ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+                </button>
+                
+                <div class="card mt-3" x-show="filtersOpen" x-transition>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <label for="subject-filter" class="form-label">Subject</label>
+                                <select name="subject" id="subject-filter" class="form-select">
+                                    <option value="">All Subjects</option>
+                                    {% for subject in subjects %}
+                                        <option value="{{ subject.id }}" 
+                                                {% if request.GET.subject == subject.id|stringformat:"s" %}selected{% endif %}>
+                                            {{ subject.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-3 mb-3">
+                                <label for="status-filter" class="form-label">Status</label>
+                                <select name="status" id="status-filter" class="form-select">
+                                    <option value="">All Status</option>
+                                    <option value="OPEN" 
+                                            {% if request.GET.status == 'OPEN' %}selected{% endif %}>Open</option>
+                                    <option value="IN_PROGRESS" 
+                                            {% if request.GET.status == 'IN_PROGRESS' %}selected{% endif %}>In Progress</option>
+                                    <option value="CLOSED" 
+                                            {% if request.GET.status == 'CLOSED' %}selected{% endif %}>Closed</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-3 mb-3">
+                                <label for="budget-filter" class="form-label">Budget Range</label>
+                                <select name="budget_range" id="budget-filter" class="form-select">
+                                    <option value="">Any Budget</option>
+                                    <option value="0-20" 
+                                            {% if request.GET.budget_range == '0-20' %}selected{% endif %}>$0-20/hr</option>
+                                    <option value="20-50" 
+                                            {% if request.GET.budget_range == '20-50' %}selected{% endif %}>$20-50/hr</option>
+                                    <option value="50-100" 
+                                            {% if request.GET.budget_range == '50-100' %}selected{% endif %}>$50-100/hr</option>
+                                    <option value="100+" 
+                                            {% if request.GET.budget_range == '100+' %}selected{% endif %}>$100+/hr</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-3 mb-3">
+                                <label for="sort-filter" class="form-label">Sort By</label>
+                                <select name="sort_by" id="sort-filter" class="form-select">
+                                    <option value="relevance">Most Relevant</option>
+                                    <option value="newest">Newest First</option>
+                                    <option value="oldest">Oldest First</option>
+                                    <option value="budget_high">Highest Budget</option>
+                                    <option value="budget_low">Lowest Budget</option>
+                                    <option value="proposals">Most Proposals</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <div class="d-flex gap-2">
+                                    <button type="submit" form="search-form" class="btn btn-primary">
+                                        <i class="bi bi-search me-2"></i>Apply Filters
+                                    </button>
+                                    <a href="{% url 'search:requirement_search' %}" class="btn btn-outline-secondary">
+                                        <i class="bi bi-x-circle me-2"></i>Clear All
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Summary -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <p class="mb-0">Found <strong>{{ requirements.count }}</strong> requirements</p>
+                
+                <div class="btn-group" role="group" x-data="{ viewMode: 'grid' }">
+                    <input type="radio" class="btn-check" name="view" id="grid-view" 
+                           autocomplete="off" value="grid" 
+                           @change="viewMode = $el.value" checked>
+                    <label class="btn btn-outline-primary" for="grid-view">
+                        <i class="bi bi-grid-3x3-gap"></i>
+                    </label>
+                    
+                    <input type="radio" class="btn-check" name="view" id="list-view" 
+                           autocomplete="off" value="list"
+                           @change="viewMode = $el.value">
+                    <label class="btn btn-outline-primary" for="list-view">
+                        <i class="bi bi-list"></i>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Requirement List -->
+    <div id="requirement-list">
+        <div class="row" :class="viewMode === 'list' ? 'list-view' : ''">
+            {% for requirement in requirements %}
+                <div class="col-md-6 col-lg-4 mb-4">
+                    {% include 'ui_components/card.html' with 
+                        title=requirement.title,
+                        content=requirement.description|truncatewords:15,
+                        animate=True,
+                        extra_classes='requirement-card h-100'
+                    %}
+                    
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h6 class="card-title">{{ requirement.title }}</h6>
+                            {% badge requirement.get_status_display 'primary' True %}
+                        </div>
+                        
+                        <div class="mb-2">
+                            {% badge requirement.subject.name 'secondary' %}
+                        </div>
+                        
+                        <p class="card-text">{{ requirement.description|truncatewords:20 }}</p>
+                        
+                        <div class="mb-2">
+                            {% if requirement.skill_level %}
+                                {% badge requirement.get_skill_level_display 'light' %}
+                            {% endif %}
+                            
+                            {% if requirement.learning_format %}
+                                {% badge requirement.get_learning_format_display 'info' %}
+                            {% endif %}
+                        </div>
+                        
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                <small class="text-muted">Posted by 
+                                    {% avatar requirement.student.user 'sm' True %}</small>
+                                <small class="text-muted">{{ requirement.created_at|time_ago }}</small>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <small class="text-muted">Budget:</small>
+                                <span class="fw-bold text-primary">
+                                    {{ requirement.budget_min|currency }} - {{ requirement.budget_max|currency }}/hr
+                                </span>
+                            </div>
+                            <small class="text-muted">{{ requirement.created_at|date }}</small>
+                        </div>
+                    </div>
+                    
+                    <div class="card-footer bg-transparent">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                {% badge requirement.proposal_count 'info' %}
+                            </div>
+                            <a href="{% url 'requirements:requirement_detail' requirement.id %}" 
+                               class="btn btn-sm btn-primary">
+                                View Details
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        
+        {% empty %}
+            <div class="col-12">
+                <div class="text-center py-5">
+                    <i class="bi bi-clipboard-x text-muted" style="font-size: 3rem;"></i>
+                    <h4 class="mt-3">No requirements found</h4>
+                    <p class="text-muted">Try adjusting your search criteria or check back later</p>
+                    
+                    {% if user.is_authenticated and user.user_type == 'STUDENT' %}
+                        <a href="{% url 'requirements:requirement_create' %}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle me-2"></i>Post First Requirement
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        {% empty %}
+    </div>
+
+    <!-- Pagination -->
+    {% if is_paginated %}
+        {% include 'ui_components/pagination.html' with 
+            pagination=page_obj,
+            ajax=True,
+            ajax_target='#requirement-list',
+            show_info=True,
+            show_per_page=True
+        %}
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('alpine:init', () => {
+    // Handle view mode toggle
+    Alpine.data('viewMode', 'grid');
+});
+</script>
+
+<style>
+.requirement-card {
+    transition: transform 0.2s;
+}
+
+.requirement-card:hover {
+    transform: translateY(-5px);
+}
+
+.list-view .col-md-6 {
+    width: 100%;
+}
+
+.list-view .requirement-card {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.list-view .requirement-card .card-body {
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 1rem;
+}
+
+.list-view .requirement-card .card-footer {
+    width: auto;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,681 @@
+// =============================================================================
+// Django Tutor Platform - Main SCSS File
+// =============================================================================
+// This is the main SCSS file that imports all partials in the correct order
+// and includes Bootstrap 5 with customizations for the Django Tutor Platform.
+// =============================================================================
+
+// -----------------------------------------------------------------------------
+// 1. CONFIGURATION AND VARIABLES
+// -----------------------------------------------------------------------------
+// Import our custom variables first to override Bootstrap defaults
+@import 'variables';
+
+// -----------------------------------------------------------------------------
+// 2. BOOTSTRAP 5 FRAMEWORK
+// -----------------------------------------------------------------------------
+// Import Bootstrap 5 SCSS files with our customizations
+// We're using Bootstrap 5.3.2 with enhanced features
+
+// Bootstrap Functions and Mixins
+@import "~bootstrap/scss/functions";
+@import "~bootstrap/scss/mixins";
+
+// Bootstrap Variables (overridden by our variables)
+@import "~bootstrap/scss/variables";
+
+// Bootstrap Utilities
+@import "~bootstrap/scss/utilities";
+
+// -----------------------------------------------------------------------------
+// 3. BOOTSTRAP COMPONENTS
+// -----------------------------------------------------------------------------
+// Import only the Bootstrap components we need to keep the CSS size optimized
+
+// Bootstrap Layout
+@import "~bootstrap/scss/root";
+@import "~bootstrap/scss/reboot";
+@import "~bootstrap/scss/type";
+@import "~bootstrap/scss/images";
+@import "~bootstrap/scss/containers";
+@import "~bootstrap/scss/grid";
+
+// Bootstrap Components
+@import "~bootstrap/scss/tables";
+@import "~bootstrap/scss/forms";
+@import "~bootstrap/scss/buttons";
+@import "~bootstrap/scss/transitions";
+@import "~bootstrap/scss/dropdown";
+@import "~bootstrap/scss/button-group";
+@import "~bootstrap/scss/nav";
+@import "~bootstrap/scss/navbar";
+@import "~bootstrap/scss/card";
+@import "~bootstrap/scss/accordion";
+@import "~bootstrap/scss/breadcrumb";
+@import "~bootstrap/scss/pagination";
+@import "~bootstrap/scss/badge";
+@import "~bootstrap/scss/alert";
+@import "~bootstrap/scss/progress";
+@import "~bootstrap/scss/list-group";
+@import "~bootstrap/scss/close";
+@import "~bootstrap/scss/toasts";
+@import "~bootstrap/scss/modal";
+@import "~bootstrap/scss/tooltip";
+@import "~bootstrap/scss/popover";
+@import "~bootstrap/scss/carousel";
+@import "~bootstrap/scss/spinners";
+@import "~bootstrap/scss/offcanvas";
+@import "~bootstrap/scss/placeholders";
+@import "~bootstrap/scss/helpers";
+
+// Bootstrap Utilities API
+@import "~bootstrap/scss/utilities/api";
+
+// -----------------------------------------------------------------------------
+// 4. CUSTOM DESIGN SYSTEM
+// -----------------------------------------------------------------------------
+// Import our custom design system files in the correct order
+
+// Base styles (reset, normalize, typography)
+@import 'base';
+
+// Layout system (containers, grid, layout components)
+@import 'layout';
+
+// Component base styles (buttons, cards, forms, etc.)
+@import 'components';
+
+// Utility classes (spacing, colors, typography, etc.)
+@import 'utilities';
+
+// Theme system (light/dark themes, role-based themes)
+@import 'themes';
+
+// -----------------------------------------------------------------------------
+// 5. PLATFORM SPECIFIC STYLES
+// -----------------------------------------------------------------------------
+
+// Platform header styles
+.platform-header {
+  // Custom header styles that build on Bootstrap navbar
+  @extend .navbar;
+  @extend .navbar-expand-lg;
+  @extend .navbar-light;
+  @extend .bg-white;
+  @extend .shadow-sm;
+  
+  .navbar-brand {
+    font-weight: 700;
+    color: var(--color-primary);
+    
+    &:hover {
+      color: var(--color-primary-dark);
+    }
+  }
+  
+  .navbar-nav {
+    .nav-link {
+      font-weight: 500;
+      color: var(--color-text-secondary);
+      
+      &:hover {
+        color: var(--color-primary);
+      }
+      
+      &.active {
+        color: var(--color-primary);
+        font-weight: 600;
+      }
+    }
+  }
+  
+  .navbar-toggler {
+    border: none;
+    
+    &:focus {
+      box-shadow: 0 0 0 0.2rem var(--color-primary-light);
+    }
+  }
+}
+
+// Platform sidebar styles
+.platform-sidebar {
+  // Custom sidebar styles
+  @extend .bg-light;
+  @extend .border-end;
+  
+  .sidebar-section {
+    @extend .p-3;
+    @extend .border-bottom;
+    
+    .section-title {
+      @extend .text-uppercase;
+      @extend .fw-bold;
+      @extend .small;
+      @extend .text-muted;
+      @extend .mb-3;
+    }
+  }
+  
+  .sidebar-nav {
+    @extend .list-unstyled;
+    
+    .nav-item {
+      @extend .mb-1;
+      
+      .nav-link {
+        @extend .d-flex;
+        @extend .align-items-center;
+        @extend .px-3;
+        @extend .py-2;
+        @extend .rounded;
+        @extend .text-decoration-none;
+        color: var(--color-text-secondary);
+        
+        &:hover {
+          color: var(--color-primary);
+          background-color: var(--color-bg-tertiary);
+        }
+        
+        &.active {
+          color: var(--color-primary);
+          background-color: rgba(var(--color-primary), 0.1);
+          font-weight: 600;
+        }
+        
+        i {
+          @extend .me-2;
+          width: 1.25rem;
+        }
+      }
+    }
+  }
+}
+
+// Platform content area
+.platform-content {
+  @extend .p-4;
+  @extend .p-lg-5;
+  
+  .content-header {
+    @extend .mb-4;
+    @extend .mb-lg-5;
+    
+    .page-title {
+      @extend .display-5;
+      @extend .fw-bold;
+      @extend .mb-3;
+      color: var(--color-text-primary);
+    }
+    
+    .page-subtitle {
+      @extend .lead;
+      @extend .text-muted;
+      @extend .mb-0;
+    }
+  }
+  
+  .content-section {
+    @extend .mb-5;
+    
+    .section-title {
+      @extend .h3;
+      @extend .fw-semibold;
+      @extend .mb-4;
+      color: var(--color-text-primary);
+    }
+  }
+}
+
+// Platform footer styles
+.platform-footer {
+  @extend .bg-light;
+  @extend .border-top;
+  @extend .py-4;
+  @extend .py-lg-5;
+  @extend .mt-5;
+  
+  .footer-section {
+    @extend .mb-4;
+    @extend .mb-lg-0;
+    
+    .footer-title {
+      @extend .h5;
+      @extend .fw-bold;
+      @extend .mb-3;
+      color: var(--color-text-primary);
+    }
+    
+    .footer-links {
+      @extend .list-unstyled;
+      
+      .footer-link {
+        @extend .mb-2;
+        
+        a {
+          @extend .text-decoration-none;
+          color: var(--color-text-secondary);
+          
+          &:hover {
+            color: var(--color-primary);
+          }
+        }
+      }
+    }
+  }
+  
+  .footer-bottom {
+    @extend .border-top;
+    @extend .pt-4;
+    @extend .mt-4;
+    @extend .text-center;
+    @extend .text-muted;
+    @extend .small;
+  }
+}
+
+// Platform card styles
+.platform-card {
+  @extend .card;
+  @extend .border-0;
+  @extend .shadow-sm;
+  @extend .h-100;
+  @extend .transition;
+  
+  &:hover {
+    @extend .shadow-md;
+    transform: translateY(-2px);
+  }
+  
+  .card-header {
+    @extend .bg-white;
+    @extend .border-bottom;
+    @extend .fw-semibold;
+    color: var(--color-text-primary);
+  }
+  
+  .card-body {
+    @extend .p-4;
+  }
+  
+  .card-footer {
+    @extend .bg-white;
+    @extend .border-top;
+    @extend .px-4;
+    @extend .py-3;
+  }
+}
+
+// Platform button styles
+.platform-btn {
+  @extend .btn;
+  @extend .rounded-pill;
+  @extend .fw-medium;
+  @extend .px-4;
+  @extend .py-2;
+  @extend .transition;
+  
+  &-primary {
+    @extend .btn-primary;
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+    
+    &:hover {
+      background-color: var(--color-primary-dark);
+      border-color: var(--color-primary-dark);
+    }
+  }
+  
+  &-outline-primary {
+    @extend .btn-outline-primary;
+    color: var(--color-primary);
+    border-color: var(--color-primary);
+    
+    &:hover {
+      background-color: var(--color-primary);
+      border-color: var(--color-primary);
+    }
+  }
+  
+  &-ghost {
+    background-color: transparent;
+    border-color: transparent;
+    color: var(--color-text-secondary);
+    
+    &:hover {
+      color: var(--color-primary);
+      background-color: rgba(var(--color-primary), 0.1);
+    }
+  }
+}
+
+// Platform form styles
+.platform-form {
+  .form-label {
+    @extend .fw-medium;
+    @extend .mb-2;
+    color: var(--color-text-primary);
+  }
+  
+  .form-control {
+    @extend .border;
+    @extend .rounded;
+    @extend .py-2;
+    @extend .px-3;
+    @extend .transition;
+    
+    &:focus {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 0.2rem var(--color-primary-light);
+    }
+  }
+  
+  .form-select {
+    @extend .border;
+    @extend .rounded;
+    @extend .py-2;
+    @extend .px-3;
+    @extend .transition;
+    
+    &:focus {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 0.2rem var(--color-primary-light);
+    }
+  }
+  
+  .form-check-input {
+    &:checked {
+      background-color: var(--color-primary);
+      border-color: var(--color-primary);
+    }
+    
+    &:focus {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 0.2rem var(--color-primary-light);
+    }
+  }
+}
+
+// Platform alert styles
+.platform-alert {
+  @extend .alert;
+  @extend .border-0;
+  @extend .rounded;
+  
+  &-primary {
+    background-color: rgba(var(--color-primary), 0.1);
+    color: var(--color-primary);
+  }
+  
+  &-success {
+    background-color: rgba(var(--color-success), 0.1);
+    color: var(--color-success);
+  }
+  
+  &-danger {
+    background-color: rgba(var(--color-error), 0.1);
+    color: var(--color-error);
+  }
+  
+  &-warning {
+    background-color: rgba(var(--color-warning), 0.1);
+    color: var(--color-warning);
+  }
+  
+  &-info {
+    background-color: rgba(var(--color-info), 0.1);
+    color: var(--color-info);
+  }
+}
+
+// Platform badge styles
+.platform-badge {
+  @extend .badge;
+  @extend .rounded-pill;
+  
+  &-primary {
+    background-color: var(--color-primary);
+  }
+  
+  &-success {
+    background-color: var(--color-success);
+  }
+  
+  &-danger {
+    background-color: var(--color-error);
+  }
+  
+  &-warning {
+    background-color: var(--color-warning);
+  }
+  
+  &-info {
+    background-color: var(--color-info);
+  }
+}
+
+// -----------------------------------------------------------------------------
+// 6. ROLE-SPECIFIC STYLES
+// -----------------------------------------------------------------------------
+
+// Student-specific styles
+[data-role="student"] {
+  .role-accent {
+    color: var(--color-student);
+  }
+  
+  .role-bg {
+    background-color: var(--color-student);
+  }
+  
+  .role-border {
+    border-color: var(--color-student);
+  }
+}
+
+// Tutor-specific styles
+[data-role="tutor"] {
+  .role-accent {
+    color: var(--color-tutor);
+  }
+  
+  .role-bg {
+    background-color: var(--color-tutor);
+  }
+  
+  .role-border {
+    border-color: var(--color-tutor);
+  }
+}
+
+// Admin-specific styles
+[data-role="admin"] {
+  .role-accent {
+    color: var(--color-admin);
+  }
+  
+  .role-bg {
+    background-color: var(--color-admin);
+  }
+  
+  .role-border {
+    border-color: var(--color-admin);
+  }
+}
+
+// -----------------------------------------------------------------------------
+// 7. RESPONSIVE OVERRIDES
+// -----------------------------------------------------------------------------
+
+// Mobile-specific adjustments
+@media (max-width: 767.98px) {
+  .platform-header {
+    .navbar-nav {
+      @extend .ms-auto;
+      @extend .mt-3;
+    }
+  }
+  
+  .platform-sidebar {
+    position: fixed;
+    top: 0;
+    left: -100%;
+    width: 280px;
+    height: 100vh;
+    z-index: var(--z-index-modal);
+    @extend .transition;
+    
+    &.show {
+      left: 0;
+    }
+  }
+  
+  .platform-content {
+    margin-left: 0;
+  }
+}
+
+// Tablet-specific adjustments
+@media (min-width: 768px) and (max-width: 991.98px) {
+  .platform-sidebar {
+    width: 200px;
+  }
+  
+  .platform-content {
+    margin-left: 200px;
+  }
+}
+
+// Desktop-specific adjustments
+@media (min-width: 992px) {
+  .platform-sidebar {
+    width: 250px;
+  }
+  
+  .platform-content {
+    margin-left: 250px;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// 8. PRINT STYLES
+// -----------------------------------------------------------------------------
+
+@media print {
+  .platform-header,
+  .platform-sidebar,
+  .platform-footer {
+    display: none !important;
+  }
+  
+  .platform-content {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  
+  .platform-card {
+    border: 1px solid #dee2e6 !important;
+    box-shadow: none !important;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// 9. ACCESSIBILITY ENHANCEMENTS
+// -----------------------------------------------------------------------------
+
+// High contrast mode
+@media (prefers-contrast: high) {
+  .platform-btn {
+    border-width: 2px;
+  }
+  
+  .platform-card {
+    border-width: 2px;
+  }
+  
+  .form-control {
+    border-width: 2px;
+  }
+}
+
+// Reduced motion
+@media (prefers-reduced-motion: reduce) {
+  .platform-card,
+  .platform-btn,
+  .platform-sidebar,
+  .form-control,
+  .form-select {
+    transition: none !important;
+  }
+}
+
+// Focus visible
+.platform-btn:focus-visible,
+.form-control:focus-visible,
+.form-select:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+// -----------------------------------------------------------------------------
+// 10. COMPATIBILITY FIXES
+// -----------------------------------------------------------------------------
+
+// Fix for Bootstrap 5.3+ CSS custom properties
+:root {
+  // Ensure our custom properties work with Bootstrap
+  --bs-primary: var(--color-primary);
+  --bs-secondary: var(--color-secondary);
+  --bs-success: var(--color-success);
+  --bs-info: var(--color-info);
+  --bs-warning: var(--color-warning);
+  --bs-danger: var(--color-error);
+  --bs-light: var(--color-gray-100);
+  --bs-dark: var(--color-gray-800);
+  
+  --bs-font-sans-serif: var(--font-family-primary);
+  --bs-font-monospace: var(--font-family-mono);
+  
+  --bs-body-font-family: var(--font-family-primary);
+  --bs-body-font-size: var(--font-size-base);
+  --bs-body-line-height: var(--line-height-normal);
+  --bs-body-color: var(--color-text-primary);
+  --bs-body-bg: var(--color-bg-primary);
+}
+
+// Dark mode compatibility with Bootstrap
+[data-theme="dark"] {
+  --bs-body-color: var(--color-text-primary);
+  --bs-body-bg: var(--color-bg-primary);
+  --bs-emphasis-color: var(--color-text-inverse);
+  --bs-secondary-color: var(--color-text-secondary);
+  --bs-secondary-bg: var(--color-bg-secondary);
+  --bs-tertiary-color: var(--color-text-muted);
+  --bs-tertiary-bg: var(--color-bg-tertiary);
+  --bs-primary-text: var(--color-primary);
+  --bs-secondary-text: var(--color-secondary);
+  --bs-success-text: var(--color-success);
+  --bs-info-text: var(--color-info);
+  --bs-warning-text: var(--color-warning);
+  --bs-danger-text: var(--color-error);
+  --bs-light-text: var(--color-gray-100);
+  --bs-dark-text: var(--color-gray-800);
+  
+  --bs-primary-bg-subtle: rgba(var(--color-primary), 0.15);
+  --bs-secondary-bg-subtle: rgba(var(--color-secondary), 0.15);
+  --bs-success-bg-subtle: rgba(var(--color-success), 0.15);
+  --bs-info-bg-subtle: rgba(var(--color-info), 0.15);
+  --bs-warning-bg-subtle: rgba(var(--color-warning), 0.15);
+  --bs-danger-bg-subtle: rgba(var(--color-error), 0.15);
+  --bs-light-bg-subtle: rgba(var(--color-gray-100), 0.15);
+  --bs-dark-bg-subtle: rgba(var(--color-gray-800), 0.15);
+  
+  --bs-primary-border-subtle: rgba(var(--color-primary), 0.25);
+  --bs-secondary-border-subtle: rgba(var(--color-secondary), 0.25);
+  --bs-success-border-subtle: rgba(var(--color-success), 0.25);
+  --bs-info-border-subtle: rgba(var(--color-info), 0.25);
+  --bs-warning-border-subtle: rgba(var(--color-warning), 0.25);
+  --bs-danger-border-subtle: rgba(var(--color-error), 0.25);
+  --bs-light-border-subtle: rgba(var(--color-gray-100), 0.25);
+  --bs-dark-border-subtle: rgba(var(--color-gray-800), 0.25);
+}

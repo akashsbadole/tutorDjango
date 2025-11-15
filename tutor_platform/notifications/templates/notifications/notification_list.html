@@ -1,0 +1,246 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Notifications - Django Tutor Platform{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3">Notifications</h1>
+            <p class="text-muted">Stay updated with your latest activities</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Filter Notifications</h6>
+                </div>
+                <div class="card-body">
+                    <form hx-get="{% url 'notifications:notification_list' %}" hx-target="#notification-list" hx-push-url="true">
+                        <div class="mb-3">
+                            <label for="notification_type" class="form-label">Type</label>
+                            <select class="form-select" id="notification_type" name="notification_type">
+                                <option value="">All Types</option>
+                                <option value="MESSAGE" {% if request.GET.notification_type == 'MESSAGE' %}selected{% endif %}>Messages</option>
+                                <option value="PROPOSAL" {% if request.GET.notification_type == 'PROPOSAL' %}selected{% endif %}>Proposals</option>
+                                <option value="SESSION" {% if request.GET.notification_type == 'SESSION' %}selected{% endif %}>Sessions</option>
+                                <option value="PAYMENT" {% if request.GET.notification_type == 'PAYMENT' %}selected{% endif %}>Payments</option>
+                                <option value="REVIEW" {% if request.GET.notification_type == 'REVIEW' %}selected{% endif %}>Reviews</option>
+                                <option value="SYSTEM" {% if request.GET.notification_type == 'SYSTEM' %}selected{% endif %}>System</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="status" class="form-label">Status</label>
+                            <select class="form-select" id="status" name="status">
+                                <option value="">All Status</option>
+                                <option value="unread" {% if request.GET.status == 'unread' %}selected{% endif %}>Unread</option>
+                                <option value="read" {% if request.GET.status == 'read' %}selected{% endif %}>Read</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="date_range" class="form-label">Date Range</label>
+                            <select class="form-select" id="date_range" name="date_range">
+                                <option value="">All Time</option>
+                                <option value="today" {% if request.GET.date_range == 'today' %}selected{% endif %}>Today</option>
+                                <option value="week" {% if request.GET.date_range == 'week' %}selected{% endif %}>This Week</option>
+                                <option value="month" {% if request.GET.date_range == 'month' %}selected{% endif %}>This Month</option>
+                                <option value="year" {% if request.GET.date_range == 'year' %}selected{% endif %}>This Year</option>
+                            </select>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-sm">
+                                <i class="bi bi-funnel"></i> Apply Filters
+                            </button>
+                            <a href="{% url 'notifications:notification_list' %}" class="btn btn-outline-secondary btn-sm">
+                                <i class="bi bi-x-circle"></i> Clear
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Notification Stats -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0">Notification Stats</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <h4 class="text-primary">{{ unread_count }}</h4>
+                            <small class="text-muted">Unread</small>
+                        </div>
+                        <div class="col-6">
+                            <h4 class="text-secondary">{{ total_count }}</h4>
+                            <small class="text-muted">Total</small>
+                        </div>
+                    </div>
+                    <div class="row text-center mt-2">
+                        <div class="col-6">
+                            <h5 class="text-info">{{ today_count }}</h5>
+                            <small class="text-muted">Today</small>
+                        </div>
+                        <div class="col-6">
+                            <h5 class="text-warning">{{ week_count }}</h5>
+                            <small class="text-muted">This Week</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notification List -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">Recent Notifications</h6>
+                    <div class="btn-group">
+                        <button class="btn btn-sm btn-outline-primary" 
+                                hx-post="{% url 'notifications:mark_all_read' %}"
+                                hx-confirm="Mark all notifications as read?">
+                            <i class="bi bi-check2"></i> Mark All Read
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" 
+                                hx-post="{% url 'notifications:delete_all_read' %}"
+                                hx-confirm="Delete all read notifications?">
+                            <i class="bi bi-trash"></i> Delete Read
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div id="notification-list" hx-get="{% url 'notifications:notification_list' %}" hx-trigger="load">
+                        <div class="list-group list-group-flush">
+                            {% for notification in notifications %}
+                                <div class="list-group-item list-group-item-action {% if not notification.is_read %}unread{% endif %}" 
+                                     style="cursor: pointer;"
+                                     hx-get="{% url 'notifications:notification_detail' notification.id %}"
+                                     hx-target="#notification-detail"
+                                     hx-swap="innerHTML">
+                                    <div class="d-flex w-100 justify-content-between align-items-start">
+                                        <div class="d-flex align-items-center">
+                                            <div class="notification-icon me-3">
+                                                {% if notification.notification_type == 'MESSAGE' %}
+                                                    <i class="bi bi-envelope text-primary"></i>
+                                                {% elif notification.notification_type == 'PROPOSAL' %}
+                                                    <i class="bi bi-clipboard-data text-success"></i>
+                                                {% elif notification.notification_type == 'SESSION' %}
+                                                    <i class="bi bi-calendar-check text-info"></i>
+                                                {% elif notification.notification_type == 'PAYMENT' %}
+                                                    <i class="bi bi-currency-dollar text-warning"></i>
+                                                {% elif notification.notification_type == 'REVIEW' %}
+                                                    <i class="bi bi-star text-warning"></i>
+                                                {% else %}
+                                                    <i class="bi bi-info-circle text-secondary"></i>
+                                                {% endif %}
+                                            </div>
+                                            <div>
+                                                <h6 class="mb-0">{{ notification.title }}</h6>
+                                                <p class="mb-0 text-muted small">{{ notification.created_at|date:"M d, Y H:i" }}</p>
+                                            </div>
+                                        </div>
+                                        <div class="text-end">
+                                            {% if not notification.is_read %}
+                                                <span class="badge bg-primary">New</span>
+                                            {% endif %}
+                                            <div class="dropdown">
+                                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                                    <i class="bi bi-three-dots"></i>
+                                                </button>
+                                                <ul class="dropdown-menu">
+                                                    <li>
+                                                        <button class="dropdown-item" 
+                                                                hx-post="{% url 'notifications:mark_read' notification.id %}">
+                                                            <i class="bi bi-check me-2"></i>Mark as Read
+                                                        </button>
+                                                    </li>
+                                                    <li>
+                                                        <button class="dropdown-item" 
+                                                                hx-get="{% url 'notifications:notification_detail' notification.id %}">
+                                                            <i class="bi bi-eye me-2"></i>View Details
+                                                        </button>
+                                                    </li>
+                                                    <li><hr class="dropdown-divider"></li>
+                                                    <li>
+                                                        <button class="dropdown-item text-danger" 
+                                                                hx-post="{% url 'notifications:delete_notification' notification.id %}"
+                                                                hx-confirm="Delete this notification?">
+                                                            <i class="bi bi-trash me-2"></i>Delete
+                                                        </button>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mt-2">
+                                        <p class="mb-0 text-truncate">{{ notification.message|default:notification.title }}</p>
+                                        {% if notification.action_url %}
+                                            <a href="{{ notification.action_url }}" class="btn btn-sm btn-outline-primary">View</a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% empty %}
+                                <div class="text-center py-4">
+                                    <i class="bi bi-bell text-muted" style="font-size: 3rem;"></i>
+                                    <p class="text-muted mt-2">No notifications found</p>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Detail Modal -->
+    <div class="modal fade" id="notification-detail-modal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <!-- Content will be loaded via HTMX -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.notification-icon {
+    font-size: 1.5rem;
+    width: 2.5rem;
+    text-align: center;
+}
+
+.list-group-item.unread {
+    background-color: #f8f9fa;
+    border-left: 4px solid #0d6efd;
+}
+
+.list-group-item {
+    transition: background-color 0.2s;
+}
+
+.list-group-item:hover {
+    background-color: #f1f3f5;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-refresh notifications every 30 seconds
+    setInterval(function() {
+        htmx.trigger(document.body, 'refreshNotifications');
+    }, 30000);
+    
+    // Handle notification actions
+    document.body.addEventListener('htmx:afterRequest', function(evt) {
+        if (evt.detail.successful) {
+            // Update notification counts
+            htmx.trigger(document.body, 'updateNotificationCounts');
+        }
+    });
+</script>
+{% endblock %}

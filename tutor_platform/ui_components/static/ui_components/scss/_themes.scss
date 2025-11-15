@@ -1,0 +1,603 @@
+// =============================================================================
+// Django Tutor Platform - Theme System
+// =============================================================================
+// This file contains theme system with light/dark theme support, role-based
+// theme variations, and CSS custom properties for dynamic theming.
+// =============================================================================
+
+// Import variables first
+@import 'variables';
+
+// -----------------------------------------------------------------------------
+// CSS CUSTOM PROPERTIES (CSS VARIABLES)
+// -----------------------------------------------------------------------------
+// Define CSS custom properties for dynamic theming
+:root {
+  // Color variables
+  --color-primary: #{$color-primary};
+  --color-secondary: #{$color-secondary};
+  --color-success: #{$color-success};
+  --color-warning: #{$color-warning};
+  --color-error: #{$color-error};
+  --color-info: #{$color-info};
+  
+  // Role-specific colors
+  --color-student: #{$color-student};
+  --color-tutor: #{$color-tutor};
+  --color-admin: #{$color-admin};
+  
+  // Neutral colors
+  --color-white: #{$color-white};
+  --color-gray-50: #{$color-gray-50};
+  --color-gray-100: #{$color-gray-100};
+  --color-gray-200: #{$color-gray-200};
+  --color-gray-300: #{$color-gray-300};
+  --color-gray-400: #{$color-gray-400};
+  --color-gray-500: #{$color-gray-500};
+  --color-gray-600: #{$color-gray-600};
+  --color-gray-700: #{$color-gray-700};
+  --color-gray-800: #{$color-gray-800};
+  --color-gray-900: #{$color-gray-900};
+  --color-black: #{$color-black};
+  
+  // Semantic colors
+  --color-text-primary: #{$color-text-primary};
+  --color-text-secondary: #{$color-text-secondary};
+  --color-text-muted: #{$color-text-muted};
+  --color-text-inverse: #{$color-text-inverse};
+  
+  --color-bg-primary: #{$color-bg-primary};
+  --color-bg-secondary: #{$color-bg-secondary};
+  --color-bg-tertiary: #{$color-bg-tertiary};
+  --color-bg-inverse: #{$color-bg-inverse};
+  
+  --color-border-light: #{$color-border-light};
+  --color-border-medium: #{$color-border-medium};
+  --color-border-dark: #{$color-border-dark};
+  
+  // Typography
+  --font-family-primary: #{$font-family-primary};
+  --font-family-mono: #{$font-family-mono};
+  
+  --font-size-xs: #{$font-size-xs};
+  --font-size-sm: #{$font-size-sm};
+  --font-size-base: #{$font-size-base};
+  --font-size-lg: #{$font-size-lg};
+  --font-size-xl: #{$font-size-xl};
+  --font-size-2xl: #{$font-size-2xl};
+  --font-size-3xl: #{$font-size-3xl};
+  --font-size-4xl: #{$font-size-4xl};
+  --font-size-5xl: #{$font-size-5xl};
+  --font-size-6xl: #{$font-size-6xl};
+  
+  --font-weight-light: #{$font-weight-light};
+  --font-weight-normal: #{$font-weight-normal};
+  --font-weight-medium: #{$font-weight-medium};
+  --font-weight-semibold: #{$font-weight-semibold};
+  --font-weight-bold: #{$font-weight-bold};
+  --font-weight-extrabold: #{$font-weight-extrabold};
+  
+  --line-height-tight: #{$line-height-tight};
+  --line-height-normal: #{$line-height-normal};
+  --line-height-relaxed: #{$line-height-relaxed};
+  --line-height-loose: #{$line-height-loose};
+  
+  // Spacing
+  --space-0: #{$space-0};
+  --space-1: #{$space-1};
+  --space-2: #{$space-2};
+  --space-3: #{$space-3};
+  --space-4: #{$space-4};
+  --space-5: #{$space-5};
+  --space-6: #{$space-6};
+  --space-8: #{$space-8};
+  --space-10: #{$space-10};
+  --space-12: #{$space-12};
+  --space-16: #{$space-16};
+  --space-20: #{$space-20};
+  --space-24: #{$space-24};
+  --space-32: #{$space-32};
+  --space-40: #{$space-40};
+  --space-48: #{$space-48};
+  --space-56: #{$space-56};
+  --space-64: #{$space-64};
+  
+  // Border radius
+  --border-radius-none: #{$border-radius-none};
+  --border-radius-sm: #{$border-radius-sm};
+  --border-radius-base: #{$border-radius-base};
+  --border-radius-md: #{$border-radius-md};
+  --border-radius-lg: #{$border-radius-lg};
+  --border-radius-xl: #{$border-radius-xl};
+  --border-radius-2xl: #{$border-radius-2xl};
+  --border-radius-3xl: #{$border-radius-3xl};
+  --border-radius-full: #{$border-radius-full};
+  
+  // Shadows
+  --shadow-sm: #{$shadow-sm};
+  --shadow-base: #{$shadow-base};
+  --shadow-md: #{$shadow-md};
+  --shadow-lg: #{$shadow-lg};
+  --shadow-xl: #{$shadow-xl};
+  --shadow-2xl: #{$shadow-2xl};
+  --shadow-inner: #{$shadow-inner};
+  
+  // Transitions
+  --transition-base: #{$transition-base};
+  --transition-fast: #{$transition-fast};
+  --transition-slow: #{$transition-slow};
+  
+  // Z-index
+  --z-index-dropdown: #{$z-index-dropdown};
+  --z-index-sticky: #{$z-index-sticky};
+  --z-index-fixed: #{$z-index-fixed};
+  --z-index-modal-backdrop: #{$z-index-modal-backdrop};
+  --z-index-modal: #{$z-index-modal};
+  --z-index-popover: #{$z-index-popover};
+  --z-index-tooltip: #{$z-index-tooltip};
+}
+
+// -----------------------------------------------------------------------------
+// LIGHT THEME (DEFAULT)
+// -----------------------------------------------------------------------------
+// Light theme is the default, so we don't need to add a specific class
+// The root variables already define the light theme
+
+// -----------------------------------------------------------------------------
+// DARK THEME
+// -----------------------------------------------------------------------------
+[data-theme="dark"] {
+  // Update color variables for dark theme
+  --color-text-primary: #{$color-gray-100};
+  --color-text-secondary: #{$color-gray-300};
+  --color-text-muted: #{$color-gray-400};
+  --color-text-inverse: #{$color-gray-900};
+  
+  --color-bg-primary: #{$color-gray-900};
+  --color-bg-secondary: #{$color-gray-800};
+  --color-bg-tertiary: #{$color-gray-700};
+  --color-bg-inverse: #{$color-white};
+  
+  --color-border-light: #{$color-gray-700};
+  --color-border-medium: #{$color-gray-600};
+  --color-border-dark: #{$color-gray-500};
+  
+  // Dark theme specific colors
+  --color-gray-50: #{$color-gray-900};
+  --color-gray-100: #{$color-gray-800};
+  --color-gray-200: #{$color-gray-700};
+  --color-gray-300: #{$color-gray-600};
+  --color-gray-400: #{$color-gray-500};
+  --color-gray-500: #{$color-gray-400};
+  --color-gray-600: #{$color-gray-300};
+  --color-gray-700: #{$color-gray-200};
+  --color-gray-800: #{$color-gray-100};
+  --color-gray-900: #{$color-white};
+  
+  // Dark theme shadows
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-base: 0 1px 3px 0 rgba(0, 0, 0, 0.4), 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+// -----------------------------------------------------------------------------
+// ROLE-BASED THEME VARIATIONS
+// -----------------------------------------------------------------------------
+
+// Student theme
+[data-role="student"] {
+  --color-primary: #{$color-student};
+  
+  // Student theme specific colors
+  --color-primary-light: lighten($color-student, 10%);
+  --color-primary-dark: darken($color-student, 10%);
+  
+  // Student theme gradients
+  --gradient-primary: linear-gradient(135deg, #{$color-student} 0%, darken($color-student, 10%) 100%);
+  --gradient-secondary: linear-gradient(135deg, lighten($color-student, 20%) 0%, #{$color-student} 100%);
+}
+
+// Tutor theme
+[data-role="tutor"] {
+  --color-primary: #{$color-tutor};
+  
+  // Tutor theme specific colors
+  --color-primary-light: lighten($color-tutor, 10%);
+  --color-primary-dark: darken($color-tutor, 10%);
+  
+  // Tutor theme gradients
+  --gradient-primary: linear-gradient(135deg, #{$color-tutor} 0%, darken($color-tutor, 10%) 100%);
+  --gradient-secondary: linear-gradient(135deg, lighten($color-tutor, 20%) 0%, #{$color-tutor} 100%);
+}
+
+// Admin theme
+[data-role="admin"] {
+  --color-primary: #{$color-admin};
+  
+  // Admin theme specific colors
+  --color-primary-light: lighten($color-admin, 10%);
+  --color-primary-dark: darken($color-admin, 10%);
+  
+  // Admin theme gradients
+  --gradient-primary: linear-gradient(135deg, #{$color-admin} 0%, darken($color-admin, 10%) 100%);
+  --gradient-secondary: linear-gradient(135deg, lighten($color-admin, 20%) 0%, #{$color-admin} 100%);
+}
+
+// -----------------------------------------------------------------------------
+// THEME COMBINATIONS
+// -----------------------------------------------------------------------------
+
+// Dark student theme
+[data-theme="dark"][data-role="student"] {
+  --color-primary: #{$color-student};
+  --color-primary-light: lighten($color-student, 5%);
+  --color-primary-dark: darken($color-student, 5%);
+}
+
+// Dark tutor theme
+[data-theme="dark"][data-role="tutor"] {
+  --color-primary: #{$color-tutor};
+  --color-primary-light: lighten($color-tutor, 5%);
+  --color-primary-dark: darken($color-tutor, 5%);
+}
+
+// Dark admin theme
+[data-theme="dark"][data-role="admin"] {
+  --color-primary: #{$color-admin};
+  --color-primary-light: lighten($color-admin, 5%);
+  --color-primary-dark: darken($color-admin, 5%);
+}
+
+// -----------------------------------------------------------------------------
+// THEME COMPONENT STYLES
+// -----------------------------------------------------------------------------
+
+// Theme-aware components
+.theme-aware {
+  // Use CSS custom properties for theme-aware styling
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  border-color: var(--color-border-light);
+  transition: var(--transition-base);
+}
+
+// Theme-aware card
+.theme-card {
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition-base);
+  
+  &:hover {
+    box-shadow: var(--shadow-md);
+  }
+}
+
+// Theme-aware button
+.theme-btn {
+  background-color: var(--color-primary);
+  color: var(--color-text-inverse);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--border-radius-md);
+  padding: var(--space-3) var(--space-4);
+  transition: var(--transition-base);
+  
+  &:hover {
+    background-color: var(--color-primary-dark);
+    border-color: var(--color-primary-dark);
+  }
+  
+  &:focus {
+    box-shadow: 0 0 0 0.2rem var(--color-primary-light);
+  }
+}
+
+// Theme-aware input
+.theme-input {
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-medium);
+  border-radius: var(--border-radius-md);
+  padding: var(--space-3) var(--space-4);
+  transition: var(--transition-base);
+  
+  &:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 0.2rem var(--color-primary-light);
+  }
+  
+  &::placeholder {
+    color: var(--color-text-muted);
+  }
+}
+
+// Theme-aware navigation
+.theme-nav {
+  background-color: var(--color-bg-secondary);
+  border-bottom: 1px solid var(--color-border-light);
+  
+  a {
+    color: var(--color-text-secondary);
+    
+    &:hover {
+      color: var(--color-primary);
+    }
+    
+    &.active {
+      color: var(--color-primary);
+      background-color: var(--color-bg-tertiary);
+    }
+  }
+}
+
+// Theme-aware sidebar
+.theme-sidebar {
+  background-color: var(--color-bg-secondary);
+  border-right: 1px solid var(--color-border-light);
+  
+  .sidebar-link {
+    color: var(--color-text-secondary);
+    
+    &:hover {
+      color: var(--color-primary);
+      background-color: var(--color-bg-tertiary);
+    }
+    
+    &.active {
+      color: var(--color-primary);
+      background-color: rgba(var(--color-primary), 0.1);
+    }
+  }
+}
+
+// Theme-aware modal
+.theme-modal {
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-xl);
+}
+
+// Theme-aware alert
+.theme-alert {
+  border-radius: var(--border-radius-md);
+  padding: var(--space-4);
+  
+  &-primary {
+    background-color: rgba(var(--color-primary), 0.1);
+    color: var(--color-primary);
+    border: 1px solid rgba(var(--color-primary), 0.2);
+  }
+  
+  &-success {
+    background-color: rgba(var(--color-success), 0.1);
+    color: var(--color-success);
+    border: 1px solid rgba(var(--color-success), 0.2);
+  }
+  
+  &-danger {
+    background-color: rgba(var(--color-error), 0.1);
+    color: var(--color-error);
+    border: 1px solid rgba(var(--color-error), 0.2);
+  }
+  
+  &-warning {
+    background-color: rgba(var(--color-warning), 0.1);
+    color: var(--color-warning);
+    border: 1px solid rgba(var(--color-warning), 0.2);
+  }
+  
+  &-info {
+    background-color: rgba(var(--color-info), 0.1);
+    color: var(--color-info);
+    border: 1px solid rgba(var(--color-info), 0.2);
+  }
+}
+
+// -----------------------------------------------------------------------------
+// THEME UTILITIES
+// -----------------------------------------------------------------------------
+
+// Theme toggle button
+.theme-toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  background-color: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border-medium);
+  border-radius: var(--border-radius-full);
+  cursor: pointer;
+  transition: var(--transition-base);
+  
+  &:hover {
+    background-color: var(--color-bg-secondary);
+  }
+  
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 0.2rem var(--color-primary-light);
+  }
+}
+
+// Theme switcher
+.theme-switcher {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  
+  .theme-option {
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--border-radius-md);
+    cursor: pointer;
+    transition: var(--transition-base);
+    
+    &:hover {
+      background-color: var(--color-bg-tertiary);
+    }
+    
+    &.active {
+      background-color: var(--color-primary);
+      color: var(--color-text-inverse);
+    }
+  }
+}
+
+// Theme preview
+.theme-preview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border-radius: var(--border-radius-lg);
+  border: 1px solid var(--color-border-light);
+  
+  .preview-colors {
+    display: flex;
+    gap: var(--space-2);
+    
+    .color-swatch {
+      width: 2rem;
+      height: 2rem;
+      border-radius: var(--border-radius-md);
+      border: 1px solid var(--color-border-medium);
+    }
+  }
+  
+  .preview-text {
+    color: var(--color-text-primary);
+    font-size: var(--font-size-sm);
+  }
+}
+
+// -----------------------------------------------------------------------------
+// THEME ANIMATIONS
+// -----------------------------------------------------------------------------
+
+// Smooth theme transition
+* {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+// Theme transition animation
+@keyframes themeTransition {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+// Apply theme transition when theme changes
+.theme-transitioning {
+  animation: themeTransition 0.3s ease-in-out;
+}
+
+// -----------------------------------------------------------------------------
+// THEME PREFERENCES
+// -----------------------------------------------------------------------------
+
+// Respect user's preferred color scheme
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    // Apply dark theme variables by default if user prefers dark mode
+    --color-text-primary: #{$color-gray-100};
+    --color-text-secondary: #{$color-gray-300};
+    --color-text-muted: #{$color-gray-400};
+    --color-text-inverse: #{$color-gray-900};
+    
+    --color-bg-primary: #{$color-gray-900};
+    --color-bg-secondary: #{$color-gray-800};
+    --color-bg-tertiary: #{$color-gray-700};
+    --color-bg-inverse: #{$color-white};
+    
+    --color-border-light: #{$color-gray-700};
+    --color-border-medium: #{$color-gray-600};
+    --color-border-dark: #{$color-gray-500};
+  }
+}
+
+// Respect user's reduced motion preference
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// THEME MIXINS
+// -----------------------------------------------------------------------------
+
+// Mixin for theme-aware components
+@mixin theme-aware($property, $light-value, $dark-value) {
+  #{$property}: $light-value;
+  
+  [data-theme="dark"] & {
+    #{$property}: $dark-value;
+  }
+}
+
+// Mixin for role-specific theming
+@mixin role-theme($property, $student-value, $tutor-value, $admin-value) {
+  [data-role="student"] & {
+    #{$property}: $student-value;
+  }
+  
+  [data-role="tutor"] & {
+    #{$property}: $tutor-value;
+  }
+  
+  [data-role="admin"] & {
+    #{$property}: $admin-value;
+  }
+}
+
+// Mixin for combined theme and role theming
+@mixin combined-theme($property, $light-student, $dark-student, $light-tutor, $dark-tutor, $light-admin, $dark-admin) {
+  [data-role="student"] & {
+    #{$property}: $light-student;
+    
+    [data-theme="dark"] & {
+      #{$property}: $dark-student;
+    }
+  }
+  
+  [data-role="tutor"] & {
+    #{$property}: $light-tutor;
+    
+    [data-theme="dark"] & {
+      #{$property}: $dark-tutor;
+    }
+  }
+  
+  [data-role="admin"] & {
+    #{$property}: $light-admin;
+    
+    [data-theme="dark"] & {
+      #{$property}: $dark-admin;
+    }
+  }
+}
+
+// Example usage of mixins:
+// .example-component {
+//   @include theme-aware(background-color, $color-white, $color-gray-900);
+//   @include role-theme(border-color, $color-student, $color-tutor, $color-admin);
+//   @include combined-theme(color, $color-gray-800, $color-gray-200, $color-gray-700, $color-gray-300, $color-gray-600, $color-gray-400);
+// }

@@ -1,0 +1,403 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Class Schedule - {{ schedule.online_class.topic }} - Django Tutor Platform{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'messaging:message_list' %}">Messages</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'messaging:online_class_detail' schedule.online_class.id %}">{{ schedule.online_class.topic }}</a></li>
+                    <li class="breadcrumb-item active">Schedule</li>
+                </ol>
+            </nav>
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3">Class Schedule</h1>
+                    <p class="text-muted">{{ schedule.online_class.topic }} - {{ schedule.get_recurrence_type_display }} recurring class</p>
+                </div>
+                <div>
+                    <span class="badge bg-{{ schedule.status|status_color }} fs-6">{{ schedule.get_status_display }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-md-8">
+            <!-- Schedule Information -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Schedule Information</h5>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-three-dots"></i>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a class="dropdown-item" href="#">
+                                    <i class="bi bi-pencil me-2"></i>Edit Schedule
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="#">
+                                    <i class="bi bi-calendar-plus me-2"></i>Add Exception
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="#">
+                                    <i class="bi bi-download me-2"></i>Export Calendar
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <button class="dropdown-item text-danger" 
+                                        hx-post="{% url 'messaging:class_schedule_cancel' schedule.id %}"
+                                        hx-confirm="Are you sure you want to cancel this recurring schedule?">
+                                    <i class="bi bi-x-circle me-2"></i>Cancel Schedule
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Class Topic</label>
+                            <p>{{ schedule.online_class.topic }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Recurrence Pattern</label>
+                            <p>{{ schedule.get_recurrence_type_display }}</p>
+                        </div>
+                    </div>
+                    <div class="row mb-4">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Start Date</label>
+                            <p>{{ schedule.start_date|date:"M d, Y" }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">End Date</label>
+                            <p>{{ schedule.end_date|date:"M d, Y"|default:"No end date" }}</p>
+                        </div>
+                    </div>
+                    <div class="row mb-4">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Time</label>
+                            <p>{{ schedule.start_time|date:"H:i" }} - {{ schedule.end_time|date:"H:i" }} ({{ schedule.timezone }})</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Platform</label>
+                            <p>{{ schedule.online_class.get_platform_display }}</p>
+                        </div>
+                    </div>
+                    <div class="row mb-4">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Max Participants</label>
+                            <p>{{ schedule.online_class.max_participants }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Duration</label>
+                            <p>{{ schedule.online_class.duration }} minutes</p>
+                        </div>
+                    </div>
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <label class="form-label text-muted">Description</label>
+                            <p>{{ schedule.online_class.description|default:"No description provided" }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Upcoming Sessions -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Upcoming Sessions</h5>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="prev-week">
+                            <i class="bi bi-chevron-left"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="current-week">
+                            This Week
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="next-week">
+                            <i class="bi bi-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Time</th>
+                                    <th>Status</th>
+                                    <th>Participants</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sessions-table">
+                                {% for session in upcoming_sessions %}
+                                    <tr>
+                                        <td>{{ session.scheduled_date|date:"M d, Y" }}</td>
+                                        <td>{{ session.scheduled_date|date:"H:i" }}</td>
+                                        <td>
+                                            <span class="badge bg-{{ session.status|status_color }}">
+                                                {{ session.get_status_display }}
+                                            </span>
+                                        </td>
+                                        <td>{{ session.participants.count }}/{{ session.max_participants }}</td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="{% url 'messaging:online_class_detail' session.id %}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                                {% if session.status == 'SCHEDULED' %}
+                                                    <button class="btn btn-sm btn-outline-warning" 
+                                                            hx-post="{% url 'messaging:online_class_cancel' session.id %}"
+                                                            hx-confirm="Cancel this session?">
+                                                        <i class="bi bi-x-circle"></i>
+                                                    </button>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="5" class="text-center text-muted">No upcoming sessions</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Calendar View -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Calendar View</h5>
+                </div>
+                <div class="card-body">
+                    <div id="calendar-container">
+                        <!-- Calendar will be rendered here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Schedule Exceptions -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Schedule Exceptions</h5>
+                    <button class="btn btn-sm btn-outline-primary" 
+                            hx-get="{% url 'messaging:class_schedule_exception_add' schedule.id %}"
+                            hx-target="#exception-modal"
+                            data-bs-toggle="modal"
+                            data-bs-target="#exception-modal">
+                        <i class="bi bi-plus-circle"></i> Add Exception
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Reason</th>
+                                    <th>Added By</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for exception in exceptions %}
+                                    <tr>
+                                        <td>{{ exception.exception_date|date:"M d, Y" }}</td>
+                                        <td>{{ exception.reason }}</td>
+                                        <td>{{ exception.added_by.get_full_name }}</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-danger" 
+                                                    hx-post="{% url 'messaging:class_schedule_exception_remove' exception.id %}"
+                                                    hx-confirm="Remove this exception?">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted">No exceptions</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-md-4">
+            <!-- Schedule Statistics -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Schedule Statistics</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6 mb-3">
+                            <div class="display-6 text-primary">{{ total_sessions }}</div>
+                            <div class="small text-muted">Total Sessions</div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="display-6 text-success">{{ completed_sessions }}</div>
+                            <div class="small text-muted">Completed</div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="display-6 text-warning">{{ upcoming_sessions.count }}</div>
+                            <div class="small text-muted">Upcoming</div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="display-6 text-info">{{ cancelled_sessions }}</div>
+                            <div class="small text-muted">Cancelled</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Attendance Overview -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Attendance Overview</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="small">Average Attendance</span>
+                            <span class="small fw-bold">{{ avg_attendance }}%</span>
+                        </div>
+                        <div class="progress" style="height: 10px;">
+                            <div class="progress-bar bg-success" style="width: {{ avg_attendance }}%"></div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="small">Total Attendees</span>
+                            <span class="small fw-bold">{{ total_attendees }}</span>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="small">Best Session</span>
+                            <span class="small fw-bold">{{ best_session_attendance }}%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Quick Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-primary btn-sm" 
+                                hx-get="{% url 'messaging:class_schedule_sync' schedule.id %}"
+                                hx-confirm="Sync this schedule with your calendar?">
+                            <i class="bi bi-arrow-repeat"></i> Sync Calendar
+                        </button>
+                        <button class="btn btn-outline-primary btn-sm" 
+                                hx-get="{% url 'messaging:class_schedule_notify' schedule.id %}"
+                                hx-confirm="Send reminder to all participants?">
+                            <i class="bi bi-envelope"></i> Send Reminders
+                        </button>
+                        <button class="btn btn-outline-primary btn-sm" 
+                                hx-get="{% url 'messaging:class_schedule_export' schedule.id %}">
+                            <i class="bi bi-download"></i> Export Schedule
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Participants Summary -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Regular Participants</h6>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        {% for participant in regular_participants %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                <div class="d-flex align-items-center">
+                                    <img src="{{ participant.user.profile_picture.url|default:'/static/images/default-avatar.png' }}" 
+                                         class="rounded-circle me-2" width="30" height="30" alt="{{ participant.user.get_full_name }}">
+                                    <div>
+                                        <div class="fw-semibold">{{ participant.user.get_full_name }}</div>
+                                        <small class="text-muted">{{ participant.attendance_count }} sessions</small>
+                                    </div>
+                                </div>
+                                <span class="badge bg-primary rounded-pill">{{ participant.attendance_percentage }}%</span>
+                            </div>
+                        {% empty %}
+                            <p class="text-muted text-center">No regular participants yet</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Exception Modal -->
+<div class="modal fade" id="exception-modal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <!-- Content will be loaded via HTMX -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Calendar view implementation
+        const calendarContainer = document.getElementById('calendar-container');
+        if (calendarContainer) {
+            // Initialize calendar with schedule data
+            // This would typically use a library like FullCalendar
+            // For now, we'll just show a placeholder
+            calendarContainer.innerHTML = '<p class="text-center text-muted">Calendar view will be implemented here</p>';
+        }
+        
+        // Week navigation
+        let currentWeekOffset = 0;
+        
+        document.getElementById('prev-week')?.addEventListener('click', function() {
+            currentWeekOffset--;
+            loadSessionsForWeek(currentWeekOffset);
+        });
+        
+        document.getElementById('next-week')?.addEventListener('click', function() {
+            currentWeekOffset++;
+            loadSessionsForWeek(currentWeekOffset);
+        });
+        
+        document.getElementById('current-week')?.addEventListener('click', function() {
+            currentWeekOffset = 0;
+            loadSessionsForWeek(currentWeekOffset);
+        });
+        
+        function loadSessionsForWeek(weekOffset) {
+            // This would typically make an AJAX request to load sessions for the specified week
+            // For now, we'll just reload the page
+            window.location.reload();
+        }
+    });
+</script>
+{% endblock %}

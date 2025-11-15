@@ -1,0 +1,78 @@
+{% load ui_tags %}
+<div class="rating-container {{ container_class|default:'' }}" 
+     {% if not readonly %}x-data="ratingComponent({{ value|default:0 }}, {{ max_rating|default:5 }})"{% endif %}>
+    
+    {% for i in "12345"|make_list %}
+        {% with forloop.counter0 as star_index %}
+            <span class="rating-star {{ star_class|default:'' }}"
+                  {% if not readonly %}
+                      @click="setRating({{ star_index }} + 1)"
+                      @mouseenter="hoverRating = {{ star_index }} + 1"
+                      @mouseleave="hoverRating = 0"
+                  {% endif %}>
+                
+                {% if star_index < value %}
+                    <i class="bi bi-star-fill text-warning"></i>
+                {% else %}
+                    <i class="bi bi-star text-warning"></i>
+                {% endif %}
+                
+                {% if not readonly %}
+                    <i class="bi bi-star-fill text-warning" 
+                       x-show="hoverRating > {{ star_index }}"
+                       x-transition></i>
+                {% endif %}
+            </span>
+        {% endwith %}
+    {% endfor %}
+    
+    {% if show_value %}
+        <span class="rating-value {{ value_class|default:'ms-2' }}">
+            {{ value|default:0 }} / {{ max_rating|default:5 }}
+        </span>
+    {% endif %}
+</div>
+
+<style>
+.rating-container {
+    display: flex;
+    align-items: center;
+}
+
+.rating-star {
+    cursor: pointer;
+    font-size: 1.2rem;
+    transition: transform 0.2s;
+    position: relative;
+}
+
+.rating-star:hover {
+    transform: scale(1.1);
+}
+
+.rating-star i {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.rating-value {
+    font-weight: 500;
+    color: var(--secondary-color);
+}
+</style>
+
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('ratingComponent', (initialValue, maxRating) => ({
+        rating: initialValue,
+        hoverRating: 0,
+        maxRating: maxRating,
+        
+        setRating(value) {
+            this.rating = value;
+            this.$dispatch('rating-changed', { rating: value });
+        }
+    }));
+});
+</script>

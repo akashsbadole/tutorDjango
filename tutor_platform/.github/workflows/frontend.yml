@@ -1,0 +1,255 @@
+name: Frontend Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  javascript-tests:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: |
+        npm install
+
+    - name: Run JavaScript unit tests
+      run: |
+        npm test
+
+    - name: Run JavaScript linting
+      run: |
+        npm run lint
+
+    - name: Run JavaScript code formatting check
+      run: |
+        npm run format:check
+
+    - name: Upload test coverage
+      uses: actions/upload-artifact@v3
+      with:
+        name: js-coverage
+        path: coverage/
+
+  browser-tests:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-django selenium webdriver-manager
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install Node.js dependencies
+      run: |
+        npm install
+
+    - name: Install browser dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y firefox chromium-browser
+
+    - name: Run Django frontend tests
+      run: |
+        python manage.py test tests.frontend --settings=tutor_platform.test_settings --verbosity=2
+
+    - name: Run HTMX interaction tests
+      run: |
+        python manage.py test tests.frontend.test_frontend::HTMXInteractionTest --settings=tutor_platform.test_settings
+
+    - name: Run Alpine.js component tests
+      run: |
+        python manage.py test tests.frontend.test_frontend::AlpineJSComponentTest --settings=tutor_platform.test_settings
+
+    - name: Run form validation tests
+      run: |
+        python manage.py test tests.frontend.test_frontend::FormValidationTest --settings=tutor_platform.test_settings
+
+    - name: Upload browser test results
+      uses: actions/upload-artifact@v3
+      with:
+        name: browser-test-results
+        path: test_results/
+
+  mobile-tests:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-django selenium webdriver-manager
+
+    - name: Install browser dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y firefox chromium-browser
+
+    - name: Run mobile compatibility tests
+      run: |
+        python manage.py test tests.frontend.test_mobile --settings=tutor_platform.test_settings --verbosity=2
+
+    - name: Run responsive design tests
+      run: |
+        python manage.py test tests.frontend.test_mobile::ResponsiveDesignTest --settings=tutor_platform.test_settings
+
+    - name: Run touch interaction tests
+      run: |
+        python manage.py test tests.frontend.test_mobile::TouchInteractionTest --settings=tutor_platform.test_settings
+
+    - name: Upload mobile test results
+      uses: actions/upload-artifact@v3
+      with:
+        name: mobile-test-results
+        path: mobile_test_results/
+
+  accessibility-tests:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-django selenium webdriver-manager axe-selenium-python
+
+    - name: Install browser dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y firefox chromium-browser
+
+    - name: Run accessibility tests
+      run: |
+        python manage.py test tests.frontend.test_frontend::AccessibilityTest --settings=tutor_platform.test_settings --verbosity=2
+
+    - name: Run WCAG compliance tests
+      run: |
+        python manage.py test tests.frontend.test_frontend::WCAGComplianceTest --settings=tutor_platform.test_settings
+
+    - name: Run screen reader tests
+      run: |
+        python manage.py test tests.frontend.test_frontend::ScreenReaderTest --settings=tutor_platform.test_settings
+
+    - name: Upload accessibility test results
+      uses: actions/upload-artifact@v3
+      with:
+        name: accessibility-test-results
+        path: accessibility_test_results/
+
+  cross-browser-tests:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        browser: [chrome, firefox, edge]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-django selenium webdriver-manager
+
+    - name: Install browser dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y firefox chromium-browser
+
+    - name: Run cross-browser tests
+      run: |
+        python manage.py test tests.frontend.test_frontend::CrossBrowserTest --settings=tutor_platform.test_settings --browser=${{ matrix.browser }}
+      env:
+        BROWSER: ${{ matrix.browser }}
+
+    - name: Upload cross-browser test results
+      uses: actions/upload-artifact@v3
+      with:
+        name: cross-browser-test-results-${{ matrix.browser }}
+        path: cross_browser_test_results_${{ matrix.browser }}/
+
+  visual-regression:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-django selenium webdriver-manager percy
+
+    - name: Install browser dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y firefox chromium-browser
+
+    - name: Run visual regression tests
+      run: |
+        python manage.py test tests.frontend.test_frontend::VisualRegressionTest --settings=tutor_platform.test_settings --verbosity=2
+      env:
+        PERCY_TOKEN: ${{ secrets.PERCY_TOKEN }}
+
+    - name: Upload visual regression results
+      uses: actions/upload-artifact@v3
+      with:
+        name: visual-regression-results
+        path: visual_regression_results/

@@ -1,0 +1,480 @@
+{% load ui_tags %}
+<!-- Enhanced Pagination Component -->
+{% if pagination and pagination.num_pages > 1 %}
+<nav aria-label="Page navigation" 
+     class="pagination-container {{ container_class|default:'' }}"
+     {% if pagination_id %}id="{{ pagination_id }}"{% endif %}
+     x-data="paginationComponent('{{ pagination_id|default:'pagination' }}', {{ pagination.number|default:1 }}, {{ pagination.paginator.num_pages|default:1 }})">
+    
+    <!-- Pagination Info -->
+    {% if show_info|default:true %}
+    <div class="pagination-info d-flex justify-content-between align-items-center mb-3">
+        <div class="pagination-summary text-muted">
+            Showing 
+            <span class="fw-semibold">{{ pagination.start_index }}</span> 
+            to 
+            <span class="fw-semibold">{{ pagination.end_index }}</span> 
+            of 
+            <span class="fw-semibold">{{ pagination.paginator.count }}</span> 
+            entries
+        </div>
+        
+        <!-- Page Size Selector -->
+        {% if show_per_page|default:false %}
+        <div class="page-size-selector d-flex align-items-center">
+            <label for="per-page-select-{{ pagination_id|default:'pagination' }}" class="form-label me-2 mb-0">Show:</label>
+            <select id="per-page-select-{{ pagination_id|default:'pagination' }}"
+                    class="form-select form-select-sm" 
+                    style="width: auto;"
+                    x-model="pageSize"
+                    @change="changePageSize()">
+                <option value="10" {% if request.GET.per_page == '10' %}selected{% endif %}>10</option>
+                <option value="25" {% if request.GET.per_page == '25' or not request.GET.per_page %}selected{% endif %}>25</option>
+                <option value="50" {% if request.GET.per_page == '50' %}selected{% endif %}>50</option>
+                <option value="100" {% if request.GET.per_page == '100' %}selected{% endif %}>100</option>
+            </select>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    <!-- Pagination Controls -->
+    <ul class="pagination {{ pagination_class|default:'justify-content-center' }}"
+        :class="{
+            'pagination-sm': size === 'sm',
+            'pagination-lg': size === 'lg'
+        }">
+        
+        <!-- First Page -->
+        <li class="page-item" :class="{ 'disabled': currentPage === 1 }">
+            <button class="page-link" 
+                    @click="goToPage(1)"
+                    :disabled="currentPage === 1"
+                    aria-label="First page">
+                <i class="bi bi-chevron-double-left" aria-hidden="true"></i>
+                <span class="d-none d-sm-inline ms-1">First</span>
+            </button>
+        </li>
+        
+        <!-- Previous -->
+        <li class="page-item" :class="{ 'disabled': currentPage === 1 }">
+            <button class="page-link" 
+                    @click="goToPage(currentPage - 1)"
+                    :disabled="currentPage === 1"
+                    aria-label="Previous page">
+                <i class="bi bi-chevron-left" aria-hidden="true"></i>
+                <span class="d-none d-sm-inline ms-1">Previous</span>
+            </button>
+        </li>
+        
+        <!-- Page Numbers -->
+        <template x-for="page in visiblePages" :key="page">
+            <!-- Ellipsis -->
+            <li class="page-item disabled" x-show="page === '...'">
+                <span class="page-link">...</span>
+            </li>
+            
+            <!-- Regular Page -->
+            <li class="page-item" 
+                :class="{ 'active': page === currentPage }"
+                x-show="page !== '...'">
+                <button class="page-link" 
+                        @click="goToPage(page)"
+                        :aria-current="page === currentPage ? 'page' : null"
+                        :aria-label="`Page ${page}`">
+                    <span x-text="page"></span>
+                </button>
+            </li>
+        </template>
+        
+        <!-- Next -->
+        <li class="page-item" :class="{ 'disabled': currentPage === totalPages }">
+            <button class="page-link" 
+                    @click="goToPage(currentPage + 1)"
+                    :disabled="currentPage === totalPages"
+                    aria-label="Next page">
+                <span class="d-none d-sm-inline me-1">Next</span>
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+            </button>
+        </li>
+        
+        <!-- Last Page -->
+        <li class="page-item" :class="{ 'disabled': currentPage === totalPages }">
+            <button class="page-link" 
+                    @click="goToPage(totalPages)"
+                    :disabled="currentPage === totalPages"
+                    aria-label="Last page">
+                <span class="d-none d-sm-inline me-1">Last</span>
+                <i class="bi bi-chevron-double-right" aria-hidden="true"></i>
+            </button>
+        </li>
+    </ul>
+    
+    <!-- Jump to Page -->
+    {% if show_jump|default:false %}
+    <div class="pagination-jump mt-3 d-flex align-items-center justify-content-center">
+        <span class="me-2">Go to page:</span>
+        <input type="number" 
+               class="form-control form-control-sm" 
+               style="width: 80px;"
+               x-model="jumpToPage"
+               @keyup.enter="jumpToPageNumber()"
+               :min="1"
+               :max="totalPages">
+        <button class="btn btn-sm btn-outline-primary ms-2" 
+                @click="jumpToPageNumber()"
+                :disabled="!jumpToPage || jumpToPage < 1 || jumpToPage > totalPages">
+            Go
+        </button>
+    </div>
+    {% endif %}
+    
+    <!-- Loading Indicator -->
+    {% if ajax %}
+    <div class="htmx-indicator text-center mt-3" x-show="loading" x-transition>
+        <div class="spinner-border spinner-border-sm" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+    {% endif %}
+</nav>
+{% endif %}
+
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('paginationComponent', (paginationId, currentPage = 1, totalPages = 1) => ({
+        currentPage: currentPage,
+        totalPages: totalPages,
+        pageSize: {{ request.GET.per_page|default:25 }},
+        jumpToPage: null,
+        loading: false,
+        maxVisiblePages: {{ max_visible_pages|default:5 }},
+        
+        get visiblePages() {
+            const pages = [];
+            const { currentPage, totalPages, maxVisiblePages } = this;
+            
+            if (totalPages <= maxVisiblePages) {
+                // Show all pages if total is less than max visible
+                for (let i = 1; i <= totalPages; i++) {
+                    pages.push(i);
+                }
+            } else {
+                // Calculate range around current page
+                const half = Math.floor(maxVisiblePages / 2);
+                let start = Math.max(1, currentPage - half);
+                let end = Math.min(totalPages, start + maxVisiblePages - 1);
+                
+                // Adjust start if we're near the end
+                if (end - start + 1 < maxVisiblePages) {
+                    start = Math.max(1, end - maxVisiblePages + 1);
+                }
+                
+                // Add first page and ellipsis if needed
+                if (start > 1) {
+                    pages.push(1);
+                    if (start > 2) {
+                        pages.push('...');
+                    }
+                }
+                
+                // Add visible pages
+                for (let i = start; i <= end; i++) {
+                    pages.push(i);
+                }
+                
+                // Add ellipsis and last page if needed
+                if (end < totalPages) {
+                    if (end < totalPages - 1) {
+                        pages.push('...');
+                    }
+                    pages.push(totalPages);
+                }
+            }
+            
+            return pages;
+        },
+        
+        goToPage(page) {
+            if (page < 1 || page > totalPages || page === currentPage) {
+                return;
+            }
+            
+            this.currentPage = page;
+            this.updateURL();
+            
+            // Emit page change event
+            this.$dispatch('pagination-changed', {
+                paginationId: paginationId,
+                page: page,
+                pageSize: this.pageSize
+            });
+        },
+        
+        changePageSize() {
+            // Reset to first page when changing page size
+            this.currentPage = 1;
+            this.updateURL();
+            
+            // Emit page size change event
+            this.$dispatch('pagination-page-size-changed', {
+                paginationId: paginationId,
+                pageSize: this.pageSize
+            });
+        },
+        
+        jumpToPageNumber() {
+            const page = parseInt(this.jumpToPage);
+            if (page >= 1 && page <= totalPages) {
+                this.goToPage(page);
+                this.jumpToPage = null;
+            }
+        },
+        
+        updateURL() {
+            // Update URL parameters
+            const url = new URL(window.location);
+            url.searchParams.set('page', this.currentPage);
+            url.searchParams.set('per_page', this.pageSize);
+            
+            {% if ajax %}
+            // For AJAX pagination
+            this.loading = true;
+            htmx.ajax('GET', url.toString(), {
+                target: '{{ ajax_target|default:"#content" }}',
+                swap: 'innerHTML',
+                select: '#content'
+            }).then(() => {
+                this.loading = false;
+            });
+            {% else %}
+            // For regular pagination
+            window.history.pushState({}, '', url);
+            
+            // Trigger custom event for other listeners
+            this.$dispatch('url-updated', {
+                page: this.currentPage,
+                pageSize: this.pageSize
+            });
+            {% endif %}
+        },
+        
+        init() {
+            // Get initial values from URL parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            const pageParam = urlParams.get('page');
+            const pageSizeParam = urlParams.get('per_page');
+            
+            if (pageParam) {
+                this.currentPage = parseInt(pageParam);
+            }
+            
+            if (pageSizeParam) {
+                this.pageSize = parseInt(pageSizeParam);
+            }
+            
+            // Listen for browser back/forward
+            window.addEventListener('popstate', () => {
+                const urlParams = new URLSearchParams(window.location.search);
+                const pageParam = urlParams.get('page');
+                const pageSizeParam = urlParams.get('per_page');
+                
+                if (pageParam) {
+                    this.currentPage = parseInt(pageParam);
+                }
+                
+                if (pageSizeParam) {
+                    this.pageSize = parseInt(pageSizeParam);
+                }
+            });
+            
+            // Add loading indicators for AJAX
+            {% if ajax %}
+            document.addEventListener('htmx:beforeRequest', (evt) => {
+                if (evt.target.closest(`#${paginationId}`)) {
+                    this.loading = true;
+                }
+            });
+            
+            document.addEventListener('htmx:afterRequest', (evt) => {
+                if (evt.target.closest(`#${paginationId}`)) {
+                    this.loading = false;
+                }
+            });
+            {% endif %}
+        }
+    }));
+});
+</script>
+
+<style>
+/* Pagination Container */
+.pagination-container {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Pagination Info */
+.pagination-info {
+    font-size: var(--font-size-sm);
+}
+
+.pagination-summary {
+    color: var(--color-text-secondary);
+}
+
+.pagination-summary .fw-semibold {
+    color: var(--color-text-primary);
+}
+
+/* Page Size Selector */
+.page-size-selector .form-select {
+    border-radius: var(--border-radius-sm);
+}
+
+/* Pagination Controls */
+.pagination {
+    margin-bottom: 0;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.pagination .page-link {
+    border: 1px solid var(--color-border-light);
+    color: var(--color-text-primary);
+    background-color: var(--color-bg-primary);
+    padding: var(--space-2) var(--space-3);
+    margin: 0 2px;
+    border-radius: var(--border-radius-sm);
+    transition: var(--transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+}
+
+.pagination .page-link:hover {
+    background-color: var(--color-bg-secondary);
+    border-color: var(--color-border-medium);
+    color: var(--color-primary);
+}
+
+.pagination .page-link:focus {
+    box-shadow: 0 0 0 2px rgba(var(--color-primary), 0.25);
+    outline: none;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+    color: white;
+}
+
+.pagination .page-item.disabled .page-link {
+    background-color: var(--color-bg-secondary);
+    border-color: var(--color-border-light);
+    color: var(--color-text-muted);
+    cursor: not-allowed;
+}
+
+/* Pagination Size Variants */
+.pagination-sm .page-link {
+    padding: var(--space-1) var(--space-2);
+    font-size: var(--font-size-sm);
+    min-width: 32px;
+}
+
+.pagination-lg .page-link {
+    padding: var(--space-3) var(--space-4);
+    font-size: var(--font-size-lg);
+    min-width: 48px;
+}
+
+/* Jump to Page */
+.pagination-jump {
+    font-size: var(--font-size-sm);
+}
+
+.pagination-jump .form-control {
+    border-radius: var(--border-radius-sm);
+}
+
+/* Loading Indicator */
+.htmx-indicator {
+    transition: opacity 0.3s ease;
+}
+
+/* Responsive Design */
+@media (max-width: 576px) {
+    .pagination-info {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-2);
+    }
+    
+    .pagination {
+        justify-content: center;
+    }
+    
+    .pagination .page-link {
+        margin: 1px;
+        min-width: 36px;
+    }
+    
+    .pagination-jump {
+        flex-direction: column;
+        gap: var(--space-2);
+    }
+    
+    .pagination-jump .form-control {
+        width: 100% !important;
+    }
+}
+
+/* Dark Mode Adjustments */
+[data-theme="dark"] .pagination .page-link {
+    background-color: var(--color-bg-secondary);
+    border-color: var(--color-border-medium);
+    color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .pagination .page-link:hover {
+    background-color: var(--color-bg-tertiary);
+    border-color: var(--color-border-dark);
+}
+
+[data-theme="dark"] .pagination .page-item.active .page-link {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+}
+
+[data-theme="dark"] .pagination .page-item.disabled .page-link {
+    background-color: var(--color-bg-tertiary);
+    border-color: var(--color-border-medium);
+    color: var(--color-text-muted);
+}
+
+/* Accessibility */
+.pagination .page-link:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+    .pagination .page-link {
+        border-width: 2px;
+    }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+    .pagination .page-link {
+        transition: none;
+    }
+    
+    .htmx-indicator {
+        transition: none;
+    }
+}
+</style>

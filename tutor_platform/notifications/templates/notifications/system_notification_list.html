@@ -1,0 +1,57 @@
+{% extends "notifications/base.html" %}
+{% load static %}
+
+{% block notification_content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>System Notifications</h2>
+    <span class="badge bg-info">{{ system_notifications|length }}</span>
+</div>
+
+{% if system_notifications %}
+    <div class="list-group">
+        {% for notification in system_notifications %}
+        <div class="list-group-item system-notification {% if notification.priority == 'HIGH' %}border-danger{% elif notification.priority == 'MEDIUM' %}border-warning{% else %}border-info{% endif %}">
+            <div class="d-flex justify-content-between align-items-start">
+                <div class="flex-grow-1">
+                    <h5 class="mb-1">
+                        {{ notification.title }}
+                        <span class="badge bg-{{ notification.priority|lower }} ms-2">{{ notification.priority }}</span>
+                    </h5>
+                    <p class="mb-2">{{ notification.message }}</p>
+                    
+                    {% if notification.action_url and notification.action_text %}
+                    <div class="mt-2">
+                        <a href="{{ notification.action_url }}" class="btn btn-sm btn-primary">
+                            {{ notification.action_text }}
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="ms-3">
+                    {% if notification.is_dismissible %}
+                    <button type="button" class="btn btn-sm btn-outline-secondary dismiss-notification-btn" 
+                            data-notification-id="{{ notification.id }}">
+                        <i class="fas fa-times"></i>
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="text-muted small mt-2">
+                <i class="fas fa-clock me-1"></i>
+                Posted {{ notification.created_at|timesince }} ago
+                {% if notification.end_time %}
+                | Expires {{ notification.end_time|timesince }} ago
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>
+        No system notifications at this time.
+    </div>
+{% endif %}
+{% endblock %}

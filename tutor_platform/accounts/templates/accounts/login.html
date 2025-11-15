@@ -1,0 +1,165 @@
+{% extends 'ui_components/base.html' %}
+{% load ui_tags static %}
+
+{% block title %}Login - Django Tutor Platform{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow-lg border-0" x-data="{ submitting: false }">
+            <div class="card-body p-4 p-md-5">
+                <div class="text-center mb-4">
+                    <i class="bi bi-mortarboard-fill text-primary" style="font-size: 3rem;"></i>
+                    <h3 class="mt-2">Welcome Back</h3>
+                    <p class="text-muted">Sign in to your account</p>
+                </div>
+
+                <form method="post" 
+                      hx-post="{% url 'accounts:login' %}" 
+                      hx-target="#form-result" 
+                      hx-swap="innerHTML"
+                      hx-indicator=".htmx-indicator"
+                      @submit="submitting = true">
+                    {% csrf_token %}
+                    
+                    <div id="form-result"></div>
+                    
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username or Email</label>
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="bi bi-person"></i>
+                            </span>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="username" 
+                                   name="username" 
+                                   placeholder="Enter your username or email"
+                                   required
+                                   autocomplete="username"
+                                   x-init="$el.focus()">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="bi bi-lock"></i>
+                            </span>
+                            <input type="password" 
+                                   class="form-control" 
+                                   id="password" 
+                                   name="password" 
+                                   placeholder="Enter your password"
+                                   required
+                                   autocomplete="current-password">
+                            <button type="button" 
+                                    class="btn btn-outline-secondary" 
+                                    @click="$el.previousElementSibling.type = $el.previousElementSibling.type === 'password' ? 'text' : 'password'">
+                                <i class="bi" :class="$el.previousElementSibling.type === 'password' ? 'bi-eye' : 'bi-eye-slash'"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="remember" name="remember">
+                        <label class="form-check-label" for="remember">Remember me for 30 days</label>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" 
+                                class="btn btn-primary btn-lg"
+                                :disabled="submitting">
+                            <span class="htmx-indicator spinner-border spinner-border-sm me-2" role="status"></span>
+                            <span x-show="!submitting">Sign In</span>
+                            <span x-show="submitting" class="d-flex align-items-center">
+                                <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                Signing in...
+                            </span>
+                        </button>
+                    </div>
+
+                    <div class="text-center mt-4">
+                        <a href="{% url 'accounts:password_reset' %}" class="text-decoration-none">
+                            <i class="bi bi-question-circle me-1"></i>Forgot password?
+                        </a>
+                    </div>
+                </form>
+
+                <hr class="my-4">
+
+                <div class="text-center">
+                    <p class="mb-0">Don't have an account? 
+                        <a href="{% url 'accounts:signup' %}" class="text-decoration-none fw-bold">
+                            <i class="bi bi-person-plus me-1"></i>Sign up
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Social Login Section -->
+<div class="row justify-content-center mt-3">
+    <div class="col-md-6 col-lg-5">
+        <div class="card border-0">
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <p class="text-muted mb-0">Or continue with</p>
+                </div>
+                
+                <div class="d-grid gap-2">
+                    <button type="button" class="btn btn-outline-primary">
+                        <i class="bi bi-google me-2"></i>Google
+                    </button>
+                    <button type="button" class="btn btn-outline-primary">
+                        <i class="bi bi-facebook me-2"></i>Facebook
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('htmx:afterRequest', function(evt) {
+    // Handle login response
+    if (evt.detail.successful) {
+        try {
+            const response = JSON.parse(evt.detail.xhr.response);
+            if (response.redirect) {
+                window.location.href = response.redirect;
+            } else if (response.error) {
+                // Show error message
+                const formResult = document.getElementById('form-result');
+                if (formResult) {
+                    formResult.innerHTML = `
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                <div>${response.error}</div>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+        } catch (e) {
+            // If response is not JSON, check if it's a redirect
+            if (evt.detail.xhr.responseURL && evt.detail.xhr.status === 200) {
+                window.location.href = '{% url "accounts:home" %}';
+            }
+        }
+    }
+    
+    // Reset submitting state
+    if (evt.detail.target && evt.detail.target.tagName === 'FORM') {
+        evt.detail.target._x_dataStack && evt.detail.target._x_dataStack[0].submitting = false;
+    }
+});
+</script>
+{% endblock %}

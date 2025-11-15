@@ -1,0 +1,474 @@
+{% extends "search/base.html" %}
+{% load static %}
+
+{% block title %}Saved Searches{% endblock %}
+
+{% block search_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4>My Saved Searches</h4>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createSearchModal">
+        <i class="fas fa-plus me-1"></i> Create New Search
+    </button>
+</div>
+
+<!-- Saved Searches List -->
+{% if saved_searches %}
+<div class="row">
+    {% for search in saved_searches %}
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">{{ search.name }}</h5>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-ellipsis-v"></i>
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li>
+                            <a class="dropdown-item" href="{% url 'search:run_saved' search.id %}">
+                                <i class="fas fa-play me-1"></i> Run Search
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#editSearchModal{{ search.id }}">
+                                <i class="fas fa-edit me-1"></i> Edit
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#deleteSearchModal{{ search.id }}">
+                                <i class="fas fa-trash me-1"></i> Delete
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#shareSearchModal{{ search.id }}">
+                                <i class="fas fa-share me-1"></i> Share
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="card-body">
+                <p class="card-text">{{ search.description|default:"No description" }}</p>
+                
+                <!-- Search Details -->
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <small class="text-muted">Content Type</small>
+                        <div class="fw-bold">
+                            {% if search.content_type.model == 'user' %}
+                            Tutors
+                            {% elif search.content_type.model == 'requirement' %}
+                            Requirements
+                            {% elif search.content_type.model == 'message' %}
+                            Messages
+                            {% elif search.content_type.model == 'payment' %}
+                            Payments
+                            {% else %}
+                            All Content
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted">Created</small>
+                        <div class="fw-bold">{{ search.created_at|date:"M d, Y" }}</div>
+                    </div>
+                </div>
+                
+                <!-- Search Query Preview -->
+                <div class="mb-3">
+                    <small class="text-muted">Search Query</small>
+                    <div class="bg-light p-2 rounded">
+                        <code>{{ search.query|default:"All results" }}</code>
+                    </div>
+                </div>
+                
+                <!-- Filters Preview -->
+                {% if search.filters %}
+                <div class="mb-3">
+                    <small class="text-muted">Active Filters</small>
+                    <div class="d-flex flex-wrap gap-1">
+                        {% for key, value in search.filters.items %}
+                        <span class="badge bg-secondary">{{ key }}: {{ value }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Notification Settings -->
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        {% if search.email_notifications %}
+                        <span class="badge bg-success">
+                            <i class="fas fa-bell me-1"></i>Email notifications ON
+                        </span>
+                        {% else %}
+                        <span class="badge bg-secondary">
+                            <i class="fas fa-bell-slash me-1"></i>Email notifications OFF
+                        </span>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <small class="text-muted">Last run: {{ search.last_run|date:"M d, Y"|default:"Never" }}</small>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent">
+                <a href="{% url 'search:run_saved' search.id %}" class="btn btn-primary w-100">
+                    <i class="fas fa-search me-1"></i> Run This Search
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Edit Modal -->
+    <div class="modal fade" id="editSearchModal{{ search.id }}" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Saved Search</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="edit-search-form-{{ search.id }}">
+                        <div class="mb-3">
+                            <label for="edit-name-{{ search.id }}" class="form-label">Search Name</label>
+                            <input type="text" class="form-control" id="edit-name-{{ search.id }}" 
+                                   value="{{ search.name }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-description-{{ search.id }}" class="form-label">Description</label>
+                            <textarea class="form-control" id="edit-description-{{ search.id }}" rows="3">{{ search.description }}</textarea>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" 
+                                       id="edit-notifications-{{ search.id }}" 
+                                       {% if search.email_notifications %}checked{% endif %}>
+                                <label class="form-check-label" for="edit-notifications-{{ search.id }}">
+                                    Email me when new results match this search
+                                </label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" 
+                            onclick="updateSavedSearch({{ search.id }})">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade" id="deleteSearchModal{{ search.id }}" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Delete Saved Search</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete the saved search "<strong>{{ search.name }}</strong>"?</p>
+                    <p class="text-muted">This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" 
+                            onclick="deleteSavedSearch({{ search.id }})">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Share Modal -->
+    <div class="modal fade" id="shareSearchModal{{ search.id }}" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Share Saved Search</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="share-link-{{ search.id }}" class="form-label">Share Link</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="share-link-{{ search.id }}" 
+                                   value="{{ request.build_absolute_uri }}{% url 'search:run_saved' search.id %}" readonly>
+                            <button class="btn btn-outline-secondary" type="button" 
+                                    onclick="copyShareLink({{ search.id }})">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="share-email-{{ search.id }}" class="form-label">Email to</label>
+                        <input type="email" class="form-control" id="share-email-{{ search.id }}" 
+                               placeholder="Enter email address">
+                    </div>
+                    <div class="mb-3">
+                        <label for="share-message-{{ search.id }}" class="form-label">Message (optional)</label>
+                        <textarea class="form-control" id="share-message-{{ search.id }}" rows="3"
+                                  placeholder="Check out this saved search I found..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" 
+                            onclick="shareSavedSearch({{ search.id }})">Share</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<!-- No Saved Searches -->
+<div class="text-center py-5">
+    <i class="fas fa-bookmark fa-3x text-muted mb-3"></i>
+    <h4>No Saved Searches</h4>
+    <p class="text-muted">You haven't saved any searches yet. Save a search to get notified when new results match your criteria.</p>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createSearchModal">
+        <i class="fas fa-plus me-1"></i> Create Your First Saved Search
+    </button>
+</div>
+{% endif %}
+
+<!-- Create Search Modal -->
+<div class="modal fade" id="createSearchModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Create New Saved Search</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="create-search-form">
+                    <div class="mb-3">
+                        <label for="create-name" class="form-label">Search Name</label>
+                        <input type="text" class="form-control" id="create-name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="create-description" class="form-label">Description</label>
+                        <textarea class="form-control" id="create-description" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="create-query" class="form-label">Search Query</label>
+                        <input type="text" class="form-control" id="create-query" placeholder="Keywords to search for">
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="create-notifications">
+                            <label class="form-check-label" for="create-notifications">
+                                Email me when new results match this search
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="createSavedSearch()">Create</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Copy share link to clipboard
+    function copyShareLink(searchId) {
+        const input = document.getElementById(`share-link-${searchId}`);
+        input.select();
+        document.execCommand('copy');
+        
+        // Show feedback
+        const button = event.target.closest('button');
+        const originalText = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-check"></i> Copied!';
+        button.classList.remove('btn-outline-secondary');
+        button.classList.add('btn-success');
+        
+        setTimeout(() => {
+            button.innerHTML = originalText;
+            button.classList.remove('btn-success');
+            button.classList.add('btn-outline-secondary');
+        }, 2000);
+    }
+    
+    // Update saved search
+    function updateSavedSearch(searchId) {
+        const name = document.getElementById(`edit-name-${searchId}`).value;
+        const description = document.getElementById(`edit-description-${searchId}`).value;
+        const notifications = document.getElementById(`edit-notifications-${searchId}`).checked;
+        
+        fetch(`/search/api/saved-searches/${searchId}/`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                name: name,
+                description: description,
+                email_notifications: notifications
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                bootstrap.Modal.getInstance(document.getElementById(`editSearchModal${searchId}`)).hide();
+                showAlert('Search updated successfully!', 'success');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showAlert('Error updating search: ' + data.error, 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error updating search:', error);
+            showAlert('Error updating search', 'danger');
+        });
+    }
+    
+    // Delete saved search
+    function deleteSavedSearch(searchId) {
+        fetch(`/search/api/saved-searches/${searchId}/`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                bootstrap.Modal.getInstance(document.getElementById(`deleteSearchModal${searchId}`)).hide();
+                showAlert('Search deleted successfully!', 'success');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showAlert('Error deleting search: ' + data.error, 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error deleting search:', error);
+            showAlert('Error deleting search', 'danger');
+        });
+    }
+    
+    // Share saved search
+    function shareSavedSearch(searchId) {
+        const email = document.getElementById(`share-email-${searchId}`).value;
+        const message = document.getElementById(`share-message-${searchId}`).value;
+        
+        if (!email) {
+            showAlert('Please enter an email address', 'warning');
+            return;
+        }
+        
+        fetch(`/search/api/saved-searches/${searchId}/share/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                email: email,
+                message: message
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                bootstrap.Modal.getInstance(document.getElementById(`shareSearchModal${searchId}`)).hide();
+                showAlert('Search shared successfully!', 'success');
+            } else {
+                showAlert('Error sharing search: ' + data.error, 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error sharing search:', error);
+            showAlert('Error sharing search', 'danger');
+        });
+    }
+    
+    // Create new saved search
+    function createSavedSearch() {
+        const name = document.getElementById('create-name').value;
+        const description = document.getElementById('create-description').value;
+        const query = document.getElementById('create-query').value;
+        const notifications = document.getElementById('create-notifications').checked;
+        
+        if (!name) {
+            showAlert('Please enter a search name', 'warning');
+            return;
+        }
+        
+        fetch('/search/api/saved-searches/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                name: name,
+                description: description,
+                query: query,
+                email_notifications: notifications
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                bootstrap.Modal.getInstance(document.getElementById('createSearchModal')).hide();
+                showAlert('Search created successfully!', 'success');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showAlert('Error creating search: ' + data.error, 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error creating search:', error);
+            showAlert('Error creating search', 'danger');
+        });
+    }
+    
+    // Helper function to get CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
+    // Show alert message
+    function showAlert(message, type) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+        alertDiv.style.top = '20px';
+        alertDiv.style.right = '20px';
+        alertDiv.style.zIndex = '9999';
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        document.body.appendChild(alertDiv);
+        
+        // Auto-dismiss after 5 seconds
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.parentNode.removeChild(alertDiv);
+            }
+        }, 5000);
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,71 @@
+<div class="dropdown-menu dropdown-menu-end" aria-labelledby="notificationDropdown" style="width: 350px; max-height: 400px; overflow-y: auto;">
+    <div class="dropdown-header d-flex justify-content-between align-items-center">
+        <span>Notifications</span>
+        <a href="{% url 'notifications:notification_list' %}" class="text-decoration-none">View All</a>
+    </div>
+    <hr class="dropdown-divider">
+    
+    {% if notifications %}
+        {% for notification in notifications|slice:":5" %}
+            <a class="dropdown-item {% if not notification.is_read %}bg-light{% endif %}" 
+               href="{% url 'notifications:notification_detail' notification.id %}"
+               hx-get="{% url 'notifications:mark_read' notification.id %}"
+               hx-target="#notification-count"
+               hx-swap="innerHTML">
+                <div class="d-flex">
+                    <div class="flex-shrink-0">
+                        {% if notification.notification_type == 'MESSAGE' %}
+                            <i class="bi bi-envelope text-primary"></i>
+                        {% elif notification.notification_type == 'PROPOSAL' %}
+                            <i class="bi bi-clipboard-data text-success"></i>
+                        {% elif notification.notification_type == 'SESSION' %}
+                            <i class="bi bi-calendar-check text-info"></i>
+                        {% elif notification.notification_type == 'PAYMENT' %}
+                            <i class="bi bi-currency-dollar text-warning"></i>
+                        {% elif notification.notification_type == 'REVIEW' %}
+                            <i class="bi bi-star text-warning"></i>
+                        {% else %}
+                            <i class="bi bi-info-circle text-secondary"></i>
+                        {% endif %}
+                    </div>
+                    <div class="flex-grow-1 ms-2">
+                        <div class="d-flex justify-content-between">
+                            <strong>{{ notification.title|truncatechars:30 }}</strong>
+                            <small>{{ notification.created_at|timesince }}</small>
+                        </div>
+                        <small class="text-muted">{{ notification.message|truncatechars:40 }}</small>
+                    </div>
+                </div>
+            </a>
+            {% if not forloop.last %}<hr class="dropdown-divider">{% endif %}
+        {% endfor %}
+        
+        {% if notifications.count > 5 %}
+            <div class="text-center py-2">
+                <a href="{% url 'notifications:notification_list' %}" class="text-decoration-none">
+                    View all {{ notifications.count }} notifications
+                </a>
+            </div>
+        {% endif %}
+    {% else %}
+        <div class="text-center py-4">
+            <i class="bi bi-bell text-muted" style="font-size: 2rem;"></i>
+            <p class="text-muted mt-2">No notifications</p>
+        </div>
+    {% endif %}
+    
+    <hr class="dropdown-divider">
+    <div class="dropdown-item">
+        <div class="d-flex justify-content-between">
+            <a href="{% url 'notifications:preferences' %}" class="text-decoration-none">
+                <i class="bi bi-gear me-1"></i> Settings
+            </a>
+            <button class="btn btn-sm btn-outline-primary" 
+                    hx-post="{% url 'notifications:mark_all_read' %}"
+                    hx-target="#notification-count"
+                    hx-swap="innerHTML">
+                Mark all read
+            </button>
+        </div>
+    </div>
+</div>

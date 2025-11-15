@@ -1,0 +1,199 @@
+name: Performance Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run performance tests daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-django pytest-mock pytest-benchmark
+        pip install py-spy memory-profiler
+
+    - name: Create test data
+      run: |
+        python manage.py generate_test_data --users=50 --requirements=100 --proposals=200 --payments=150
+      env:
+        DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_db
+
+    - name: Run database performance tests
+      run: |
+        python manage.py test tests.performance::DatabasePerformanceTest --settings=tutor_platform.test_settings --benchmark
+      env:
+        DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_db
+
+    - name: Run API performance tests
+      run: |
+        python manage.py test tests.performance::APIPerformanceTest --settings=tutor_platform.test_settings --benchmark
+      env:
+        DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_db
+
+    - name: Run page load performance tests
+      run: |
+        python manage.py test tests.performance::PageLoadPerformanceTest --settings=tutor_platform.test_settings --benchmark
+      env:
+        DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_db
+
+    - name: Run search performance tests
+      run: |
+        python manage.py test tests.performance::SearchPerformanceTest --settings=tutor_platform.test_settings --benchmark
+      env:
+        DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_db
+
+    - name: Run concurrent user load tests
+      run: |
+        python manage.py performance_test --load-test --users=100 --duration=60 --output=load_test_results.json
+      env:
+        DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_db
+
+    - name: Generate performance report
+      run: |
+        python manage.py performance_test --benchmark --output=performance_report.json
+      env:
+        DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_db
+
+    - name: Compare with baseline
+      run: |
+        # Download previous benchmark results
+        curl -L -o baseline.json https://github.com/${{ github.repository }}/releases/download/latest/benchmark.json
+        
+        # Compare current results with baseline
+        python -c "
+import json
+with open('performance_report.json', 'r') as f:
+    current = json.load(f)
+with open('baseline.json', 'r') as f:
+    baseline = json.load(f)
+
+# Compare key metrics
+metrics = ['database_query_time', 'api_response_time', 'page_load_time', 'search_time']
+for metric in metrics:
+    if metric in current and metric in baseline:
+        current_val = current[metric]
+        baseline_val = baseline[metric]
+        change = ((current_val - baseline_val) / baseline_val) * 100
+        status = 'IMPROVED' if change < 0 else 'DEGRADED' if change > 5 else 'STABLE'
+        print(f'{metric}: {current_val:.4f}s (baseline: {baseline_val:.4f}s) - {status} ({change:+.2f}%)')
+        "
+
+    - name: Upload performance report
+      uses: actions/upload-artifact@v3
+      with:
+        name: performance-report
+        path: performance_report.json
+
+    - name: Upload load test results
+      uses: actions/upload-artifact@v3
+      with:
+        name: load-test-results
+        path: load_test_results.json
+
+    - name: Comment on PR with performance changes
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          const performanceReport = JSON.parse(fs.readFileSync('performance_report.json', 'utf8'));
+          
+          // Create performance comment
+          const comment = `
+          ## Performance Test Results
+          
+          | Metric | Current | Status |
+          |--------|---------|--------|
+          | Database Query Time | ${performanceReport.database_query_time || 'N/A'}s | ${performanceReport.database_query_status || 'N/A'} |
+          | API Response Time | ${performanceReport.api_response_time || 'N/A'}s | ${performanceReport.api_response_status || 'N/A'} |
+          | Page Load Time | ${performanceReport.page_load_time || 'N/A'}s | ${performanceReport.page_load_status || 'N/A'} |
+          | Search Time | ${performanceReport.search_time || 'N/A'}s | ${performanceReport.search_status || 'N/A'} |
+          `;
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: comment
+          });
+
+  memory-profiling:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-django memory-profiler
+        pip install -e .
+
+    - name: Run memory profiling
+      run: |
+        mprof run --include-children python -m pytest tests.performance::MemoryUsageTest --settings=tutor_platform.test_settings
+      env:
+        DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_db
+
+    - name: Generate memory profile report
+      run: |
+        mprof plot --output memory_profile.png
+
+    - name: Upload memory profile
+      uses: actions/upload-artifact@v3
+      with:
+        name: memory-profile
+        path: memory_profile.png

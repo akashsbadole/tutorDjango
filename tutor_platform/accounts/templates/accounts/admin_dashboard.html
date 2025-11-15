@@ -1,0 +1,351 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Admin Dashboard - Django Tutor Platform{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3">Admin Dashboard</h1>
+            <p class="text-muted">System Overview and Management</p>
+        </div>
+    </div>
+
+    <!-- System Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ total_users }}</h4>
+                            <p class="card-text">Total Users</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-people" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ total_students }}</h4>
+                            <p class="card-text">Students</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-mortarboard" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ total_tutors }}</h4>
+                            <p class="card-text">Tutors</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-award" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ total_sessions }}</h4>
+                            <p class="card-text">Total Sessions</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-calendar-check" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Financial Overview -->
+    <div class="row mb-4">
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">${{ total_revenue }}</h4>
+                            <p class="card-text">Total Revenue</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-currency-dollar" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">${{ monthly_revenue }}</h4>
+                            <p class="card-text">Monthly Revenue</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-graph-up" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">${{ platform_fees }}</h4>
+                            <p class="card-text">Platform Fees</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-percent" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">${{ pending_payouts }}</h4>
+                            <p class="card-text">Pending Payouts</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-hourglass-split" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Activity -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Recent Activity</h5>
+                    <button class="btn btn-sm btn-outline-primary" 
+                            hx-get="{% url 'accounts:recent_activity' %}"
+                            hx-target="#recent-activity"
+                            hx-trigger="click">
+                        Refresh
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="recent-activity" hx-get="{% url 'accounts:recent_activity' %}" hx-trigger="load">
+                        <div class="text-center">
+                            <div class="spinner-border spinner-border-sm" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">System Health</h5>
+                    <button class="btn btn-sm btn-outline-primary" 
+                            hx-get="{% url 'accounts:system_health' %}"
+                            hx-target="#system-health"
+                            hx-trigger="click">
+                        Check
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="system-health" hx-get="{% url 'accounts:system_health' %}" hx-trigger="load">
+                        <div class="text-center">
+                            <div class="spinner-border spinner-border-sm" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Management Sections -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">User Management</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'admin:accounts_user_changelist' %}" class="btn btn-outline-primary">
+                            <i class="bi bi-people-fill"></i> Manage Users
+                        </a>
+                        <a href="{% url 'admin:accounts_studentprofile_changelist' %}" class="btn btn-outline-primary">
+                            <i class="bi bi-mortarboard-fill"></i> Student Profiles
+                        </a>
+                        <a href="{% url 'admin:accounts_tutorprofile_changelist' %}" class="btn btn-outline-primary">
+                            <i class="bi bi-award-fill"></i> Tutor Profiles
+                        </a>
+                        <a href="{% url 'admin:accounts_subject_changelist' %}" class="btn btn-outline-primary">
+                            <i class="bi bi-book-fill"></i> Subjects
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Content Management</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'admin:requirements_requirement_changelist' %}" class="btn btn-outline-primary">
+                            <i class="bi bi-clipboard-check-fill"></i> Requirements
+                        </a>
+                        <a href="{% url 'admin:requirements_proposal_changelist' %}" class="btn btn-outline-primary">
+                            <i class="bi bi-clipboard-data-fill"></i> Proposals
+                        </a>
+                        <a href="{% url 'admin:requirements_session_changelist' %}" class="btn btn-outline-primary">
+                            <i class="bi bi-calendar-check-fill"></i> Sessions
+                        </a>
+                        <a href="{% url 'admin:messaging_message_changelist' %}" class="btn btn-outline-primary">
+                            <i class="bi bi-envelope-fill"></i> Messages
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Issues/Reports -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Recent Reports & Issues</h5>
+                    <button class="btn btn-sm btn-outline-primary" 
+                            hx-get="{% url 'accounts:recent_reports' %}"
+                            hx-target="#recent-reports"
+                            hx-trigger="click">
+                        Refresh
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="recent-reports" hx-get="{% url 'accounts:recent_reports' %}" hx-trigger="load">
+                        <div class="text-center">
+                            <div class="spinner-border spinner-border-sm" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-2">
+                            <button class="btn btn-primary w-100" 
+                                    hx-get="{% url 'accounts:send_announcement' %}"
+                                    hx-target="#announcement-modal"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#announcement-modal">
+                                <i class="bi bi-megaphone"></i> Send Announcement
+                            </button>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <button class="btn btn-success w-100" 
+                                    hx-get="{% url 'accounts:generate_report' %}"
+                                    hx-target="#report-modal"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#report-modal">
+                                <i class="bi bi-file-earmark-text"></i> Generate Report
+                            </button>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{% url 'paymentsdetails:admin_dashboard' %}" class="btn btn-info w-100">
+                                <i class="bi bi-currency-dollar"></i> Financial Dashboard
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{% url 'admin:index' %}" class="btn btn-secondary w-100">
+                                <i class="bi bi-gear"></i> Admin Panel
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Announcement Modal -->
+<div class="modal fade" id="announcement-modal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <!-- Content will be loaded via HTMX -->
+        </div>
+    </div>
+</div>
+
+<!-- Report Modal -->
+<div class="modal fade" id="report-modal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <!-- Content will be loaded via HTMX -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-refresh dashboard data every 60 seconds
+    setInterval(function() {
+        htmx.trigger(document.body, 'refreshDashboard');
+    }, 60000);
+    
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    });
+</script>
+{% endblock %}

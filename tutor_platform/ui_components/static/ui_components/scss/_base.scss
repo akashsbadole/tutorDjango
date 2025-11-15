@@ -1,0 +1,526 @@
+// =============================================================================
+// Django Tutor Platform - Base Styles
+// =============================================================================
+// This file contains reset styles, base HTML element styling, and typography
+// foundations for the entire platform.
+// =============================================================================
+
+// Import variables first
+@import 'variables';
+
+// -----------------------------------------------------------------------------
+// CSS RESET & NORMALIZE
+// -----------------------------------------------------------------------------
+// Modern CSS reset based on Andy Bell's CSS Reset
+// https://piccalil.li/blog/a-modern-css-reset/
+
+/* Box sizing rules */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Remove default margin and padding */
+* {
+  margin: 0;
+  padding: 0;
+}
+
+/* Remove list styles on ul, ol elements with a list role */
+ul[role='list'],
+ol[role='list'] {
+  list-style: none;
+}
+
+/* Set core root defaults */
+html:focus-within {
+  scroll-behavior: smooth;
+}
+
+/* Set core body defaults */
+body {
+  min-height: 100vh;
+  text-rendering: optimizeSpeed;
+  line-height: $line-height-normal;
+  font-family: $font-family-primary;
+  font-size: $font-size-base;
+  color: $color-text-primary;
+  background-color: $color-bg-primary;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* A elements that don't have a class get default styles */
+a:not([class]) {
+  text-decoration-skip-ink: auto;
+  color: $color-primary;
+  
+  &:hover {
+    color: darken($color-primary, 10%);
+  }
+}
+
+/* Make images easier to work with */
+img,
+picture {
+  max-width: 100%;
+  display: block;
+  height: auto;
+}
+
+/* Inherit fonts for inputs and buttons */
+input,
+button,
+textarea,
+select {
+  font: inherit;
+}
+
+/* Remove all animations, transitions and smooth scroll for people that prefer not to see them */
+@media (prefers-reduced-motion: reduce) {
+  html:focus-within {
+   scroll-behavior: auto;
+  }
+  
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// TYPOGRAPHY BASE STYLES
+// -----------------------------------------------------------------------------
+
+// Base HTML elements
+h1, h2, h3, h4, h5, h6 {
+  margin-bottom: $space-4;
+  font-weight: $font-weight-semibold;
+  line-height: $line-height-tight;
+  color: $color-text-primary;
+}
+
+h1 {
+  font-size: clamp($font-size-3xl, 5vw, $font-size-5xl);
+  font-weight: $font-weight-bold;
+  line-height: $line-height-tight;
+  letter-spacing: $letter-spacing-tight;
+}
+
+h2 {
+  font-size: clamp($font-size-2xl, 4vw, $font-size-4xl);
+  font-weight: $font-weight-bold;
+  line-height: $line-height-tight;
+}
+
+h3 {
+  font-size: clamp($font-size-xl, 3vw, $font-size-3xl);
+  font-weight: $font-weight-semibold;
+}
+
+h4 {
+  font-size: clamp($font-size-lg, 2.5vw, $font-size-2xl);
+  font-weight: $font-weight-semibold;
+}
+
+h5 {
+  font-size: clamp($font-size-base, 2vw, $font-size-xl);
+  font-weight: $font-weight-medium;
+}
+
+h6 {
+  font-size: clamp($font-size-sm, 1.5vw, $font-size-lg);
+  font-weight: $font-weight-medium;
+}
+
+// Paragraph and text elements
+p {
+  margin-bottom: $space-4;
+  color: $color-text-primary;
+  max-width: 65ch; // Optimal reading length
+}
+
+// Links
+a {
+  color: $color-primary;
+  text-decoration: none;
+  transition: $transition-fast;
+  
+  &:hover {
+    color: darken($color-primary, 10%);
+    text-decoration: underline;
+  }
+  
+  &:focus {
+    outline: 2px solid $color-primary;
+    outline-offset: 2px;
+  }
+}
+
+// Lists
+ul, ol {
+  margin-bottom: $space-4;
+  padding-left: $space-6;
+  
+  li {
+    margin-bottom: $space-2;
+  }
+}
+
+// Description lists
+dl {
+  margin-bottom: $space-4;
+}
+
+dt {
+  font-weight: $font-weight-semibold;
+  margin-bottom: $space-2;
+}
+
+dd {
+  margin-left: $space-4;
+  margin-bottom: $space-4;
+}
+
+// Blockquotes
+blockquote {
+  margin: $space-6 0;
+  padding: $space-4 $space-6;
+  border-left: 4px solid $color-primary;
+  background-color: $color-bg-secondary;
+  border-radius: $border-radius-md;
+  font-style: italic;
+  
+  p {
+    margin-bottom: 0;
+    font-size: $font-size-lg;
+    color: $color-text-secondary;
+  }
+  
+  cite {
+    display: block;
+    margin-top: $space-2;
+    font-size: $font-size-sm;
+    color: $color-text-muted;
+    font-style: normal;
+    
+    &:before {
+      content: "— ";
+    }
+  }
+}
+
+// Code and preformatted text
+code {
+  font-family: $font-family-mono;
+  font-size: 0.875em;
+  background-color: $color-gray-100;
+  padding: 0.125rem 0.25rem;
+  border-radius: $border-radius-sm;
+  color: $color-primary;
+}
+
+pre {
+  background-color: $color-gray-900;
+  color: $color-gray-100;
+  padding: $space-4;
+  border-radius: $border-radius-md;
+  overflow-x: auto;
+  margin-bottom: $space-4;
+  
+  code {
+    background-color: transparent;
+    padding: 0;
+    color: inherit;
+    font-size: $font-size-sm;
+  }
+}
+
+// Tables
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: $space-6;
+  font-size: $font-size-sm;
+}
+
+thead {
+  background-color: $color-bg-secondary;
+  border-bottom: 2px solid $color-border-medium;
+}
+
+th {
+  padding: $space-3 $space-4;
+  text-align: left;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+}
+
+td {
+  padding: $space-3 $space-4;
+  border-bottom: 1px solid $color-border-light;
+}
+
+tbody tr {
+  transition: $transition-fast;
+  
+  &:hover {
+    background-color: $color-bg-secondary;
+  }
+  
+  &:last-child td {
+    border-bottom: none;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// FORM ELEMENTS
+// -----------------------------------------------------------------------------
+
+// Form groups
+.form-group {
+  margin-bottom: $space-4;
+}
+
+// Labels
+label {
+  display: block;
+  margin-bottom: $space-2;
+  font-weight: $font-weight-medium;
+  color: $color-text-primary;
+  font-size: $font-size-sm;
+}
+
+// Inputs, textareas, selects
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="search"],
+input[type="tel"],
+input[type="url"],
+input[type="number"],
+textarea,
+select {
+  width: 100%;
+  padding: $input-padding-y $input-padding-x;
+  font-family: $input-font-family;
+  font-size: $input-font-size;
+  line-height: $input-line-height;
+  color: $color-text-primary;
+  background-color: $color-bg-primary;
+  border: $input-border-width solid $input-border-color;
+  border-radius: $input-border-radius;
+  transition: $transition-fast;
+  
+  &:focus {
+    outline: none;
+    border-color: $input-focus-border-color;
+    box-shadow: $input-focus-box-shadow;
+  }
+  
+  &:disabled {
+    background-color: $color-gray-100;
+    color: $color-text-muted;
+    cursor: not-allowed;
+  }
+  
+  &::placeholder {
+    color: $color-text-muted;
+    opacity: 1;
+  }
+}
+
+// Textarea specific
+textarea {
+  resize: vertical;
+  min-height: 6rem;
+}
+
+// Select specific
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.5rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  padding-right: 2.5rem;
+}
+
+// Checkboxes and radios
+input[type="checkbox"],
+input[type="radio"] {
+  width: auto;
+  margin-right: $space-2;
+}
+
+// -----------------------------------------------------------------------------
+// BUTTONS
+// -----------------------------------------------------------------------------
+
+button {
+  font-family: $btn-font-family;
+  font-size: $btn-font-size;
+  line-height: $btn-line-height;
+  display: inline-block;
+  padding: $btn-padding-y $btn-padding-x;
+  margin: 0;
+  text-align: center;
+  text-decoration: none;
+  vertical-align: middle;
+  cursor: pointer;
+  user-select: none;
+  border: 1px solid transparent;
+  border-radius: $btn-border-radius;
+  transition: $btn-transition;
+  
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 0.2rem rgba($color-primary, 0.25);
+  }
+  
+  &:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// MEDIA ELEMENTS
+// -----------------------------------------------------------------------------
+
+// Figures
+figure {
+  margin: 0 0 $space-6 0;
+  
+  img {
+    margin-bottom: $space-2;
+  }
+  
+  figcaption {
+    font-size: $font-size-sm;
+    color: $color-text-secondary;
+    text-align: center;
+    font-style: italic;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// ACCESSIBILITY & UTILITY
+// -----------------------------------------------------------------------------
+
+// Skip to main content link for screen readers
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 6px;
+  background: $color-primary;
+  color: white;
+  padding: 8px;
+  text-decoration: none;
+  border-radius: $border-radius-base;
+  z-index: $z-index-tooltip;
+  
+  &:focus {
+    top: 6px;
+  }
+}
+
+// Screen reader only content
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+// Focus styles
+.focusable:focus {
+  outline: 2px solid $color-primary;
+  outline-offset: 2px;
+}
+
+// -----------------------------------------------------------------------------
+// RESPONSIVE TYPOGRAPHY
+// -----------------------------------------------------------------------------
+
+// Responsive font sizes using clamp()
+@media (max-width: $breakpoint-sm) {
+  html {
+    font-size: 14px;
+  }
+}
+
+@media (min-width: $breakpoint-xl) {
+  html {
+    font-size: 18px;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// PRINT STYLES
+// -----------------------------------------------------------------------------
+
+@media print {
+  *,
+  *::before,
+  *::after {
+    background: transparent !important;
+    color: black !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+  
+  a,
+  a:visited {
+    text-decoration: underline;
+  }
+  
+  a[href]::after {
+    content: " (" attr(href) ")";
+  }
+  
+  abbr[title]::after {
+    content: " (" attr(title) ")";
+  }
+  
+  pre,
+  blockquote {
+    border: 1px solid #999;
+    page-break-inside: avoid;
+  }
+  
+  thead {
+    display: table-header-group;
+  }
+  
+  tr,
+  img {
+    page-break-inside: avoid;
+  }
+  
+  img {
+    max-width: 100% !important;
+  }
+  
+  p,
+  h2,
+  h3 {
+    orphans: 3;
+    widows: 3;
+  }
+  
+  h2,
+  h3 {
+    page-break-after: avoid;
+  }
+}

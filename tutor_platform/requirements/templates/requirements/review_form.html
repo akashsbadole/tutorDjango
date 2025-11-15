@@ -1,0 +1,374 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Leave Review - Django Tutor Platform{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3">Leave a Review</h1>
+            <p class="text-muted">Share your experience and help others make informed decisions</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <form hx-post="{% url 'requirements:review_create' session.id %}" hx-target="#form-errors" hx-swap="innerHTML">
+                        {% csrf_token %}
+                        
+                        <!-- Session Information -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">Session Details</h5>
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label text-muted">Subject</label>
+                                            <p>{{ session.proposal.requirement.subject.name }}</p>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label text-muted">Session Date</label>
+                                            <p>{{ session.completed_at|date:"M d, Y" }}</p>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label text-muted">Duration</label>
+                                            <p>{{ session.actual_duration|default:session.duration }} minutes</p>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label text-muted">Rate</label>
+                                            <p>${{ session.proposal.proposed_rate }}/hour</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Rating -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">Overall Rating *</h5>
+                            <div class="card">
+                                <div class="card-body text-center">
+                                    <div class="mb-3">
+                                        <div class="btn-group" role="group">
+                                            <input type="radio" class="btn-check" name="rating" id="rating-1" value="1" required>
+                                            <label class="btn btn-outline-warning" for="rating-1">
+                                                <i class="bi bi-star"></i>
+                                            </label>
+                                            
+                                            <input type="radio" class="btn-check" name="rating" id="rating-2" value="2">
+                                            <label class="btn btn-outline-warning" for="rating-2">
+                                                <i class="bi bi-star"></i>
+                                            </label>
+                                            
+                                            <input type="radio" class="btn-check" name="rating" id="rating-3" value="3">
+                                            <label class="btn btn-outline-warning" for="rating-3">
+                                                <i class="bi bi-star"></i>
+                                            </label>
+                                            
+                                            <input type="radio" class="btn-check" name="rating" id="rating-4" value="4">
+                                            <label class="btn btn-outline-warning" for="rating-4">
+                                                <i class="bi bi-star"></i>
+                                            </label>
+                                            
+                                            <input type="radio" class="btn-check" name="rating" id="rating-5" value="5">
+                                            <label class="btn btn-outline-warning" for="rating-5">
+                                                <i class="bi bi-star"></i>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="rating-text text-muted">
+                                        <span id="rating-text">Click to rate</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Detailed Ratings -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">Detailed Ratings</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Teaching Quality</label>
+                                    <div class="btn-group w-100" role="group">
+                                        <input type="radio" class="btn-check" name="teaching_quality" id="teaching-1" value="1">
+                                        <label class="btn btn-outline-secondary" for="teaching-1">1</label>
+                                        <input type="radio" class="btn-check" name="teaching_quality" id="teaching-2" value="2">
+                                        <label class="btn btn-outline-secondary" for="teaching-2">2</label>
+                                        <input type="radio" class="btn-check" name="teaching_quality" id="teaching-3" value="3">
+                                        <label class="btn btn-outline-secondary" for="teaching-3">3</label>
+                                        <input type="radio" class="btn-check" name="teaching_quality" id="teaching-4" value="4">
+                                        <label class="btn btn-outline-secondary" for="teaching-4">4</label>
+                                        <input type="radio" class="btn-check" name="teaching_quality" id="teaching-5" value="5">
+                                        <label class="btn btn-outline-secondary" for="teaching-5">5</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Communication</label>
+                                    <div class="btn-group w-100" role="group">
+                                        <input type="radio" class="btn-check" name="communication" id="comm-1" value="1">
+                                        <label class="btn btn-outline-secondary" for="comm-1">1</label>
+                                        <input type="radio" class="btn-check" name="communication" id="comm-2" value="2">
+                                        <label class="btn btn-outline-secondary" for="comm-2">2</label>
+                                        <input type="radio" class="btn-check" name="communication" id="comm-3" value="3">
+                                        <label class="btn btn-outline-secondary" for="comm-3">3</label>
+                                        <input type="radio" class="btn-check" name="communication" id="comm-4" value="4">
+                                        <label class="btn btn-outline-secondary" for="comm-4">4</label>
+                                        <input type="radio" class="btn-check" name="communication" id="comm-5" value="5">
+                                        <label class="btn btn-outline-secondary" for="comm-5">5</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Punctuality</label>
+                                    <div class="btn-group w-100" role="group">
+                                        <input type="radio" class="btn-check" name="punctuality" id="punct-1" value="1">
+                                        <label class="btn btn-outline-secondary" for="punct-1">1</label>
+                                        <input type="radio" class="btn-check" name="punctuality" id="punct-2" value="2">
+                                        <label class="btn btn-outline-secondary" for="punct-2">2</label>
+                                        <input type="radio" class="btn-check" name="punctuality" id="punct-3" value="3">
+                                        <label class="btn btn-outline-secondary" for="punct-3">3</label>
+                                        <input type="radio" class="btn-check" name="punctuality" id="punct-4" value="4">
+                                        <label class="btn btn-outline-secondary" for="punct-4">4</label>
+                                        <input type="radio" class="btn-check" name="punctuality" id="punct-5" value="5">
+                                        <label class="btn btn-outline-secondary" for="punct-5">5</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Value for Money</label>
+                                    <div class="btn-group w-100" role="group">
+                                        <input type="radio" class="btn-check" name="value_for_money" id="value-1" value="1">
+                                        <label class="btn btn-outline-secondary" for="value-1">1</label>
+                                        <input type="radio" class="btn-check" name="value_for_money" id="value-2" value="2">
+                                        <label class="btn btn-outline-secondary" for="value-2">2</label>
+                                        <input type="radio" class="btn-check" name="value_for_money" id="value-3" value="3">
+                                        <label class="btn btn-outline-secondary" for="value-3">3</label>
+                                        <input type="radio" class="btn-check" name="value_for_money" id="value-4" value="4">
+                                        <label class="btn btn-outline-secondary" for="value-4">4</label>
+                                        <input type="radio" class="btn-check" name="value_for_money" id="value-5" value="5">
+                                        <label class="btn btn-outline-secondary" for="value-5">5</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Review Comment -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">Your Review *</h5>
+                            <div class="mb-3">
+                                <label for="comment" class="form-label">What did you think of the session?</label>
+                                <textarea class="form-control" id="comment" name="comment" rows="5" required
+                                          placeholder="Share your experience, what you learned, and any suggestions for improvement..."></textarea>
+                                <div class="form-text">Minimum 20 characters</div>
+                            </div>
+                        </div>
+
+                        <!-- Learning Outcomes -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">Learning Outcomes</h5>
+                            <div class="mb-3">
+                                <label class="form-label">Did you achieve your learning goals?</label>
+                                <div class="btn-group w-100" role="group">
+                                    <input type="radio" class="btn-check" name="goals_achieved" id="goals-no" value="NO">
+                                    <label class="btn btn-outline-primary" for="goals-no">Not at all</label>
+                                    <input type="radio" class="btn-check" name="goals_achieved" id="goals-partially" value="PARTIALLY">
+                                    <label class="btn btn-outline-primary" for="goals-partially">Partially</label>
+                                    <input type="radio" class="btn-check" name="goals_achieved" id="goals-yes" value="YES">
+                                    <label class="btn btn-outline-primary" for="goals-yes">Yes</label>
+                                    <input type="radio" class="btn-check" name="goals_achieved" id="goals-exceeded" value="EXCEEDED">
+                                    <label class="btn btn-outline-primary" for="goals-exceeded">Exceeded expectations</label>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="skills_learned" class="form-label">What skills did you learn?</label>
+                                <textarea class="form-control" id="skills_learned" name="skills_learned" rows="3"
+                                          placeholder="List specific skills or concepts you learned..."></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Recommendations -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">Recommendations</h5>
+                            <div class="mb-3">
+                                <label class="form-label">Would you recommend this tutor?</label>
+                                <div class="btn-group w-100" role="group">
+                                    <input type="radio" class="btn-check" name="would_recommend" id="recommend-no" value="NO">
+                                    <label class="btn btn-outline-success" for="recommend-no">No</label>
+                                    <input type="radio" class="btn-check" name="would_recommend" id="recommend-maybe" value="MAYBE">
+                                    <label class="btn btn-outline-success" for="recommend-maybe">Maybe</label>
+                                    <input type="radio" class="btn-check" name="would_recommend" id="recommend-yes" value="YES">
+                                    <label class="btn btn-outline-success" for="recommend-yes">Yes</label>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="recommendation_comment" class="form-label">Why or why not?</label>
+                                <textarea class="form-control" id="recommendation_comment" name="recommendation_comment" rows="3"
+                                          placeholder="Explain your recommendation..."></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Privacy Settings -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">Privacy Settings</h5>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="public_review" name="public_review" checked>
+                                <label class="form-check-label" for="public_review">
+                                    Make this review public (visible to other students)
+                                </label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="show_name" name="show_name" checked>
+                                <label class="form-check-label" for="show_name">
+                                    Show my name in the review
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="allow_contact" name="allow_contact">
+                                <label class="form-check-label" for="allow_contact">
+                                    Allow other students to contact me about this review
+                                </label>
+                            </div>
+                        </div>
+
+                        <div id="form-errors"></div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <span class="htmx-indicator spinner-border spinner-border-sm me-2" role="status"></span>
+                                Submit Review
+                            </button>
+                            <a href="{% url 'requirements:session_detail' session.id %}" class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-md-4">
+            <!-- Tutor Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Tutor Information</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <img src="{{ session.proposal.tutor.profile_picture.url|default:'/static/images/default-avatar.png' }}" 
+                             class="rounded-circle me-3" width="60" height="60" alt="{{ session.proposal.tutor.user.get_full_name }}">
+                        <div>
+                            <h6 class="mb-0">{{ session.proposal.tutor.user.get_full_name }}</h6>
+                            <div class="text-warning small">
+                                {% for i in session.proposal.tutor.average_rating|star_range %}
+                                    <i class="bi bi-star-fill"></i>
+                                {% endfor %}
+                                <span class="text-muted">({{ session.proposal.tutor.total_reviews }})</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <h6 class="text-primary">{{ session.proposal.tutor.experience_years }}</h6>
+                            <small class="text-muted">Years Exp.</small>
+                        </div>
+                        <div class="col-6">
+                            <h6 class="text-success">{{ session.proposal.tutor.session_count }}</h6>
+                            <small class="text-muted">Sessions</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Review Guidelines -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Review Guidelines</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle text-success me-2"></i>
+                            Be honest and specific in your feedback
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle text-success me-2"></i>
+                            Focus on the tutoring experience
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle text-success me-2"></i>
+                            Mention what you learned
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle text-success me-2"></i>
+                            Keep it respectful and constructive
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle text-success me-2"></i>
+                            Avoid personal information
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Why Reviews Matter -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Why Reviews Matter</h6>
+                </div>
+                <div class="card-body">
+                    <p class="card-text small">Your reviews help:</p>
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="bi bi-arrow-right text-primary me-2"></i>
+                            Other students make informed decisions
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-arrow-right text-primary me-2"></i>
+                            Tutors improve their teaching
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-arrow-right text-primary me-2"></i>
+                            Maintain quality standards
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Handle rating selection
+    document.querySelectorAll('input[name="rating"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            const ratingTexts = ['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'];
+            document.getElementById('rating-text').textContent = ratingTexts[this.value];
+            
+            // Update star appearance
+            document.querySelectorAll('label[for^="rating-"]').forEach((label, index) => {
+                if (index < this.value) {
+                    label.classList.add('active');
+                    label.innerHTML = '<i class="bi bi-star-fill"></i>';
+                } else {
+                    label.classList.remove('active');
+                    label.innerHTML = '<i class="bi bi-star"></i>';
+                }
+            });
+        });
+    });
+    
+    // Handle form submission success
+    document.body.addEventListener('htmx:afterRequest', function(evt) {
+        if (evt.detail.successful && evt.detail.target.id === 'form-errors') {
+            // Redirect on successful submission
+            window.location.href = evt.detail.xhr.responseURL || '{% url "requirements:session_detail" session.id %}';
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,595 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Online Class - {{ online_class.topic }} - Django Tutor Platform{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'messaging:message_list' %}">Messages</a></li>
+                    <li class="breadcrumb-item active">{{ online_class.topic }}</li>
+                </ol>
+            </nav>
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3">{{ online_class.topic }}</h1>
+                    <p class="text-muted">Scheduled for {{ online_class.scheduled_date|date:"M d, Y H:i" }} ({{ online_class.timezone }})</p>
+                    {% if online_class.is_recurring %}
+                        <span class="badge bg-info me-2">
+                            <i class="bi bi-arrow-repeat"></i> {{ online_class.get_recurrence_type_display }}
+                        </span>
+                    {% endif %}
+                </div>
+                <div>
+                    <span class="badge bg-{{ online_class.status|status_color }} fs-6">{{ online_class.get_status_display }}</span>
+                    {% if online_class.cancellation_reason %}
+                        <span class="badge bg-warning" title="{{ online_class.cancellation_reason }}">
+                            <i class="bi bi-exclamation-triangle"></i> Cancelled
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-md-8">
+            <!-- Class Information -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Class Information</h5>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-three-dots"></i>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a class="dropdown-item" href="#">
+                                    <i class="bi bi-pencil me-2"></i>Edit Class
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="#">
+                                    <i class="bi bi-people me-2"></i>Manage Participants
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'messaging:class_analytics' online_class.id %}">
+                                    <i class="bi bi-graph-up me-2"></i>View Analytics
+                                </a>
+                            </li>
+                            {% if online_class.is_recurring %}
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'messaging:class_schedule' online_class.schedule.id %}">
+                                        <i class="bi bi-calendar3 me-2"></i>View Schedule
+                                    </a>
+                                </li>
+                            {% endif %}
+                            <li><hr class="dropdown-divider"></li>
+                            {% if online_class.status == 'SCHEDULED' %}
+                                <li>
+                                    <button class="dropdown-item text-warning" 
+                                            hx-post="{% url 'messaging:online_class_reschedule' online_class.id %}"
+                                            hx-confirm="Are you sure you want to reschedule this class?">
+                                        <i class="bi bi-clock-history me-2"></i>Reschedule Class
+                                    </button>
+                                </li>
+                                <li>
+                                    <button class="dropdown-item text-danger" 
+                                            hx-post="{% url 'messaging:online_class_cancel' online_class.id %}"
+                                            hx-confirm="Are you sure you want to cancel this class?">
+                                        <i class="bi bi-x-circle me-2"></i>Cancel Class
+                                    </button>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Class Details -->
+                    <div class="row mb-4">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Date & Time</label>
+                            <p>{{ online_class.scheduled_date|date:"M d, Y" }} at {{ online_class.scheduled_date|date:"H:i" }} ({{ online_class.timezone }})</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Duration</label>
+                            <p>{{ online_class.duration }} minutes</p>
+                        </div>
+                    </div>
+                    <div class="row mb-4">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Platform</label>
+                            <p>{{ online_class.get_platform_display }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Max Participants</label>
+                            <p>{{ online_class.max_participants }}</p>
+                        </div>
+                    </div>
+                    {% if online_class.is_recurring %}
+                        <div class="row mb-4">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label text-muted">Recurrence Pattern</label>
+                                <p>{{ online_class.get_recurrence_type_display }}</p>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label text-muted">Recurrence End Date</label>
+                                <p>{{ online_class.recurrence_end_date|date:"M d, Y"|default:"No end date" }}</p>
+                            </div>
+                        </div>
+                    {% endif %}
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <label class="form-label text-muted">Description</label>
+                            <p>{{ online_class.description|default:"No description provided" }}</p>
+                        </div>
+                    </div>
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <label class="form-label text-muted">Materials Needed</label>
+                            <p>{{ online_class.materials|default:"No specific materials required" }}</p>
+                        </div>
+                    </div>
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <label class="form-label text-muted">Preparation Required</label>
+                            <p>{{ online_class.preparation|default:"No preparation required" }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Participants -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Participants ({{ participants.count }}/{{ online_class.max_participants }})</h5>
+                    {% if can_manage_participants %}
+                        <button class="btn btn-sm btn-outline-primary" 
+                                hx-get="{% url 'messaging:manage_participants' online_class.id %}"
+                                hx-target="#participants-modal"
+                                data-bs-toggle="modal"
+                                data-bs-target="#participants-modal">
+                            <i class="bi bi-person-plus"></i> Add Participant
+                        </button>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for participant in participants %}
+                            <div class="col-md-6 mb-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center">
+                                            <img src="{{ participant.user.profile_picture.url|default:'/static/images/default-avatar.png' }}" 
+                                                 class="rounded-circle me-3" width="40" height="40" alt="{{ participant.user.get_full_name }}">
+                                            <div>
+                                                <h6 class="mb-0">{{ participant.user.get_full_name }}</h6>
+                                                <small class="text-muted">{{ participant.user.user_type }}</small>
+                                            </div>
+                                        </div>
+                                        <div class="mt-2">
+                                            <span class="badge bg-{{ participant.status|status_color }}">
+                                                {{ participant.get_status_display }}
+                                            </span>
+                                            {% if participant.attendance_records.exists %}
+                                                <span class="badge bg-info">
+                                                    <i class="bi bi-check-circle"></i> Attended
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% empty %}
+                            <div class="col-12">
+                                <p class="text-muted text-center">No participants yet</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- Waiting List -->
+                    {% if waiting_list.exists %}
+                        <div class="mt-4">
+                            <h6 class="mb-3">Waiting List ({{ waiting_list.count }})</h6>
+                            <div class="row">
+                                {% for waiting in waiting_list %}
+                                    <div class="col-md-6 mb-3">
+                                        <div class="card border-warning">
+                                            <div class="card-body">
+                                                <div class="d-flex align-items-center">
+                                                    <img src="{{ waiting.user.profile_picture.url|default:'/static/images/default-avatar.png' }}" 
+                                                         class="rounded-circle me-3" width="40" height="40" alt="{{ waiting.user.get_full_name }}">
+                                                    <div>
+                                                        <h6 class="mb-0">{{ waiting.user.get_full_name }}</h6>
+                                                        <small class="text-muted">Joined {{ waiting.created_at|date:"M d, Y H:i" }}</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Class Resources -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Class Resources</h5>
+                    <button class="btn btn-sm btn-outline-primary" 
+                            hx-get="{% url 'messaging:class_resource_create' online_class.id %}"
+                            hx-target="#resource-modal"
+                            data-bs-toggle="modal"
+                            data-bs-target="#resource-modal">
+                        <i class="bi bi-plus-circle"></i> Add Resource
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for resource in resources %}
+                            <div class="col-md-6 mb-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6 class="card-title">{{ resource.title }}</h6>
+                                        <p class="card-text small text-muted">{{ resource.description|truncatewords:20 }}</p>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span class="badge bg-{{ resource.get_resource_type_display|resource_type_color }}">
+                                                {{ resource.get_resource_type_display }}
+                                            </span>
+                                            <a href="{{ resource.file.url }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                                                <i class="bi bi-download"></i> Download
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% empty %}
+                            <div class="col-12">
+                                <p class="text-muted text-center">No resources shared yet</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Class Recordings -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Class Recordings</h5>
+                    {% if online_class.record_session != 'NO' %}
+                        <button class="btn btn-sm btn-outline-primary" 
+                                hx-get="{% url 'messaging:class_recording_create' online_class.id %}"
+                                hx-target="#recording-modal"
+                                data-bs-toggle="modal"
+                                data-bs-target="#recording-modal">
+                            <i class="bi bi-plus-circle"></i> Add Recording
+                        </button>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for recording in recordings %}
+                            <div class="col-md-6 mb-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6 class="card-title">{{ recording.title }}</h6>
+                                        <p class="card-text small text-muted">{{ recording.description|truncatewords:20 }}</p>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span class="badge bg-info">
+                                                <i class="bi bi-play-circle"></i> {{ recording.duration }} min
+                                            </span>
+                                            <a href="{{ recording.recording_url }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                                                <i class="bi bi-play-circle"></i> Watch
+                                            </a>
+                                        </div>
+                                        <div class="mt-2">
+                                            <small class="text-muted">
+                                                <i class="bi bi-eye"></i> {{ recording.view_count }} views
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% empty %}
+                            <div class="col-12">
+                                <p class="text-muted text-center">
+                                    {% if online_class.record_session == 'NO' %}
+                                        Recording is disabled for this class
+                                    {% else %}
+                                        No recordings available yet
+                                    {% endif %}
+                                </p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- Recording Settings -->
+                    {% if online_class.record_session != 'NO' %}
+                        <div class="mt-4">
+                            <h6 class="mb-3">Recording Settings</h6>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label text-muted">Recording Setting</label>
+                                    <p>{{ online_class.get_record_session_display }}</p>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label text-muted">Access Level</label>
+                                    <p>{{ online_class.get_recording_access_display }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Attendance Records -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Attendance Records</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Participant</th>
+                                    <th>Join Time</th>
+                                    <th>Leave Time</th>
+                                    <th>Duration</th>
+                                    <th>Engagement</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for attendance in attendance_records %}
+                                    <tr>
+                                        <td>{{ attendance.user.get_full_name }}</td>
+                                        <td>{{ attendance.join_time|date:"H:i:s"|default:"-" }}</td>
+                                        <td>{{ attendance.leave_time|date:"H:i:s"|default:"-" }}</td>
+                                        <td>{{ attendance.duration_minutes|default:"-" }} min</td>
+                                        <td>
+                                            {% if attendance.engagement_score %}
+                                                <div class="progress" style="height: 20px;">
+                                                    <div class="progress-bar bg-{{ attendance.engagement_score|engagement_color }}" 
+                                                         style="width: {{ attendance.engagement_score }}%">
+                                                        {{ attendance.engagement_score }}%
+                                                    </div>
+                                                </div>
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="5" class="text-center text-muted">No attendance records yet</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-md-4">
+            <!-- Join Class -->
+            {% if online_class.status == 'SCHEDULED' %}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h6 class="mb-0">Join Class</h6>
+                    </div>
+                    <div class="card-body text-center">
+                        <div id="countdown" class="mb-3">
+                            <!-- Countdown will be displayed here -->
+                        </div>
+                        <a href="{{ online_class.meeting_link }}" class="btn btn-primary btn-lg w-100" target="_blank">
+                            <i class="bi bi-camera-video me-2"></i>Join Now
+                        </a>
+                        <div class="mt-2">
+                            <small class="text-muted">Class starts in</small>
+                            <div id="time-remaining" class="fw-bold text-primary">
+                                <!-- Time remaining will be displayed here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Host Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Host Information</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <img src="{{ online_class.host.profile_picture.url|default:'/static/images/default-avatar.png' }}" 
+                             class="rounded-circle me-3" width="50" height="50" alt="{{ online_class.host.get_full_name }}">
+                        <div>
+                            <h6 class="mb-0">{{ online_class.host.get_full_name }}</h6>
+                            <small class="text-muted">{{ online_class.host.user_type }}</small>
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <button class="btn btn-outline-primary btn-sm" 
+                                hx-get="{% url 'messaging:conversation_create' %}?user={{ online_class.host.id }}"
+                                hx-target="#message-modal"
+                                data-bs-toggle="modal"
+                                data-bs-target="#message-modal">
+                            <i class="bi bi-envelope"></i> Message Host
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Class Status -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Class Status</h6>
+                </div>
+                <div class="card-body">
+                    <div class="text-center">
+                        <span class="badge bg-{{ online_class.status|status_color }} fs-6">
+                            {{ online_class.get_status_display }}
+                        </span>
+                    </div>
+                    {% if online_class.status == 'ONGOING' %}
+                        <div class="mt-3">
+                            <button class="btn btn-danger btn-sm" 
+                                    hx-post="{% url 'messaging:online_class_end' online_class.id %}"
+                                    hx-confirm="Are you sure you want to end this class?">
+                                <i class="bi bi-stop-circle"></i> End Class
+                            </button>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Quick Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'messaging:class_analytics' online_class.id %}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-graph-up"></i> View Analytics
+                        </a>
+                        {% if online_class.is_recurring %}
+                            <a href="{% url 'messaging:class_schedule' online_class.schedule.id %}" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-calendar3"></i> View Schedule
+                            </a>
+                        {% endif %}
+                        <button class="btn btn-outline-primary btn-sm" 
+                                hx-get="{% url 'messaging:export_class_data' online_class.id %}"
+                                hx-confirm="Export class data to CSV?">
+                            <i class="bi bi-download"></i> Export Data
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Technical Support -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Technical Support</h6>
+                </div>
+                <div class="card-body">
+                    <p class="card-text small">Having trouble joining the class?</p>
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-question-circle"></i> Test Connection
+                        </button>
+                        <button class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-headset"></i> Contact Support
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Message Modal -->
+<div class="modal fade" id="message-modal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <!-- Content will be loaded via HTMX -->
+        </div>
+    </div>
+</div>
+
+<!-- Participants Modal -->
+<div class="modal fade" id="participants-modal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <!-- Content will be loaded via HTMX -->
+        </div>
+    </div>
+</div>
+
+<!-- Resource Modal -->
+<div class="modal fade" id="resource-modal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <!-- Content will be loaded via HTMX -->
+        </div>
+    </div>
+</div>
+
+<!-- Recording Modal -->
+<div class="modal fade" id="recording-modal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <!-- Content will be loaded via HTMX -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Countdown timer
+    document.addEventListener('DOMContentLoaded', function() {
+        const scheduledDate = new Date('{{ online_class.scheduled_date|date:"c" }}');
+        const countdownEl = document.getElementById('countdown');
+        const timeRemainingEl = document.getElementById('time-remaining');
+        
+        function updateCountdown() {
+            const now = new Date();
+            const diff = scheduledDate - now;
+            
+            if (diff > 0) {
+                const hours = Math.floor(diff / (1000 * 60 * 60));
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                
+                if (hours > 0) {
+                    timeRemainingEl.innerHTML = `${hours}h ${minutes}m ${seconds}s`;
+                } else if (minutes > 0) {
+                    timeRemainingEl.innerHTML = `${minutes}m ${seconds}s`;
+                } else {
+                    timeRemainingEl.innerHTML = `${seconds}s`;
+                }
+                
+                if (countdownEl) {
+                    countdownEl.innerHTML = `
+                        <div class="row text-center">
+                            <div class="col-4">
+                                <div class="display-4">${hours.toString().padStart(2, '0')}</div>
+                                <div class="label">Hours</div>
+                            </div>
+                            <div class="col-4">
+                                <div class="display-4">${minutes.toString().padStart(2, '0')}</div>
+                                <div class="label">Minutes</div>
+                            </div>
+                            <div class="col-4">
+                                <div class="display-4">${seconds.toString().padStart(2, '0')}</div>
+                                <div class="label">Seconds</div>
+                            </div>
+                        </div>
+                    `;
+                }
+            } else {
+                if (countdownEl) {
+                    countdownEl.innerHTML = '<div class="text-danger">Class has started</div>';
+                }
+                if (timeRemainingEl) {
+                    timeRemainingEl.innerHTML = '<span class="text-danger">Started</span>';
+                }
+            }
+        }
+        
+        // Update immediately and then every second
+        updateCountdown();
+        setInterval(updateCountdown, 1000);
+    });
+</script>
+{% endblock %}

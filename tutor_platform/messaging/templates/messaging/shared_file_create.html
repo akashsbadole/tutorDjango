@@ -1,0 +1,241 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Share File - Django Tutor Platform{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3">Share File</h1>
+            <p class="text-muted">Share learning materials with your tutor or student</p>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <form hx-post="{% url 'messaging:shared_file_create' %}" hx-target="#form-errors" hx-swap="innerHTML" 
+                          enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <!-- Recipient Information -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">Share With</h5>
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label text-muted">
+                                                {% if conversation %}
+                                                    Conversation with
+                                                {% else %}
+                                                    Recipient
+                                                {% endif %}
+                                            </label>
+                                            {% if conversation %}
+                                                <p>{{ conversation.other_user.get_full_name }}</p>
+                                                <input type="hidden" name="conversation" value="{{ conversation.id }}">
+                                            {% elif recipient %}
+                                                <p>{{ recipient.get_full_name }}</p>
+                                                <input type="hidden" name="recipient" value="{{ recipient.id }}">
+                                            {% endif %}
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label text-muted">Type</label>
+                                            {% if conversation.other_user.user_type == 'TUTOR' %}
+                                                <p>Tutor</p>
+                                            {% else %}
+                                                <p>Student</p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- File Upload -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">File Information</h5>
+                            <div class="mb-3">
+                                <label for="file" class="form-label">Select File *</label>
+                                <input type="file" class="form-control" id="file" name="file" required
+                                       accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.mp4,.mp3,.zip">
+                                <div class="form-text">
+                                    Supported formats: PDF, Word, Excel, PowerPoint, Images, Video, Audio, ZIP (Max 50MB)
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="filename" class="form-label">Display Name</label>
+                                <input type="text" class="form-control" id="filename" name="filename" 
+                                       placeholder="Leave blank to use original filename">
+                            </div>
+                            <div class="mb-3">
+                                <label for="description" class="form-label">Description</label>
+                                <textarea class="form-control" id="description" name="description" rows="3"
+                                          placeholder="Describe what this file contains..."></textarea>
+                            </div>
+                        </div>
+
+                        <!-- File Category -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">File Category</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="category" class="form-label">Category *</label>
+                                    <select class="form-select" id="category" name="category" required>
+                                        <option value="">Select category</option>
+                                        <option value="ASSIGNMENT">Assignment</option>
+                                        <option value="NOTES">Study Notes</option>
+                                        <option value="PRESENTATION">Presentation</option>
+                                        <option value="REFERENCE">Reference Material</option>
+                                        <option value="RECORDING">Class Recording</option>
+                                        <option value="RESOURCE">Learning Resource</option>
+                                        <option value="OTHER">Other</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="subject" class="form-label">Subject</label>
+                                    <select class="form-select" id="subject" name="subject">
+                                        <option value="">Select subject</option>
+                                        {% for subject in subjects %}
+                                            <option value="{{ subject.id }}">{{ subject.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Access Settings -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">Access Settings</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="access_level" class="form-label">Access Level</label>
+                                    <select class="form-select" id="access_level" name="access_level">
+                                        <option value="PRIVATE">Private (only recipient)</option>
+                                        <option value="SHARED">Shared (conversation participants)</option>
+                                        <option value="PUBLIC">Public (with link)</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="expires_at" class="form-label">Expires At</label>
+                                    <input type="datetime-local" class="form-control" id="expires_at" name="expires_at">
+                                    <div class="form-text">Leave blank for no expiration</div>
+                                </div>
+                            </div>
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="allow_download" name="allow_download" checked>
+                                <label class="form-check-label" for="allow_download">
+                                    Allow download
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="password_protect" name="password_protect">
+                                <label class="form-check-label" for="password_protect">
+                                    Password protect
+                                </label>
+                            </div>
+                            <div id="password-field" style="display: none;" x-data="{ show: false }">
+                                <label for="password" class="form-label">Password</label>
+                                <input type="password" class="form-control" id="password" name="password" 
+                                       placeholder="Enter password for file access">
+                            </div>
+                        </div>
+
+                        <!-- Notification Settings -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">Notification Settings</h5>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="notify_email" name="notify_email" checked>
+                                <label class="form-check-label" for="notify_email">
+                                    Send email notification
+                                </label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="notify_platform" name="notify_platform" checked>
+                                <label class="form-check-label" for="notify_platform">
+                                    Send platform notification
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="request_confirmation" name="request_confirmation">
+                                <label class="form-check-label" for="request_confirmation">
+                                    Request read confirmation
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Terms and Conditions -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">Terms and Conditions</h5>
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <ul class="list-unstyled">
+                                        <li class="mb-2">
+                                            <i class="bi bi-check-circle text-success me-2"></i>
+                                            You have the right to share this file
+                                        </li>
+                                        <li class="mb-2">
+                                            <i class="bi bi-check-circle text-success me-2"></i>
+                                            Content is appropriate for educational purposes
+                                        </li>
+                                        <li class="mb-2">
+                                            <i class="bi bi-check-circle text-success me-2"></i>
+                                            File doesn't violate copyright laws
+                                        </li>
+                                        <li class="mb-2">
+                                            <i class="bi bi-check-circle text-success me-2"></i>
+                                            You accept responsibility for shared content
+                                        </li>
+                                    </ul>
+                                    <div class="form-check mt-3">
+                                        <input class="form-check-input" type="checkbox" id="terms_accepted" name="terms_accepted" required>
+                                        <label class="form-check-label" for="terms_accepted">
+                                            I agree to the <a href="#" class="text-decoration-none">Terms of Service</a> and <a href="#" class="text-decoration-none">Content Policy</a>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="form-errors"></div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <span class="htmx-indicator spinner-border spinner-border-sm me-2" role="status"></span>
+                                Share File
+                            </button>
+                            <a href="{% if conversation %}{% url 'messaging:message_detail' conversation.id %}{% else %}{% url 'messaging:message_list' %}{% endif %}" class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Handle password protection toggle
+    document.getElementById('password_protect').addEventListener('change', function() {
+        const passwordField = document.getElementById('password-field');
+        if (this.checked) {
+            passwordField.style.display = 'block';
+        } else {
+            passwordField.style.display = 'none';
+            document.getElementById('password').value = '';
+        }
+    });
+    
+    // Handle form submission success
+    document.body.addEventListener('htmx:afterRequest', function(evt) {
+        if (evt.detail.successful && evt.detail.target.id === 'form-errors') {
+            // Redirect on successful submission
+            window.location.href = evt.detail.xhr.responseURL || '{% if conversation %}{% url "messaging:message_detail" conversation.id %}{% else %}{% url "messaging:message_list" %}{% endif %}';
+        }
+    });
+</script>
+{% endblock %}

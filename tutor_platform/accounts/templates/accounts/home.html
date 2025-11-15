@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+
+{% block title %}Home - Tutor Platform{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-5">
+    <div class="row">
+        <div class="col-lg-8 mx-auto text-center">
+            <h1 class="display-4 fw-bold mb-4">Welcome to Tutor Platform</h1>
+            <p class="lead mb-5">Connect with expert tutors for personalized learning experiences</p>
+            
+            <div class="row mb-5">
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <i class="bi bi-mortarboard-fill text-primary fs-1 mb-3"></i>
+                            <h5 class="card-title">Find Tutors</h5>
+                            <p class="card-text">Browse our network of verified tutors in various subjects</p>
+                            <a href="{% url 'accounts:tutor_list' %}" class="btn btn-primary">Browse Tutors</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <i class="bi bi-book-fill text-success fs-1 mb-3"></i>
+                            <h5 class="card-title">Explore Subjects</h5>
+                            <p class="card-text">Discover subjects and topics you want to learn</p>
+                            <a href="{% url 'accounts:subject_list' %}" class="btn btn-success">View Subjects</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <i class="bi bi-person-plus-fill text-info fs-1 mb-3"></i>
+                            <h5 class="card-title">Get Started</h5>
+                            <p class="card-text">Join our community and start learning today</p>
+                            <a href="{% url 'accounts:signup' %}" class="btn btn-info">Sign Up</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            {% if featured_tutors %}
+            <div class="mb-5">
+                <h2 class="mb-4">Featured Tutors</h2>
+                <div class="row">
+                    {% for tutor in featured_tutors %}
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center mb-3">
+                                    {% if tutor.user.profile_picture %}
+                                        <img src="{{ tutor.user.profile_picture.url }}" class="rounded-circle me-3" width="50" height="50" alt="{{ tutor.user.get_full_name }}">
+                                    {% else %}
+                                        <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                                            <i class="bi bi-person text-white"></i>
+                                        </div>
+                                    {% endif %}
+                                    <div>
+                                        <h6 class="mb-0">{{ tutor.user.get_full_name|default:tutor.user.username }}</h6>
+                                        <small class="text-muted">{{ tutor.professional_title|default:"Tutor" }}</small>
+                                    </div>
+                                </div>
+                                <p class="card-text">{{ tutor.bio|truncatewords:20|default:"Experienced tutor dedicated to helping students succeed." }}</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="text-primary fw-bold">${{ tutor.hourly_rate_min }}/hr</span>
+                                    <a href="{% url 'accounts:tutor_detail' tutor.user.id %}" class="btn btn-sm btn-outline-primary">View Profile</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if subjects %}
+            <div class="mb-5">
+                <h2 class="mb-4">Popular Subjects</h2>
+                <div class="row">
+                    {% for subject in subjects %}
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <i class="bi bi-book text-secondary fs-2 mb-2"></i>
+                                <h6 class="card-title">{{ subject.name }}</h6>
+                                <a href="{% url 'accounts:subject_detail' subject.id %}" class="btn btn-sm btn-outline-secondary">Learn More</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <div class="text-center">
+                {% if not user.is_authenticated %}
+                <a href="{% url 'accounts:signup' %}" class="btn btn-lg btn-primary me-3">Sign Up Now</a>
+                <a href="{% url 'accounts:login' %}" class="btn btn-lg btn-outline-primary">Login</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

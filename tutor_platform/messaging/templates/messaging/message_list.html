@@ -1,0 +1,361 @@
+{% extends 'ui_components/base.html' %}
+{% load ui_tags static %}
+
+{% block title %}Messages - Django Tutor Platform{% endblock %}
+
+{% block content %}
+<div class="container-fluid h-100">
+    <div class="row h-100">
+        <!-- Conversations List -->
+        <div class="col-md-4 col-lg-3 h-100 border-end">
+            <div class="d-flex flex-column h-100">
+                <!-- Header -->
+                <div class="p-3 border-bottom">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">Messages</h5>
+                        
+                        <button class="btn btn-sm btn-primary"
+                                hx-get="{% url 'messaging:conversation_create' %}"
+                                hx-target="#conversation-modal"
+                                data-bs-toggle="modal"
+                                data-bs-target="#conversation-modal">
+                            <i class="bi bi-plus-circle me-1"></i>New
+                        </button>
+                    </div>
+                    
+                    <!-- Search -->
+                    <div class="mb-3">
+                        {% include 'ui_components/search_bar.html' with 
+                            action='messaging:message_search',
+                            placeholder='Search conversations...',
+                            show_suggestions=True,
+                            show_recent_searches=True,
+                            button_text='Search',
+                            button_icon='bi-search',
+                            addon_before='bi bi-search',
+                            input_class='form-control-sm'
+                        %}
+                    </div>
+                </div>
+                
+                <!-- Conversations List -->
+                <div class="flex-grow-1 overflow-auto" style="max-height: calc(100vh - 200px);">
+                    {% if is_search %}
+                        <div class="p-2 bg-light">
+                            <small class="text-muted">Search results for "{{ search_query }}"</small>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="list-group list-group-flush" id="conversations-list">
+                        {% for conversation in conversations %}
+                            <div class="list-group-item list-group-item-action {% if conversation.id == active_conversation_id %}active{% endif %}" 
+                                 hx-get="{% url 'messaging:message_detail' conversation.id %}"
+                                 hx-target="#message-content"
+                                 hx-swap="innerHTML"
+                                 hx-indicator=".message-loading"
+                                 style="cursor: pointer;">
+                                <div class="d-flex w-100">
+                                    <div class="position-relative me-3">
+                                        {% avatar conversation.other_user 'sm' True %}
+                                        
+                                        {% if conversation.has_unread_messages %}
+                                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                                {{ conversation.unread_count }}
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="flex-grow-1 min-w-0">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <h6 class="mb-0 text-truncate">{{ conversation.other_user.get_full_name }}</h6>
+                                                {% if conversation.other_user.user_type == 'TUTOR' %}
+                                                    {% badge 'Tutor' 'success' 'pill' %}
+                                                {% else %}
+                                                    {% badge 'Student' 'info' 'pill' %}
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="text-end">
+                                            <small class="text-muted">{{ conversation.last_message_time|time_ago }}</small>
+                                            
+                                            {% if conversation.has_unread_messages %}
+                                                <div class="text-primary">
+                                                    <i class="bi bi-circle-fill" style="font-size: 0.5rem;"></i>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mt-2">
+                                        <p class="mb-0 text-truncate small">{{ conversation.last_message_preview|default:"No messages yet" }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        {% empty %}
+                            <div class="text-center py-4">
+                                {% if is_search %}
+                                    <i class="bi bi-search text-muted" style="font-size: 2rem;"></i>
+                                    <p class="text-muted mt-2">No conversations found matching "{{ search_query }}"</p>
+                                    <a href="{% url 'messaging:message_list' %}" class="btn btn-outline-secondary">Clear Search</a>
+                                {% else %}
+                                    <i class="bi bi-chat-dots text-muted" style="font-size: 2rem;"></i>
+                                    <p class="text-muted mt-2">No conversations yet</p>
+                                    <button class="btn btn-primary"
+                                            hx-get="{% url 'messaging:conversation_create' %}"
+                                            hx-target="#conversation-modal"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#conversation-modal">
+                                        <i class="bi bi-plus-circle me-2"></i>Start a Conversation
+                                    </button>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Message Content -->
+        <div class="col-md-8 col-lg-9 h-100">
+            {% if active_conversation %}
+                <div class="card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            {% avatar active_conversation.other_user 'md' True %}
+                            
+                            <div class="ms-3">
+                                <div>
+                                    <h6 class="mb-0">{{ active_conversation.other_user.get_full_name }}</h6>
+                                    {% if active_conversation.other_user.user_type == 'TUTOR' %}
+                                        {% badge 'Tutor' 'success' 'pill' %}
+                                    {% else %}
+                                        {% badge 'Student' 'info' 'pill' %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
+                                    type="button" 
+                                    data-bs-toggle="dropdown">
+                                <i class="bi bi-three-dots"></i>
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li>
+                                    <a class="dropdown-item" href="#">
+                                        <i class="bi bi-person me-2"></i>View Profile
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="#">
+                                        <i class="bi bi-bell-slash me-2"></i>Mute Notifications
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item text-danger" href="#">
+                                        <i class="bi bi-trash me-2"></i>Delete Conversation
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="card-body p-0">
+                        <!-- Messages Container -->
+                        <div id="message-content" class="message-container overflow-auto" 
+                             hx-get="{% url 'messaging:message_detail' active_conversation.id %}"
+                             hx-trigger="load, every 5s"
+                             hx-swap="innerHTML"
+                             hx-indicator=".message-loading"
+                             style="height: calc(100vh - 280px);">
+                            <div class="htmx-indicator text-center p-4">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Message Input -->
+                        <div class="message-input-container border-top p-3">
+                            <form method="post" 
+                                  hx-post="{% url 'messaging:message_send' active_conversation.id %}" 
+                                  hx-target="#message-content" 
+                                  hx-swap="beforebegin"
+                                  hx-indicator="#message-loading">
+                                {% csrf_token %}
+                                <div class="input-group">
+                                    <input type="text" 
+                                           class="form-control" 
+                                           name="content" 
+                                           placeholder="Type your message..." 
+                                           autocomplete="off"
+                                           x-on:keyup="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); this.form.requestSubmit(); }">
+                                    <button class="btn btn-primary" type="submit">
+                                        <i class="bi bi-send"></i>
+                                    </button>
+                                </div>
+                                
+                                <div id="message-loading" class="htmx-indicator ms-2">
+                                    <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                        <span class="visually-hidden">Sending...</span>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="card h-100">
+                    <div class="card-body text-center py-5">
+                        <i class="bi bi-chat-text text-muted" style="font-size: 3rem;"></i>
+                        <h5 class="mt-3">Select a Conversation</h5>
+                        <p class="text-muted">Choose a conversation from the list to start messaging</p>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Conversation Modal -->
+{% include 'ui_components/modal.html' with 
+    modal_id='conversation-modal',
+    title='Start New Conversation',
+    size='modal-lg'
+%}
+
+<!-- Toast Notifications Container -->
+<div id="toast-container" class="toast-container position-fixed top-0 end-0 p-3" 
+     style="z-index: 1050; max-width: 350px;"
+     x-data="$store.toast.items"
+     x-init="$watch('items', () => {
+         if ($store.toast.items.length > 0) {
+             setTimeout(() => {
+                 $store.toast.items.shift();
+             }, 5000);
+         }
+     })">
+    <template x-for="toast in $store.toast.items">
+        {% include 'ui_components/alert.html' with 
+            message=toast.message,
+            level=toast.level,
+            dismissible=True,
+            alert_class='toast show'
+        %}
+    </template>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('alpine:init', () => {
+    // Auto-scroll to bottom of messages
+    const observer = new MutationObserver(function(mutations) {
+        const messageContainer = document.getElementById('message-content');
+        if (messageContainer) {
+            messageContainer.scrollTop = messageContainer.scrollHeight;
+        }
+    });
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        const messageContainer = document.getElementById('message-content');
+        if (messageContainer) {
+            observer.observe(messageContainer, { childList: true });
+        }
+    });
+    
+    // Mark messages as read when viewed
+    document.body.addEventListener('htmx:afterRequest', function(evt) {
+        if (evt.detail.successful && evt.detail.target.id === 'message-content') {
+            // Mark conversation as read
+            const activeConversation = document.querySelector('.list-group-item.active');
+            if (activeConversation) {
+                const unreadBadge = activeConversation.querySelector('.badge');
+                if (unreadBadge) {
+                    unreadBadge.style.display = 'none';
+                }
+            }
+        }
+    });
+});
+</script>
+
+<style>
+.message-container {
+    padding: 1rem;
+    background-color: #f8f9fa;
+}
+
+.message {
+    margin-bottom: 1rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.message.sent {
+    align-items: flex-end;
+}
+
+.message.received {
+    align-items: flex-start;
+}
+
+.message-bubble {
+    max-width: 70%;
+    padding: 0.75rem 1rem;
+    border-radius: 1rem;
+    word-wrap: break-word;
+    position: relative;
+}
+
+.message.sent .message-bubble {
+    background-color: var(--primary-color);
+    color: white;
+    border-bottom-right-radius: 0.25rem;
+}
+
+.message.received .message-bubble {
+    background-color: #e9ecef;
+    color: #212529;
+    border-bottom-left-radius: 0.25rem;
+}
+
+.message-time {
+    font-size: 0.75rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+}
+
+.message-input-container {
+    background-color: white;
+}
+
+.list-group-item {
+    border-left: none;
+    border-right: none;
+    transition: background-color 0.2s;
+}
+
+.list-group-item:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.list-group-item.active {
+    background-color: rgba(13, 110, 253, 0.1);
+    border-left: 3px solid var(--primary-color);
+}
+
+.dark .message-container {
+    background-color: var(--dark-color);
+}
+
+.dark .message.received .message-bubble {
+    background-color: #343a40;
+    color: var(--light-color);
+}
+</style>
+{% endblock %}

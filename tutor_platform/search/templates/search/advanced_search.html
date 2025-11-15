@@ -1,0 +1,426 @@
+{% extends "search/base.html" %}
+{% load static %}
+
+{% block title %}Advanced Search{% endblock %}
+
+{% block search_content %}
+<div class="card">
+    <div class="card-header">
+        <h4 class="mb-0">Advanced Search</h4>
+    </div>
+    <div class="card-body">
+        <form id="advanced-search-form" method="get" action="{% url 'search:results' %}">
+            <!-- Search Type Selection -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <h5>Search Type</h5>
+                    <div class="btn-group w-100" role="group">
+                        <input type="radio" class="btn-check" name="content_type" id="type-global" value="global" checked>
+                        <label class="btn btn-outline-primary" for="type-global">All Content</label>
+                        
+                        <input type="radio" class="btn-check" name="content_type" id="type-tutors" value="tutors">
+                        <label class="btn btn-outline-primary" for="type-tutors">Tutors</label>
+                        
+                        <input type="radio" class="btn-check" name="content_type" id="type-requirements" value="requirements">
+                        <label class="btn btn-outline-primary" for="type-requirements">Requirements</label>
+                        
+                        <input type="radio" class="btn-check" name="content_type" id="type-messages" value="messages">
+                        <label class="btn btn-outline-primary" for="type-messages">Messages</label>
+                        
+                        <input type="radio" class="btn-check" name="content_type" id="type-payments" value="payments">
+                        <label class="btn btn-outline-primary" for="type-payments">Payments</label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Basic Search -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <h5>Search Terms</h5>
+                    <div class="mb-3">
+                        <label for="query" class="form-label">Keywords</label>
+                        <input type="text" class="form-control" id="query" name="q" 
+                               placeholder="Enter keywords to search for...">
+                        <div class="form-text">Use quotes for exact phrases, + for required words, - for excluded words</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tutor Specific Filters -->
+            <div id="tutor-filters" class="filter-section">
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h5>Tutor Filters</h5>
+                    </div>
+                    
+                    <!-- Subject Expertise -->
+                    <div class="col-md-6 mb-3">
+                        <label for="subjects" class="form-label">Subjects</label>
+                        <select class="form-select" id="subjects" name="subjects" multiple>
+                            {% for subject in subjects %}
+                            <option value="{{ subject.id }}">{{ subject.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Hold Ctrl/Cmd to select multiple subjects</div>
+                    </div>
+                    
+                    <!-- Experience Level -->
+                    <div class="col-md-6 mb-3">
+                        <label for="experience" class="form-label">Experience Level</label>
+                        <select class="form-select" id="experience" name="experience">
+                            <option value="">Any Experience</option>
+                            <option value="beginner">Beginner (0-2 years)</option>
+                            <option value="intermediate">Intermediate (3-5 years)</option>
+                            <option value="experienced">Experienced (6-10 years)</option>
+                            <option value="expert">Expert (10+ years)</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Hourly Rate Range -->
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Hourly Rate Range ($/hour)</label>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <input type="number" class="form-control" name="min_rate" placeholder="Min" min="0">
+                            </div>
+                            <div class="col-6">
+                                <input type="number" class="form-control" name="max_rate" placeholder="Max" min="0">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Availability -->
+                    <div class="col-md-6 mb-3">
+                        <label for="availability" class="form-label">Availability</label>
+                        <select class="form-select" id="availability" name="availability">
+                            <option value="">Any Availability</option>
+                            <option value="available_now">Available Now</option>
+                            <option value="weekdays">Weekdays Only</option>
+                            <option value="weekends">Weekends Only</option>
+                            <option value="evenings">Evenings Only</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Location -->
+                    <div class="col-md-6 mb-3">
+                        <label for="location" class="form-label">Location</label>
+                        <input type="text" class="form-control" id="location" name="location" 
+                               placeholder="City, State, or Country">
+                    </div>
+                    
+                    <!-- Languages -->
+                    <div class="col-md-6 mb-3">
+                        <label for="languages" class="form-label">Languages</label>
+                        <select class="form-select" id="languages" name="languages" multiple>
+                            <option value="english">English</option>
+                            <option value="spanish">Spanish</option>
+                            <option value="french">French</option>
+                            <option value="german">German</option>
+                            <option value="chinese">Chinese</option>
+                            <option value="japanese">Japanese</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Verification Status -->
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Verification Status</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="verified_only" name="verified_only" value="1">
+                            <label class="form-check-label" for="verified_only">
+                                Show only verified tutors
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Requirement Specific Filters -->
+            <div id="requirement-filters" class="filter-section" style="display: none;">
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h5>Requirement Filters</h5>
+                    </div>
+                    
+                    <!-- Subject -->
+                    <div class="col-md-6 mb-3">
+                        <label for="req_subject" class="form-label">Subject</label>
+                        <select class="form-select" id="req_subject" name="req_subject">
+                            <option value="">Any Subject</option>
+                            {% for subject in subjects %}
+                            <option value="{{ subject.id }}">{{ subject.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- Learning Level -->
+                    <div class="col-md-6 mb-3">
+                        <label for="learning_level" class="form-label">Learning Level</label>
+                        <select class="form-select" id="learning_level" name="learning_level">
+                            <option value="">Any Level</option>
+                            <option value="beginner">Beginner</option>
+                            <option value="intermediate">Intermediate</option>
+                            <option value="advanced">Advanced</option>
+                            <option value="expert">Expert</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Budget Range -->
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Budget Range ($)</label>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <input type="number" class="form-control" name="budget_min" placeholder="Min" min="0">
+                            </div>
+                            <div class="col-6">
+                                <input type="number" class="form-control" name="budget_max" placeholder="Max" min="0">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Urgency -->
+                    <div class="col-md-6 mb-3">
+                        <label for="urgency" class="form-label">Urgency</label>
+                        <select class="form-select" id="urgency" name="urgency">
+                            <option value="">Any Urgency</option>
+                            <option value="low">Low</option>
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
+                            <option value="urgent">Urgent</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Deadline -->
+                    <div class="col-md-6 mb-3">
+                        <label for="deadline" class="form-label">Deadline</label>
+                        <select class="form-select" id="deadline" name="deadline">
+                            <option value="">Any Deadline</option>
+                            <option value="1">Within 1 day</option>
+                            <option value="3">Within 3 days</option>
+                            <option value="7">Within 1 week</option>
+                            <option value="14">Within 2 weeks</option>
+                            <option value="30">Within 1 month</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Status -->
+                    <div class="col-md-6 mb-3">
+                        <label for="status" class="form-label">Status</label>
+                        <select class="form-select" id="status" name="status">
+                            <option value="">Any Status</option>
+                            <option value="open">Open</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="closed">Closed</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Message Specific Filters -->
+            <div id="message-filters" class="filter-section" style="display: none;">
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h5>Message Filters</h5>
+                    </div>
+                    
+                    <!-- Sender/Recipient -->
+                    <div class="col-md-6 mb-3">
+                        <label for="sender" class="form-label">Sender</label>
+                        <input type="text" class="form-control" id="sender" name="sender" 
+                               placeholder="Username or email">
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label for="recipient" class="form-label">Recipient</label>
+                        <input type="text" class="form-control" id="recipient" name="recipient" 
+                               placeholder="Username or email">
+                    </div>
+                    
+                    <!-- Date Range -->
+                    <div class="col-md-6 mb-3">
+                        <label for="message_date_from" class="form-label">From Date</label>
+                        <input type="date" class="form-control" id="message_date_from" name="message_date_from">
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label for="message_date_to" class="form-label">To Date</label>
+                        <input type="date" class="form-control" id="message_date_to" name="message_date_to">
+                    </div>
+                    
+                    <!-- Read Status -->
+                    <div class="col-md-6 mb-3">
+                        <label for="read_status" class="form-label">Read Status</label>
+                        <select class="form-select" id="read_status" name="read_status">
+                            <option value="">All Messages</option>
+                            <option value="read">Read Only</option>
+                            <option value="unread">Unread Only</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Has Attachments -->
+                    <div class="col-md-6 mb-3">
+                        <div class="form-check mt-4">
+                            <input class="form-check-input" type="checkbox" id="has_attachments" name="has_attachments" value="1">
+                            <label class="form-check-label" for="has_attachments">
+                                Has attachments only
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Payment Specific Filters -->
+            <div id="payment-filters" class="filter-section" style="display: none;">
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h5>Payment Filters</h5>
+                    </div>
+                    
+                    <!-- Amount Range -->
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Amount Range ($)</label>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <input type="number" class="form-control" name="amount_min" placeholder="Min" min="0" step="0.01">
+                            </div>
+                            <div class="col-6">
+                                <input type="number" class="form-control" name="amount_max" placeholder="Max" min="0" step="0.01">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Payment Type -->
+                    <div class="col-md-6 mb-3">
+                        <label for="payment_type" class="form-label">Payment Type</label>
+                        <select class="form-select" id="payment_type" name="payment_type">
+                            <option value="">Any Type</option>
+                            <option value="session_payment">Session Payment</option>
+                            <option value="milestone_payment">Milestone Payment</option>
+                            <option value="refund">Refund</option>
+                            <option value="payout">Payout</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Status -->
+                    <div class="col-md-6 mb-3">
+                        <label for="payment_status" class="form-label">Payment Status</label>
+                        <select class="form-select" id="payment_status" name="payment_status">
+                            <option value="">Any Status</option>
+                            <option value="pending">Pending</option>
+                            <option value="completed">Completed</option>
+                            <option value="failed">Failed</option>
+                            <option value="refunded">Refunded</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Date Range -->
+                    <div class="col-md-6 mb-3">
+                        <label for="payment_date_from" class="form-label">From Date</label>
+                        <input type="date" class="form-control" id="payment_date_from" name="payment_date_from">
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label for="payment_date_to" class="form-label">To Date</label>
+                        <input type="date" class="form-control" id="payment_date_to" name="payment_date_to">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Date Range (Global) -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <h5>Date Range</h5>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="date_from" class="form-label">From Date</label>
+                    <input type="date" class="form-control" id="date_from" name="date_from">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="date_to" class="form-label">To Date</label>
+                    <input type="date" class="form-control" id="date_to" name="date_to">
+                </div>
+            </div>
+            
+            <!-- Sort Options -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <h5>Sort Options</h5>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="sort_by" class="form-label">Sort By</label>
+                    <select class="form-select" id="sort_by" name="sort_by">
+                        <option value="relevance">Relevance</option>
+                        <option value="date_desc">Newest First</option>
+                        <option value="date_asc">Oldest First</option>
+                        <option value="rating_desc">Highest Rating</option>
+                        <option value="price_asc">Lowest Price</option>
+                        <option value="price_desc">Highest Price</option>
+                        <option value="name_asc">Name (A-Z)</option>
+                        <option value="name_desc">Name (Z-A)</option>
+                    </select>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="results_per_page" class="form-label">Results Per Page</label>
+                    <select class="form-select" id="results_per_page" name="results_per_page">
+                        <option value="10">10</option>
+                        <option value="20" selected>20</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search me-1"></i> Search
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" id="reset-filters">
+                            <i class="fas fa-undo me-1"></i> Reset Filters
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" id="save-search">
+                            <i class="fas fa-bookmark me-1"></i> Save Search
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Toggle filter sections based on content type
+    document.querySelectorAll('input[name="content_type"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            // Hide all filter sections
+            document.querySelectorAll('.filter-section').forEach(section => {
+                section.style.display = 'none';
+            });
+            
+            // Show relevant filter section
+            const sectionId = this.value + '-filters';
+            const section = document.getElementById(sectionId);
+            if (section) {
+                section.style.display = 'block';
+            }
+        });
+    });
+    
+    // Reset filters button
+    document.getElementById('reset-filters').addEventListener('click', function() {
+        document.getElementById('advanced-search-form').reset();
+    });
+    
+    // Save search button
+    document.getElementById('save-search').addEventListener('click', function() {
+        const modal = new bootstrap.Modal(document.getElementById('saveSearchModal'));
+        modal.show();
+    });
+    
+    // Initialize with first option selected
+    document.querySelector('input[name="content_type"]:checked').dispatchEvent(new Event('change'));
+</script>
+{% endblock %}

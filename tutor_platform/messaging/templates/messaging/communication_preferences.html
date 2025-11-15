@@ -1,0 +1,323 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Communication Preferences - Django Tutor Platform{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3">Communication Preferences</h1>
+            <p class="text-muted">Manage how you communicate with tutors and students</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <form hx-post="{% url 'messaging:communication_preferences' %}" hx-target="#form-errors" hx-swap="innerHTML">
+                        {% csrf_token %}
+                        
+                        <!-- General Preferences -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">General Preferences</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="email_notifications" class="form-label">Email Notifications</label>
+                                    <select class="form-select" id="email_notifications" name="email_notifications">
+                                        <option value="ALL" {% if preferences.email_notifications == 'ALL' %}selected{% endif %}>All messages</option>
+                                        <option value="IMPORTANT" {% if preferences.email_notifications == 'IMPORTANT' %}selected{% endif %}>Important only</option>
+                                        <option value="NONE" {% if preferences.email_notifications == 'NONE' %}selected{% endif %}>None</option>
+                                    </select>
+                                    <div class="form-text">Choose which messages trigger email notifications</div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="browser_notifications" class="form-label">Browser Notifications</label>
+                                    <select class="form-select" id="browser_notifications" name="browser_notifications">
+                                        <option value="ALL" {% if preferences.browser_notifications == 'ALL' %}selected{% endif %}>All messages</option>
+                                        <option value="IMPORTANT" {% if preferences.browser_notifications == 'IMPORTANT' %}selected{% endif %}>Important only</option>
+                                        <option value="NONE" {% if preferences.browser_notifications == 'NONE' %}selected{% endif %}>None</option>
+                                    </select>
+                                    <div class="form-text">Show desktop notifications for messages</div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="sound_enabled" class="form-label">Sound Effects</label>
+                                    <select class="form-select" id="sound_enabled" name="sound_enabled">
+                                        <option value="ENABLED" {% if preferences.sound_enabled == 'ENABLED' %}selected{% endif %}>Enabled</option>
+                                        <option value="DISABLED" {% if preferences.sound_enabled == 'DISABLED' %}selected{% endif %}>Disabled</option>
+                                    </select>
+                                    <div class="form-text">Play sound for new messages</div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="auto_reply" class="form-label">Auto-Reply</label>
+                                    <select class="form-select" id="auto_reply" name="auto_reply">
+                                        <option value="ENABLED" {% if preferences.auto_reply == 'ENABLED' %}selected{% endif %}>Enabled</option>
+                                        <option value="DISABLED" {% if preferences.auto_reply == 'DISABLED' %}selected{% endif %}>Disabled</option>
+                                    </select>
+                                    <div class="form-text">Send automatic reply when away</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Message Preferences -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">Message Preferences</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="message_preview" class="form-label">Message Preview</label>
+                                    <select class="form-select" id="message_preview" name="message_preview">
+                                        <option value="ENABLED" {% if preferences.message_preview == 'ENABLED' %}selected{% endif %}>Show preview</option>
+                                        <option value="DISABLED" {% if preferences.message_preview == 'DISABLED' %}selected{% endif %}>Don't show preview</option>
+                                    </select>
+                                    <div class="form-text">Show message preview in conversation list</div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="typing_indicator" class="form-label">Typing Indicator</label>
+                                    <select class="form-select" id="typing_indicator" name="typing_indicator">
+                                        <option value="SHOW" {% if preferences.typing_indicator == 'SHOW' %}selected{% endif %}>Show when typing</option>
+                                        <option value="HIDE" {% if preferences.typing_indicator == 'HIDE' %}selected{% endif %}>Never show</option>
+                                    </select>
+                                    <div class="form-text">Show when others are typing a message</div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="read_receipts" class="form-label">Read Receipts</label>
+                                    <select class="form-select" id="read_receipts" name="read_receipts">
+                                        <option value="SEND" {% if preferences.read_receipts == 'SEND' %}selected{% endif %}>Send receipts</option>
+                                        <option value="DISABLED" {% if preferences.read_receipts == 'DISABLED' %}selected{% endif %}>Don't send</option>
+                                    </select>
+                                    <div class="form-text">Let others know when you've read their message</div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="timestamp_format" class="form-label">Timestamp Format</label>
+                                    <select class="form-select" id="timestamp_format" name="timestamp_format">
+                                        <option value="12_HOUR" {% if preferences.timestamp_format == '12_HOUR' %}selected{% endif %}>12-hour (AM/PM)</option>
+                                        <option value="24_HOUR" {% if preferences.timestamp_format == '24_HOUR' %}selected{% endif %}>24-hour</option>
+                                        <option value="RELATIVE" {% if preferences.timestamp_format == 'RELATIVE' %}selected{% endif %}>Relative (2 hours ago)</option>
+                                    </select>
+                                    <div class="form-text">How timestamps are displayed</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Privacy Settings -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">Privacy Settings</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="online_status" class="form-label">Online Status</label>
+                                    <select class="form-select" id="online_status" name="online_status">
+                                        <option value="SHOW" {% if preferences.online_status == 'SHOW' %}selected{% endif %}>Show to all</option>
+                                        <option value="CONTACTS_ONLY" {% if preferences.online_status == 'CONTACTS_ONLY' %}selected{% endif %}>Contacts only</option>
+                                        <option value="HIDE" {% if preferences.online_status == 'HIDE' %}selected{% endif %}>Always hidden</option>
+                                    </select>
+                                    <div class="form-text">Control who can see when you're online</div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="profile_visibility" class="form-label">Profile Visibility</label>
+                                    <select class="form-select" id="profile_visibility" name="profile_visibility">
+                                        <option value="PUBLIC" {% if preferences.profile_visibility == 'PUBLIC' %}selected{% endif %}>Public</option>
+                                        <option value="USERS_ONLY" {% if preferences.profile_visibility == 'USERS_ONLY' %}selected{% endif %}>Registered users only</option>
+                                        <option value="CONTACTS_ONLY" {% if preferences.profile_visibility == 'CONTACTS_ONLY' %}selected{% endif %}>Contacts only</option>
+                                    </select>
+                                    <div class="form-text">Who can view your profile information</div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="last_seen" class="form-label">Last Seen</label>
+                                    <select class="form-select" id="last_seen" name="last_seen">
+                                        <option value="SHOW" {% if preferences.last_seen == 'SHOW' %}selected{% endif %}>Show last seen time</option>
+                                        <option value="HIDE" {% if preferences.last_seen == 'HIDE' %}selected{% endif %}>Hide last seen time</option>
+                                    </select>
+                                    <div class="form-text">Let others see when you were last active</div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="message_requests" class="form-label">Message Requests</label>
+                                    <select class="form-select" id="message_requests" name="message_requests">
+                                        <option value="ALLOW_ALL" {% if preferences.message_requests == 'ALLOW_ALL' %}selected{% endif %}>Allow from all</option>
+                                        <option value="CONTACTS_ONLY" {% if preferences.message_requests == 'CONTACTS_ONLY' %}selected{% endif %}>Contacts only</option>
+                                        <option value="DISABLED" {% if preferences.message_requests == 'DISABLED' %}selected{% endif %}>Disabled</option>
+                                    </select>
+                                    <div class="form-text">Who can send you messages</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Auto-Reply Message -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">Auto-Reply Message</h5>
+                            <div class="mb-3">
+                                <label for="auto_reply_message" class="form-label">Custom Message</label>
+                                <textarea class="form-control" id="auto_reply_message" name="auto_reply_message" rows="4"
+                                          placeholder="I'm currently away but will respond as soon as possible...">{{ preferences.auto_reply_message|default:'' }}</textarea>
+                                <div class="form-text">Message sent when you're away or inactive</div>
+                            </div>
+                        </div>
+
+                        <!-- Blocked Users -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">Blocked Users</h5>
+                            <div class="mb-3">
+                                <label for="blocked_users" class="form-label">Manage Blocked Users</label>
+                                <div class="input-group">
+                                    <select class="form-select" id="blocked_users" name="blocked_users" multiple size="5">
+                                        {% for user in blocked_users %}
+                                            <option value="{{ user.id }}" selected>{{ user.get_full_name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <button class="btn btn-outline-danger" type="button" 
+                                            hx-get="{% url 'messaging:blocked_users_manage' %}"
+                                            hx-target="#blocked-users-modal"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#blocked-users-modal">
+                                        <i class="bi bi-gear"></i> Manage
+                                    </button>
+                                </div>
+                                <div class="form-text">These users cannot send you messages</div>
+                            </div>
+                        </div>
+
+                        <div id="form-errors"></div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <span class="htmx-indicator spinner-border spinner-border-sm me-2" role="status"></span>
+                                Save Preferences
+                            </button>
+                            <a href="{% url 'messaging:message_list' %}" class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-md-4">
+            <!-- Quick Settings -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Quick Settings</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-primary btn-sm" 
+                                hx-post="{% url 'messaging:communication_preferences' %}"
+                                hx-vals='{"browser_notifications": "ALL"}'>
+                            <i class="bi bi-bell"></i> Enable Notifications
+                        </button>
+                        <button class="btn btn-outline-primary btn-sm" 
+                                hx-post="{% url 'messaging:communication_preferences' %}"
+                                hx-vals='{"browser_notifications": "NONE"}'>
+                            <i class="bi bi-bell-slash"></i> Disable Notifications
+                        </button>
+                        <button class="btn btn-outline-primary btn-sm" 
+                                hx-post="{% url 'messaging:communication_preferences' %}"
+                                hx-vals='{"sound_enabled": "DISABLED"}'>
+                            <i class="bi bi-volume-mute"></i> Mute Sounds
+                        </button>
+                        <button class="btn btn-outline-primary btn-sm" 
+                                hx-post="{% url 'messaging:communication_preferences' %}"
+                                hx-vals='{"auto_reply": "DISABLED"}'>
+                            <i class="bi bi-x-circle"></i> Disable Auto-Reply
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Privacy Tips -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Privacy Tips</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="bi bi-shield-check text-success me-2"></i>
+                            Regularly review your privacy settings
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-shield-check text-success me-2"></i>
+                            Be selective about who can contact you
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-shield-check text-success me-2"></i>
+                            Report inappropriate messages
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-shield-check text-success me-2"></i>
+                            Keep your auto-reply professional
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Communication Guidelines -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Communication Guidelines</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle text-info me-2"></i>
+                            Be respectful and professional
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle text-info me-2"></i>
+                            Respond to messages in a timely manner
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle text-info me-2"></i>
+                            Keep conversations focused on learning
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle text-info me-2"></i>
+                            Report any technical issues promptly
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Blocked Users Modal -->
+<div class="modal fade" id="blocked-users-modal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <!-- Content will be loaded via HTMX -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Handle form submission success
+    document.body.addEventListener('htmx:afterRequest', function(evt) {
+        if (evt.detail.successful && evt.detail.target.id === 'form-errors') {
+            // Show success message
+            const successAlert = document.createElement('div');
+            successAlert.className = 'alert alert-success alert-dismissible fade show';
+            successAlert.innerHTML = `
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                <i class="bi bi-check-circle me-2"></i> Your preferences have been saved successfully!
+            `;
+            
+            // Insert after the form
+            const form = document.querySelector('form');
+            form.parentNode.insertBefore(successAlert, form.nextSibling);
+            
+            // Remove after 3 seconds
+            setTimeout(function() {
+                successAlert.remove();
+            }, 3000);
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,688 @@
+{% load ui_tags %}
+<!-- Enhanced Navigation Component with Mobile-First Responsive Design -->
+<nav class="platform-header navbar navbar-expand-lg sticky-top shadow-sm theme-nav"
+     role="navigation"
+     aria-label="Main navigation"
+     x-data="{
+         searchQuery: '',
+         searchResults: [],
+         searchOpen: false,
+         mobileMenuOpen: false,
+         notificationsOpen: false,
+         userMenuOpen: false,
+         lastScrollY: 0,
+         headerHidden: false
+     }"
+     x-init="initNavigation()"
+     @scroll.window="handleScroll()"
+     x-bind:class="{ 'header-hidden': headerHidden }">
+    
+    <div class="container-fluid">
+        <!-- Brand Section -->
+        <a class="navbar-brand d-flex align-items-center fw-bold text-decoration-none"
+           href="{% url 'accounts:home' %}"
+           aria-label="Django Tutor Platform Home">
+            <div class="brand-logo me-2">
+                <i class="bi bi-mortarboard-fill" aria-hidden="true"></i>
+            </div>
+            <div class="brand-text">
+                <span class="d-none d-sm-inline">Tutor Platform</span>
+                <span class="d-sm-none">TP</span>
+            </div>
+        </a>
+        
+        <!-- Mobile Controls -->
+        <div class="mobile-controls d-flex d-lg-none align-items-center">
+            <!-- Mobile Search Toggle -->
+            <button class="btn btn-link nav-link p-2 me-1"
+                    @click="searchOpen = !searchOpen"
+                    aria-label="Toggle search"
+                    aria-expanded="false"
+                    aria-controls="mobile-search">
+                <i class="bi bi-search" aria-hidden="true"></i>
+            </button>
+            
+            <!-- Mobile Notifications -->
+            {% if user.is_authenticated %}
+            <button class="btn btn-link nav-link p-2 me-1 position-relative"
+                    @click="notificationsOpen = !notificationsOpen"
+                    aria-label="Toggle notifications"
+                    aria-expanded="false">
+                <i class="bi bi-bell" aria-hidden="true"></i>
+                <span class="notification-badge position-absolute top-0 end-0"
+                      hx-get="{% url 'notifications:unread_count' %}"
+                      hx-trigger="load, every 30s"
+                      hx-target="this">0</span>
+            </button>
+            {% endif %}
+            
+            <!-- Mobile Menu Toggle -->
+            <button class="navbar-toggler border-0 p-2"
+                    @click="mobileMenuOpen = !mobileMenuOpen"
+                    aria-label="Toggle navigation menu"
+                    aria-expanded="false"
+                    aria-controls="navbarNav">
+                <div class="hamburger-menu" x-bind:class="{ 'active': mobileMenuOpen }">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </button>
+        </div>
+        
+        <!-- Collapsible Content -->
+        <div class="collapse navbar-collapse" 
+             :class="{ 'show': mobileMenuOpen }" 
+             id="navbarNav">
+            
+            <!-- Mobile Search Section -->
+            <div class="mobile-search-section d-lg-none py-3 border-bottom" 
+                 x-show="searchOpen"
+                 x-transition>
+                <form class="search-form" 
+                      action="{% url 'search:global' %}" 
+                      method="get" 
+                      role="search">
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="bi bi-search" aria-hidden="true"></i>
+                        </span>
+                        <input type="search" 
+                               class="form-control theme-input" 
+                               name="query"
+                               placeholder="Search tutors, requirements..."
+                               aria-label="Search"
+                               x-model="searchQuery"
+                               @input.debounce.300ms="performSearch()"
+                               @focus="$refs.mobileSearchResults.classList.add('show')"
+                               @blur.debounce.200ms="$refs.mobileSearchResults.classList.remove('show')">
+                        <button class="btn btn-primary" type="submit">
+                            Search
+                        </button>
+                    </div>
+                    
+                    <!-- Mobile Search Results -->
+                    <div class="search-results-dropdown dropdown-menu w-100 mt-2" 
+                         x-ref="mobileSearchResults"
+                         style="display: none; max-height: 300px; overflow-y: auto;">
+                        <template x-for="result in searchResults" :key="result.id">
+                            <a :href="result.url" 
+                               class="dropdown-item d-flex align-items-center py-2">
+                                <div class="search-result-icon me-3">
+                                    <i class="bi" 
+                                       :class="getSearchResultIcon(result.type)"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="search-result-title fw-medium" x-text="result.title"></div>
+                                    <div class="search-result-description small text-muted" x-text="result.description"></div>
+                                </div>
+                            </a>
+                        </template>
+                        <div x-show="searchResults.length === 0 && searchQuery.length > 2" 
+                             class="dropdown-item text-center text-muted">
+                            No results found
+                        </div>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Main Navigation -->
+            <ul class="navbar-nav me-auto">
+                {% if user.is_authenticated %}
+                    <!-- Role-based Navigation Items -->
+                    {% if user.user_type == 'STUDENT' %}
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center" 
+                               href="{% url 'accounts:student_dashboard' %}">
+                                <i class="bi bi-speedometer2 me-2" aria-hidden="true"></i>
+                                <span>Dashboard</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center" 
+                               href="{% url 'requirements:requirement_list' %}">
+                                <i class="bi bi-clipboard-check me-2" aria-hidden="true"></i>
+                                <span>My Requirements</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center" 
+                               href="{% url 'requirements:requirement_create' %}">
+                                <i class="bi bi-plus-circle me-2" aria-hidden="true"></i>
+                                <span>Post Requirement</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center" 
+                               href="{% url 'accounts:tutor_list' %}">
+                                <i class="bi bi-people me-2" aria-hidden="true"></i>
+                                <span>Find Tutors</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center position-relative" 
+                               href="{% url 'messaging:message_list' %}">
+                                <i class="bi bi-envelope me-2" aria-hidden="true"></i>
+                                <span>Messages</span>
+                                <span class="notification-badge" 
+                                      hx-get="{% url 'messaging:unread_count' %}" 
+                                      hx-trigger="load, every 30s"
+                                      hx-target="this">0</span>
+                            </a>
+                        </li>
+                    {% endif %}
+                    
+                    {% if user.user_type == 'TUTOR' %}
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center" 
+                               href="{% url 'accounts:tutor_dashboard' %}">
+                                <i class="bi bi-speedometer2 me-2" aria-hidden="true"></i>
+                                <span>Dashboard</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center" 
+                               href="{% url 'requirements:proposal_list' %}">
+                                <i class="bi bi-clipboard-data me-2" aria-hidden="true"></i>
+                                <span>Proposals</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center" 
+                               href="{% url 'requirements:requirement_list' %}">
+                                <i class="bi bi-search me-2" aria-hidden="true"></i>
+                                <span>Find Jobs</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center position-relative" 
+                               href="{% url 'messaging:message_list' %}">
+                                <i class="bi bi-envelope me-2" aria-hidden="true"></i>
+                                <span>Messages</span>
+                                <span class="notification-badge" 
+                                      hx-get="{% url 'messaging:unread_count' %}" 
+                                      hx-trigger="load, every 30s"
+                                      hx-target="this">0</span>
+                            </a>
+                        </li>
+                    {% endif %}
+                    
+                    {% if user.is_staff %}
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center" 
+                               href="{% url 'accounts:admin_dashboard' %}">
+                                <i class="bi bi-speedometer2 me-2" aria-hidden="true"></i>
+                                <span>Admin Dashboard</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center" 
+                               href="{% url 'admin:index' %}">
+                                <i class="bi bi-gear me-2" aria-hidden="true"></i>
+                                <span>Admin Panel</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center" 
+                               href="{% url 'paymentsdetails:admin_dashboard' %}">
+                                <i class="bi bi-currency-dollar me-2" aria-hidden="true"></i>
+                                <span>Financial</span>
+                            </a>
+                        </li>
+                    {% endif %}
+                {% else %}
+                    <!-- Guest Navigation -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'accounts:home' %}">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'accounts:tutor_list' %}">Find Tutors</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">How It Works</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">About</a>
+                    </li>
+                {% endif %}
+            </ul>
+            
+            <!-- Desktop Search -->
+            <form class="search-form d-none d-lg-flex me-3 flex-grow-1 max-w-md"
+                  action="{% url 'search:global' %}" 
+                  method="get" 
+                  role="search">
+                <div class="input-group">
+                    <span class="input-group-text">
+                        <i class="bi bi-search" aria-hidden="true"></i>
+                    </span>
+                    <input type="search" 
+                           class="form-control theme-input" 
+                           name="query"
+                           placeholder="Search tutors, requirements..."
+                           aria-label="Search"
+                           x-model="searchQuery"
+                           @input.debounce.300ms="performSearch()"
+                           @focus="$refs.desktopSearchResults.classList.add('show')"
+                           @blur.debounce.200ms="$refs.desktopSearchResults.classList.remove('show')">
+                </div>
+                
+                <!-- Desktop Search Results -->
+                <div class="search-results-dropdown dropdown-menu w-100 mt-2" 
+                     x-ref="desktopSearchResults"
+                     style="display: none; max-height: 400px; overflow-y: auto;">
+                    <template x-for="result in searchResults" :key="result.id">
+                        <a :href="result.url" 
+                           class="dropdown-item d-flex align-items-center py-2">
+                            <div class="search-result-icon me-3">
+                                <i class="bi" 
+                                   :class="getSearchResultIcon(result.type)"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="search-result-title fw-medium" x-text="result.title"></div>
+                                <div class="search-result-description small text-muted" x-text="result.description"></div>
+                            </div>
+                        </a>
+                    </template>
+                    <div x-show="searchResults.length === 0 && searchQuery.length > 2" 
+                         class="dropdown-item text-center text-muted">
+                        No results found
+                    </div>
+                </div>
+            </form>
+            
+            <!-- Right Navigation -->
+            <ul class="navbar-nav align-items-center">
+                <!-- Theme Toggle -->
+                <li class="nav-item">
+                    <button class="theme-toggle btn btn-link nav-link p-2"
+                            @click="toggleTheme()"
+                            aria-label="Toggle theme"
+                            title="Toggle between light and dark theme">
+                        <i class="bi" 
+                           :class="theme === 'dark' ? 'bi-sun-fill' : 'bi-moon-fill'" 
+                           aria-hidden="true"></i>
+                    </button>
+                </li>
+                
+                {% if user.is_authenticated %}
+                    <!-- Desktop Notifications -->
+                    <li class="nav-item dropdown d-none d-lg-block" x-data="{ open: false }">
+                        <button class="nav-link dropdown-toggle position-relative btn btn-link p-2"
+                                @click="open = !open; notificationsOpen = open"
+                                @click.outside="open = false; notificationsOpen = false"
+                                aria-expanded="false"
+                                aria-haspopup="true"
+                                aria-label="Notifications">
+                            <i class="bi bi-bell" aria-hidden="true"></i>
+                            <span class="notification-badge"
+                                  hx-get="{% url 'notifications:unread_count' %}"
+                                  hx-trigger="load, every 30s"
+                                  hx-target="this"
+                                  aria-label="Unread notifications count">0</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end notification-dropdown theme-card"
+                            x-show="open"
+                            x-transition
+                            style="display: none; min-width: 320px;"
+                            role="menu">
+                            <li><h6 class="dropdown-header" role="presentation">Notifications</h6></li>
+                            <li role="none">
+                                <div hx-get="{% url 'notifications:recent' %}"
+                                     hx-trigger="load, every 30s"
+                                     hx-target="this"
+                                     role="menuitem">
+                                    <div class="dropdown-item text-center py-3" role="none">
+                                        <div class="htmx-indicator spinner-border spinner-border-sm" role="status">
+                                            <span class="visually-hidden">Loading notifications...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </li>
+                            <li role="none"><hr class="dropdown-divider" role="separator"></li>
+                            <li role="none">
+                                <a class="dropdown-item" href="{% url 'notifications:notification_list' %}" role="menuitem">
+                                    View All Notifications
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    
+                    <!-- User Dropdown -->
+                    <li class="nav-item dropdown" x-data="{ open: false }">
+                        <button class="nav-link dropdown-toggle d-flex align-items-center btn btn-link p-2"
+                                @click="open = !open; userMenuOpen = open"
+                                @click.outside="open = false; userMenuOpen = false"
+                                aria-expanded="false"
+                                aria-haspopup="true"
+                                aria-label="User menu">
+                            <div class="user-avatar me-2">
+                                {% if user.profile.avatar %}
+                                    <img src="{{ user.profile.avatar.url }}" 
+                                         alt="{{ user.username }}" 
+                                         class="rounded-circle"
+                                         width="24" height="24">
+                                {% else %}
+                                    <i class="bi bi-person-circle" aria-hidden="true"></i>
+                                {% endif %}
+                            </div>
+                            <span class="d-none d-md-inline">{{ user.username }}</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end theme-card"
+                            x-show="open"
+                            x-transition
+                            style="display: none;"
+                            role="menu">
+                            <li role="none">
+                                <a class="dropdown-item" href="{% url 'accounts:profile' %}" role="menuitem">
+                                    <i class="bi bi-person me-2" aria-hidden="true"></i> Profile
+                                </a>
+                            </li>
+                            {% if user.user_type == 'STUDENT' %}
+                                <li role="none">
+                                    <a class="dropdown-item" href="{% url 'accounts:student_profile' %}" role="menuitem">
+                                        <i class="bi bi-mortarboard me-2" aria-hidden="true"></i> Student Profile
+                                    </a>
+                                </li>
+                            {% endif %}
+                            {% if user.user_type == 'TUTOR' %}
+                                <li role="none">
+                                    <a class="dropdown-item" href="{% url 'accounts:tutor_profile' %}" role="menuitem">
+                                        <i class="bi bi-award me-2" aria-hidden="true"></i> Tutor Profile
+                                    </a>
+                                </li>
+                            {% endif %}
+                            <li role="none">
+                                <a class="dropdown-item" href="{% url 'paymentsdetails:escrow_account' %}" role="menuitem">
+                                    <i class="bi bi-wallet2 me-2" aria-hidden="true"></i> Wallet
+                                </a>
+                            </li>
+                            <li role="none">
+                                <a class="dropdown-item" href="{% url 'notifications:preferences' %}" role="menuitem">
+                                    <i class="bi bi-gear me-2" aria-hidden="true"></i> Preferences
+                                </a>
+                            </li>
+                            <li role="none"><hr class="dropdown-divider" role="separator"></li>
+                            <li role="none">
+                                <a class="dropdown-item" href="{% url 'accounts:logout' %}" role="menuitem">
+                                    <i class="bi bi-box-arrow-right me-2" aria-hidden="true"></i> Logout
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                {% else %}
+                    <!-- Guest Actions -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'accounts:login' %}">Login</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="btn theme-btn-outline-light ms-2" href="{% url 'accounts:signup' %}">Sign Up</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+    
+    <!-- Mobile Overlay -->
+    <div class="mobile-overlay"
+         x-show="mobileMenuOpen"
+         x-transition
+         @click="mobileMenuOpen = false"></div>
+</nav>
+
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('navigation', () => ({
+        initNavigation() {
+            // Initialize search functionality
+            this.searchQuery = '';
+            this.searchResults = [];
+            
+            // Set up keyboard navigation
+            this.setupKeyboardNavigation();
+        },
+        
+        toggleTheme() {
+            this.$store.themeTransition = true;
+            this.theme = this.theme === 'dark' ? 'light' : 'dark';
+            localStorage.setItem('theme', this.theme);
+            document.documentElement.setAttribute('data-theme', this.theme);
+            
+            setTimeout(() => {
+                this.$store.themeTransition = false;
+            }, 300);
+            
+            // Announce theme change to screen readers
+            announceToScreenReader(`Theme changed to ${this.theme} mode`);
+        },
+        
+        handleScroll() {
+            const currentScrollY = window.scrollY;
+            
+            // Hide header on scroll down, show on scroll up
+            if (currentScrollY > this.lastScrollY && currentScrollY > 100) {
+                this.headerHidden = true;
+            } else {
+                this.headerHidden = false;
+            }
+            
+            this.lastScrollY = currentScrollY;
+        },
+        
+        async performSearch() {
+            if (this.searchQuery.length < 2) {
+                this.searchResults = [];
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/search/autocomplete/?q=${encodeURIComponent(this.searchQuery)}`);
+                const data = await response.json();
+                this.searchResults = data.results || [];
+            } catch (error) {
+                console.error('Search error:', error);
+                this.searchResults = [];
+            }
+        },
+        
+        getSearchResultIcon(type) {
+            const icons = {
+                'tutor': 'bi-person',
+                'student': 'bi-mortarboard',
+                'requirement': 'bi-clipboard',
+                'proposal': 'bi-file-text',
+                'message': 'bi-envelope',
+                'course': 'bi-book',
+                'session': 'bi-calendar'
+            };
+            return icons[type] || 'bi-file';
+        },
+        
+        setupKeyboardNavigation() {
+            document.addEventListener('keydown', (e) => {
+                // Ctrl/Cmd + K for search focus
+                if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                    e.preventDefault();
+                    const searchInput = document.querySelector('.search-form input[type="search"]');
+                    if (searchInput) {
+                        searchInput.focus();
+                    }
+                }
+                
+                // Escape to close mobile menu
+                if (e.key === 'Escape' && this.mobileMenuOpen) {
+                    this.mobileMenuOpen = false;
+                }
+            });
+        }
+    }));
+});
+</script>
+
+<style>
+/* Enhanced Navigation Styles */
+.platform-header {
+    transition: transform 0.3s ease;
+}
+
+.platform-header.header-hidden {
+    transform: translateY(-100%);
+}
+
+/* Hamburger Menu Animation */
+.hamburger-menu {
+    width: 24px;
+    height: 18px;
+    position: relative;
+    transform: rotate(0deg);
+    transition: 0.3s ease-in-out;
+    cursor: pointer;
+}
+
+.hamburger-menu span {
+    display: block;
+    position: absolute;
+    height: 2px;
+    width: 100%;
+    background: currentColor;
+    border-radius: 2px;
+    opacity: 1;
+    left: 0;
+    transform: rotate(0deg);
+    transition: 0.25s ease-in-out;
+}
+
+.hamburger-menu span:nth-child(1) {
+    top: 0px;
+}
+
+.hamburger-menu span:nth-child(2) {
+    top: 8px;
+}
+
+.hamburger-menu span:nth-child(3) {
+    top: 16px;
+}
+
+.hamburger-menu.active span:nth-child(1) {
+    top: 8px;
+    transform: rotate(135deg);
+}
+
+.hamburger-menu.active span:nth-child(2) {
+    opacity: 0;
+    left: -60px;
+}
+
+.hamburger-menu.active span:nth-child(3) {
+    top: 8px;
+    transform: rotate(-135deg);
+}
+
+/* Mobile Overlay */
+.mobile-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1030;
+}
+
+/* Search Results Dropdown */
+.search-results-dropdown {
+    border: none;
+    box-shadow: var(--shadow-lg);
+    border-radius: var(--border-radius-lg);
+}
+
+.search-result-icon {
+    width: 24px;
+    text-align: center;
+    color: var(--color-primary);
+}
+
+.search-result-title {
+    color: var(--color-text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.search-result-description {
+    color: var(--color-text-secondary);
+}
+
+/* Notification Badge */
+.notification-badge {
+    position: absolute;
+    top: 0;
+    right: 0;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    line-height: 18px;
+    text-align: center;
+    background-color: var(--color-error);
+    color: white;
+    border-radius: var(--border-radius-full);
+    transform: translate(25%, -25%);
+}
+
+/* User Avatar */
+.user-avatar img,
+.user-avatar i {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.user-avatar i {
+    font-size: 24px;
+    color: var(--color-text-secondary);
+}
+
+/* Responsive Adjustments */
+@media (max-width: 991.98px) {
+    .navbar-nav {
+        padding: 1rem 0;
+    }
+    
+    .nav-item {
+        margin-bottom: 0.5rem;
+    }
+    
+    .nav-link {
+        padding: 0.5rem 1rem;
+    }
+}
+
+/* Dark Mode Adjustments */
+[data-theme="dark"] .search-results-dropdown {
+    background-color: var(--color-bg-secondary);
+    border: 1px solid var(--color-border-medium);
+}
+
+[data-theme="dark"] .dropdown-item:hover {
+    background-color: var(--color-bg-tertiary);
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+    .platform-header,
+    .hamburger-menu,
+    .hamburger-menu span {
+        transition: none;
+    }
+}
+
+/* Focus Styles */
+.navbar-toggler:focus,
+.nav-link:focus,
+.theme-toggle:focus {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+</style>

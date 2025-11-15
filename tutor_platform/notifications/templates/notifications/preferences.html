@@ -1,0 +1,410 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Notification Preferences - Django Tutor Platform{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3">Notification Preferences</h1>
+            <p class="text-muted">Manage how you receive notifications</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-3">
+            <!-- Settings Navigation -->
+            <div class="card">
+                <div class="card-body p-0">
+                    <nav class="nav nav-pills nav-fill flex-column">
+                        <a class="nav-link active" href="#email-settings" data-bs-toggle="tab">
+                            <i class="bi bi-envelope me-2"></i>Email Settings
+                        </a>
+                        <a class="nav-link" href="#push-settings" data-bs-toggle="tab">
+                            <i class="bi bi-bell me-2"></i>Push Notifications
+                        </a>
+                        <a class="nav-link" href="#inapp-settings" data-bs-toggle="tab">
+                            <i class="bi bi-window me-2"></i>In-App Settings
+                        </a>
+                        <a class="nav-link" href="#privacy-settings" data-bs-toggle="tab">
+                            <i class="bi bi-shield me-2"></i>Privacy Settings
+                        </a>
+                    </nav>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-9">
+            <div class="tab-content">
+                <!-- Email Settings Tab -->
+                <div class="tab-pane fade show active" id="email-settings">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Email Notification Settings</h5>
+                            <p class="text-muted mb-0">Choose which notifications you receive via email</p>
+                        </div>
+                        <div class="card-body">
+                            <form method="post" hx-post="{% url 'notifications:update_preferences' %}" hx-target="#preferences-form-result">
+                                {% csrf_token %}
+                                <input type="hidden" name="setting_type" value="email">
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6 class="mb-3">Communication</h6>
+                                        <div class="mb-3 form-check">
+                                            <input type="checkbox" class="form-check-input" id="email_messages" name="email_messages" 
+                                                   {% if preferences.email_messages %}checked{% endif %}>
+                                            <label class="form-check-label" for="email_messages">
+                                                New Messages
+                                            </label>
+                                        </div>
+                                        <div class="mb-3 form-check">
+                                            <input type="checkbox" class="form-check-input" id="email_proposals" name="email_proposals" 
+                                                   {% if preferences.email_proposals %}checked{% endif %}>
+                                            <label class="form-check-label" for="email_proposals">
+                                                New Proposals
+                                            </label>
+                                        </div>
+                                        <div class="mb-3 form-check">
+                                            <input type="checkbox" class="form-check-input" id="email_reviews" name="email_reviews" 
+                                                   {% if preferences.email_reviews %}checked{% endif %}>
+                                            <label class="form-check-label" for="email_reviews">
+                                                New Reviews
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6 class="mb-3">Transactions</h6>
+                                        <div class="mb-3 form-check">
+                                            <input type="checkbox" class="form-check-input" id="email_payments" name="email_payments" 
+                                                   {% if preferences.email_payments %}checked{% endif %}>
+                                            <label class="form-check-label" for="email_payments">
+                                                Payment Updates
+                                            </label>
+                                        </div>
+                                        <div class="mb-3 form-check">
+                                            <input type="checkbox" class="form-check-input" id="email_sessions" name="email_sessions" 
+                                                   {% if preferences.email_sessions %}checked{% endif %}>
+                                            <label class="form-check-label" for="email_sessions">
+                                                Session Reminders
+                                            </label>
+                                        </div>
+                                        <div class="mb-3 form-check">
+                                            <input type="checkbox" class="form-check-input" id="email_system" name="email_system" 
+                                                   {% if preferences.email_system %}checked{% endif %}>
+                                            <label class="form-check-label" for="email_system">
+                                                System Updates
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row mt-4">
+                                    <div class="col-md-6">
+                                        <h6 class="mb-3">Email Frequency</h6>
+                                        <div class="mb-3">
+                                            <label for="email_frequency" class="form-label">How often to receive emails</label>
+                                            <select class="form-select" id="email_frequency" name="email_frequency">
+                                                <option value="immediate" {% if preferences.email_frequency == 'immediate' %}selected{% endif %}>Immediately</option>
+                                                <option value="daily" {% if preferences.email_frequency == 'daily' %}selected{% endif %}>Daily Digest</option>
+                                                <option value="weekly" {% if preferences.email_frequency == 'weekly' %}selected{% endif %}>Weekly Summary</option>
+                                                <option value="never" {% if preferences.email_frequency == 'never' %}selected{% endif %}>Never</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6 class="mb-3">Quiet Hours</h6>
+                                        <div class="mb-3">
+                                            <label for="quiet_hours_enabled" class="form-label">Enable Quiet Hours</label>
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="quiet_hours_enabled" name="quiet_hours_enabled" 
+                                                       {% if preferences.quiet_hours_enabled %}checked{% endif %}>
+                                                <label class="form-check-label" for="quiet_hours_enabled">
+                                                    Don't send emails during quiet hours
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-6">
+                                                <label for="quiet_hours_start" class="form-label">Start Time</label>
+                                                <input type="time" class="form-control" id="quiet_hours_start" name="quiet_hours_start" 
+                                                       value="{{ preferences.quiet_hours_start|default:'22:00' }}">
+                                            </div>
+                                            <div class="col-6">
+                                                <label for="quiet_hours_end" class="form-label">End Time</label>
+                                                <input type="time" class="form-control" id="quiet_hours_end" name="quiet_hours_end" 
+                                                       value="{{ preferences.quiet_hours_end|default:'08:00' }}">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mt-4">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-save me-2"></i>Save Email Settings
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary ms-2" 
+                                            hx-post="{% url 'notifications:test_email' %}">
+                                        <i class="bi bi-envelope me-2"></i>Send Test Email
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Push Notifications Tab -->
+                <div class="tab-pane fade" id="push-settings">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Push Notification Settings</h5>
+                            <p class="text-muted mb-0">Manage browser and mobile push notifications</p>
+                        </div>
+                        <div class="card-body">
+                            <form method="post" hx-post="{% url 'notifications:update_preferences' %}" hx-target="#preferences-form-result">
+                                {% csrf_token %}
+                                <input type="hidden" name="setting_type" value="push">
+                                
+                                <div class="mb-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="push_enabled" name="push_enabled" 
+                                               {% if preferences.push_enabled %}checked{% endif %}>
+                                        <label class="form-check-label" for="push_enabled">
+                                            Enable Push Notifications
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div id="push-notification-types" class="{% if not preferences.push_enabled %}d-none{% endif %}">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <h6 class="mb-3">Notification Types</h6>
+                                            <div class="mb-3 form-check">
+                                                <input type="checkbox" class="form-check-input" id="push_messages" name="push_messages" 
+                                                       {% if preferences.push_messages %}checked{% endif %}>
+                                                <label class="form-check-label" for="push_messages">
+                                                    New Messages
+                                                </label>
+                                            </div>
+                                            <div class="mb-3 form-check">
+                                                <input type="checkbox" class="form-check-input" id="push_proposals" name="push_proposals" 
+                                                       {% if preferences.push_proposals %}checked{% endif %}>
+                                                <label class="form-check-label" for="push_proposals">
+                                                    New Proposals
+                                                </label>
+                                            </div>
+                                            <div class="mb-3 form-check">
+                                                <input type="checkbox" class="form-check-input" id="push_sessions" name="push_sessions" 
+                                                       {% if preferences.push_sessions %}checked{% endif %}>
+                                                <label class="form-check-label" for="push_sessions">
+                                                    Session Reminders
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <h6 class="mb-3">Other Notifications</h6>
+                                            <div class="mb-3 form-check">
+                                                <input type="checkbox" class="form-check-input" id="push_payments" name="push_payments" 
+                                                       {% if preferences.push_payments %}checked{% endif %}>
+                                                <label class="form-check-label" for="push_payments">
+                                                    Payment Updates
+                                                </label>
+                                            </div>
+                                            <div class="mb-3 form-check">
+                                                <input type="checkbox" class="form-check-input" id="push_reviews" name="push_reviews" 
+                                                       {% if preferences.push_reviews %}checked{% endif %}>
+                                                <label class="form-check-label" for="push_reviews">
+                                                    New Reviews
+                                                </label>
+                                            </div>
+                                            <div class="mb-3 form-check">
+                                                <input type="checkbox" class="form-check-input" id="push_system" name="push_system" 
+                                                       {% if preferences.push_system %}checked{% endif %}>
+                                                <label class="form-check-label" for="push_system">
+                                                    System Updates
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mt-4">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-save me-2"></i>Save Push Settings
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary ms-2" 
+                                            hx-post="{% url 'notifications:test_push' %}">
+                                        <i class="bi bi-bell me-2"></i>Send Test Push
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- In-App Settings Tab -->
+                <div class="tab-pane fade" id="inapp-settings">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">In-App Notification Settings</h5>
+                            <p class="text-muted mb-0">Customize your in-app notification experience</p>
+                        </div>
+                        <div class="card-body">
+                            <form method="post" hx-post="{% url 'notifications:update_preferences' %}" hx-target="#preferences-form-result">
+                                {% csrf_token %}
+                                <input type="hidden" name="setting_type" value="inapp">
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6 class="mb-3">Display Settings</h6>
+                                        <div class="mb-3">
+                                            <label for="notification_sound" class="form-label">Notification Sound</label>
+                                            <select class="form-select" id="notification_sound" name="notification_sound">
+                                                <option value="default" {% if preferences.notification_sound == 'default' %}selected{% endif %}>Default</option>
+                                                <option value="chime" {% if preferences.notification_sound == 'chime' %}selected{% endif %}>Chime</option>
+                                                <option value="bell" {% if preferences.notification_sound == 'bell' %}selected{% endif %}>Bell</option>
+                                                <option value="none" {% if preferences.notification_sound == 'none' %}selected{% endif %}>None</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="notification_position" class="form-label">Notification Position</label>
+                                            <select class="form-select" id="notification_position" name="notification_position">
+                                                <option value="top-right" {% if preferences.notification_position == 'top-right' %}selected{% endif %}>Top Right</option>
+                                                <option value="top-left" {% if preferences.notification_position == 'top-left' %}selected{% endif %}>Top Left</option>
+                                                <option value="bottom-right" {% if preferences.notification_position == 'bottom-right' %}selected{% endif %}>Bottom Right</option>
+                                                <option value="bottom-left" {% if preferences.notification_position == 'bottom-left' %}selected{% endif %}>Bottom Left</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6 class="mb-3">Behavior Settings</h6>
+                                        <div class="mb-3 form-check">
+                                            <input type="checkbox" class="form-check-input" id="auto_mark_read" name="auto_mark_read" 
+                                                   {% if preferences.auto_mark_read %}checked{% endif %}>
+                                            <label class="form-check-label" for="auto_mark_read">
+                                                Auto-mark notifications as read when viewed
+                                            </label>
+                                        </div>
+                                        <div class="mb-3 form-check">
+                                            <input type="checkbox" class="form-check-input" id="show_preview" name="show_preview" 
+                                                   {% if preferences.show_preview %}checked{% endif %}>
+                                            <label class="form-check-label" for="show_preview">
+                                                Show message previews in notifications
+                                            </label>
+                                        </div>
+                                        <div class="mb-3 form-check">
+                                            <input type="checkbox" class="form-check-input" id="group_notifications" name="group_notifications" 
+                                                   {% if preferences.group_notifications %}checked{% endif %}>
+                                            <label class="form-check-label" for="group_notifications">
+                                                Group similar notifications together
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mt-4">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-save me-2"></i>Save In-App Settings
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Privacy Settings Tab -->
+                <div class="tab-pane fade" id="privacy-settings">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Privacy Settings</h5>
+                            <p class="text-muted mb-0">Control your notification privacy and data</p>
+                        </div>
+                        <div class="card-body">
+                            <form method="post" hx-post="{% url 'notifications:update_preferences' %}" hx-target="#preferences-form-result">
+                                {% csrf_token %}
+                                <input type="hidden" name="setting_type" value="privacy">
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6 class="mb-3">Visibility Settings</h6>
+                                        <div class="mb-3 form-check">
+                                            <input type="checkbox" class="form-check-input" id="show_online_status" name="show_online_status" 
+                                                   {% if preferences.show_online_status %}checked{% endif %}>
+                                            <label class="form-check-label" for="show_online_status">
+                                                Show online status to others
+                                            </label>
+                                        </div>
+                                        <div class="mb-3 form-check">
+                                            <input type="checkbox" class="form-check-input" id="show_read_receipts" name="show_read_receipts" 
+                                                   {% if preferences.show_read_receipts %}checked{% endif %}>
+                                            <label class="form-check-label" for="show_read_receipts">
+                                                Show read receipts for messages
+                                            </label>
+                                        </div>
+                                        <div class="mb-3 form-check">
+                                            <input type="checkbox" class="form-check-input" id="show_typing_indicators" name="show_typing_indicators" 
+                                                   {% if preferences.show_typing_indicators %}checked{% endif %}>
+                                            <label class="form-check-label" for="show_typing_indicators">
+                                                Show typing indicators
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6 class="mb-3">Data Management</h6>
+                                        <div class="mb-3 form-check">
+                                            <input type="checkbox" class="form-check-input" id="analytics_tracking" name="analytics_tracking" 
+                                                   {% if preferences.analytics_tracking %}checked{% endif %}>
+                                            <label class="form-check-label" for="analytics_tracking">
+                                                Allow notification analytics tracking
+                                            </label>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="notification_retention" class="form-label">Keep notifications for</label>
+                                            <select class="form-select" id="notification_retention" name="notification_retention">
+                                                <option value="30" {% if preferences.notification_retention == 30 %}selected{% endif %}>30 days</option>
+                                                <option value="90" {% if preferences.notification_retention == 90 %}selected{% endif %}>90 days</option>
+                                                <option value="180" {% if preferences.notification_retention == 180 %}selected{% endif %}>180 days</option>
+                                                <option value="365" {% if preferences.notification_retention == 365 %}selected{% endif %}>1 year</option>
+                                                <option value="forever" {% if preferences.notification_retention == 'forever' %}selected{% endif %}>Forever</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mt-4">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-save me-2"></i>Save Privacy Settings
+                                    </button>
+                                    <button type="button" class="btn btn-outline-danger ms-2" 
+                                            hx-post="{% url 'notifications:clear_all_notifications' %}"
+                                            hx-confirm="This will permanently delete all your notifications. Are you sure?">
+                                        <i class="bi bi-trash me-2"></i>Clear All Notifications
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Result -->
+            <div id="preferences-form-result" class="mt-3"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Toggle push notification options based on enabled status
+    document.getElementById('push_enabled').addEventListener('change', function() {
+        const pushTypes = document.getElementById('push-notification-types');
+        if (this.checked) {
+            pushTypes.classList.remove('d-none');
+        } else {
+            pushTypes.classList.add('d-none');
+        }
+    });
+</script>
+{% endblock %}

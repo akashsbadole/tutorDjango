@@ -1,0 +1,64 @@
+<div class="message-item d-flex {% if message.sender == user %}justify-content-end{% else %}justify-content-start{% endif %} mb-3"
+     id="message-{{ message.id }}">
+    <div class="d-flex align-items-start {% if message.sender == user %}flex-row-reverse{% endif %}">
+        <div class="flex-shrink-0">
+            <img src="{{ message.sender.profile.get_avatar_url|default:'/static/images/default-avatar.png' }}" 
+                 alt="{{ message.sender.get_full_name|default:message.sender.username }}" 
+                 class="rounded-circle" width="40" height="40">
+        </div>
+        <div class="flex-grow-1 {% if message.sender == user %}ms-3 text-end{% else %}me-3{% endif %}">
+            <div class="card {% if message.sender == user %}bg-primary text-white{% else %}bg-light{% endif %}"
+                 style="max-width: 70%; {% if message.sender == user %}margin-left: auto;{% endif %}">
+                <div class="card-body py-2">
+                    {% if message.content %}
+                        <p class="mb-0">{{ message.content|linebreaksbr }}</p>
+                    {% endif %}
+                    
+                    {% if message.attachment %}
+                        <div class="mt-2">
+                            <a href="{{ message.attachment.url }}" target="_blank" 
+                               class="btn btn-sm {% if message.sender == user %}btn-light{% else %}btn-primary{% endif %}">
+                                <i class="bi bi-paperclip me-1"></i> {{ message.attachment.name }}
+                            </a>
+                        </div>
+                    {% endif %}
+                    
+                    {% if message.online_class %}
+                        <div class="mt-2">
+                            <a href="{{ message.online_class.get_absolute_url }}" 
+                               class="btn btn-sm {% if message.sender == user %}btn-light{% else %}btn-primary{% endif %}">
+                                <i class="bi bi-camera-video me-1"></i> 
+                                {{ message.online_class.title }}
+                            </a>
+                        </div>
+                    {% endif %}
+                    
+                    {% if message.shared_file %}
+                        <div class="mt-2">
+                            <a href="{{ message.shared_file.get_absolute_url }}" 
+                               class="btn btn-sm {% if message.sender == user %}btn-light{% else %}btn-primary{% endif %}">
+                                <i class="bi bi-file-earmark me-1"></i> 
+                                {{ message.shared_file.title }}
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="text-muted small mt-1 {% if message.sender == user %}text-end{% endif %}">
+                <span>{{ message.created_at|date:"M d, Y H:i" }}</span>
+                {% if message.is_edited %}
+                    <span class="ms-1">(edited)</span>
+                {% endif %}
+                {% if message.sender == user %}
+                    <span class="ms-1">
+                        {% if message.is_read %}
+                            <i class="bi bi-check2-all text-primary"></i> Read
+                        {% else %}
+                            <i class="bi bi-check2"></i> Sent
+                        {% endif %}
+                    </span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,418 @@
+{% extends 'ui_components/base.html' %}
+{% load ui_tags static %}
+
+{% block title %}Payment #{{ payment.id }} - Django Tutor Platform{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            {% ui_breadcrumb %}
+                <li class="breadcrumb-item"><a href="{% url 'paymentsdetails:payment_list' %}">Payments</a></li>
+                <li class="breadcrumb-item active">Payment #{{ payment.id }}</li>
+            {% end_ui_breadcrumb %}
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 col-md-7">
+            <!-- Payment Details -->
+            {% ui_card "" "payment-details" %}
+                <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
+                    <h5 class="mb-0">Payment Details</h5>
+                    <div class="btn-group btn-group-sm">
+                        {% if payment.status == 'PENDING' %}
+                            <button class="btn btn-success" 
+                                    hx-post="{% url 'paymentsdetails:process_payment' payment.id %}"
+                                    hx-confirm="Process this payment?"
+                                    hx-target="#status-actions"
+                                    hx-swap="innerHTML">
+                                <i class="bi bi-play-circle"></i> Process
+                            </button>
+                        {% endif %}
+                        {% if payment.can_refund %}
+                            <button class="btn btn-warning" 
+                                    hx-post="{% url 'paymentsdetails:refund_payment' payment.id %}"
+                                    hx-confirm="Refund this payment?"
+                                    hx-target="#status-actions"
+                                    hx-swap="innerHTML">
+                                <i class="bi bi-arrow-counterclockwise"></i> Refund
+                            </button>
+                        {% endif %}
+                        <button class="btn btn-outline-primary" 
+                                hx-post="{% url 'paymentsdetails:send_receipt' payment.id %}"
+                                hx-confirm="Send receipt to {{ payment.user.email }}?">
+                            <i class="bi bi-envelope"></i> Send Receipt
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6>Payment Information</h6>
+                            <table class="table table-sm table-borderless">
+                                <tr>
+                                    <td class="text-muted" style="width: 40%;">Payment ID:</td>
+                                    <td><strong>#{{ payment.id }}</strong></td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Transaction ID:</td>
+                                    <td>{{ payment.transaction_id|default:"N/A" }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Amount:</td>
+                                    <td class="{% if payment.amount > 0 %}text-success{% else %}text-danger{% endif %}">
+                                        <strong>{% if payment.amount > 0 %}+{% endif %}${{ payment.amount|floatformat:2 }}</strong>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Status:</td>
+                                    <td>
+                                        {% ui_badge payment.get_status_display "bg-"|add:payment.get_status_color %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Type:</td>
+                                    <td>
+                                        {% ui_badge payment.get_payment_type_display "bg-"|add:payment.get_type_color %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Created:</td>
+                                    <td>{{ payment.created_at|date:"M d, Y H:i" }}</td>
+                                </tr>
+                                {% if payment.processed_at %}
+                                    <tr>
+                                        <td class="text-muted">Processed:</td>
+                                        <td>{{ payment.processed_at|date:"M d, Y H:i" }}</td>
+                                    </tr>
+                                {% endif %}
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Payment Method</h6>
+                            {% if payment.payment_method %}
+                                <table class="table table-sm table-borderless">
+                                    <tr>
+                                        <td class="text-muted" style="width: 40%;">Method:</td>
+                                        <td>{{ payment.payment_method.get_display_name }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-muted">Card Type:</td>
+                                        <td>{{ payment.payment_method.get_card_type_display }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-muted">Last 4 Digits:</td>
+                                        <td>{{ payment.payment_method.card_last4 }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-muted">Expires:</td>
+                                        <td>{{ payment.payment_method.expiry_month }}/{{ payment.payment_method.expiry_year }}</td>
+                                    </tr>
+                                </table>
+                            {% else %}
+                                {% ui_alert "info" "no-payment-method" %}
+                                    No payment method information available
+                                {% end_ui_alert %}
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-12">
+                            <h6>Description</h6>
+                            <p>{{ payment.description }}</p>
+                        </div>
+                    </div>
+
+                    {% if payment.proposal %}
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <h6>Related Proposal</h6>
+                                {% ui_card "" "related-proposal" %}
+                                    <div class="card-body">
+                                        <div class="row align-items-center">
+                                            <div class="col-md-8">
+                                                <h6>{{ payment.proposal.title }}</h6>
+                                                <p class="text-muted">{{ payment.proposal.description|truncatewords:20 }}</p>
+                                                <small class="text-muted">
+                                                    Proposal ID: #{{ payment.proposal.id }} | 
+                                                    Created: {{ payment.proposal.created_at|date:"M d, Y" }}
+                                                </small>
+                                            </div>
+                                            <div class="col-md-4 text-end">
+                                                <a href="{% url 'requirements:proposal_detail' payment.proposal.id %}" 
+                                                   class="btn btn-outline-primary btn-sm">
+                                                    <i class="bi bi-eye"></i> View Proposal
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% end_ui_card %}
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            {% end_ui_card %}
+
+            <!-- Payment Timeline -->
+            {% ui_card "" "payment-timeline" %}
+                <div class="card-header">
+                    <h6 class="mb-0">Payment Timeline</h6>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-primary"></div>
+                            <div class="timeline-content">
+                                <h6>Payment Created</h6>
+                                <p class="text-muted small mb-1">{{ payment.created_at|date:"M d, Y H:i" }}</p>
+                                <p>Payment of ${{ payment.amount|floatformat:2 }} was initiated.</p>
+                            </div>
+                        </div>
+                        {% if payment.processed_at %}
+                            <div class="timeline-item">
+                                <div class="timeline-marker bg-success"></div>
+                                <div class="timeline-content">
+                                    <h6>Payment Processed</h6>
+                                    <p class="text-muted small mb-1">{{ payment.processed_at|date:"M d, Y H:i" }}</p>
+                                    <p>Payment was successfully processed.</p>
+                                </div>
+                            </div>
+                        {% endif %}
+                        {% if payment.refunded_at %}
+                            <div class="timeline-item">
+                                <div class="timeline-marker bg-warning"></div>
+                                <div class="timeline-content">
+                                    <h6>Payment Refunded</h6>
+                                    <p class="text-muted small mb-1">{{ payment.refunded_at|date:"M d, Y H:i" }}</p>
+                                    <p>Payment was refunded in full.</p>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% end_ui_card %}
+        </div>
+
+        <div class="col-lg-4 col-md-5">
+            <!-- Status Actions -->
+            {% ui_card "" "status-actions" %}
+                <div class="card-header">
+                    <h6 class="mb-0">Status Actions</h6>
+                </div>
+                <div class="card-body">
+                    {% if payment.status == 'PENDING' %}
+                        {% ui_alert "warning" "pending-alert" %}
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            This payment is pending processing.
+                        {% end_ui_alert %}
+                        <div class="d-grid gap-2 mt-3">
+                            <button class="btn btn-success" 
+                                    hx-post="{% url 'paymentsdetails:process_payment' payment.id %}"
+                                    hx-confirm="Process this payment now?"
+                                    hx-target="#status-actions"
+                                    hx-swap="innerHTML">
+                                <i class="bi bi-play-circle me-2"></i>Process Payment
+                            </button>
+                            <button class="btn btn-danger" 
+                                    hx-post="{% url 'paymentsdetails:cancel_payment' payment.id %}"
+                                    hx-confirm="Cancel this payment?"
+                                    hx-target="#status-actions"
+                                    hx-swap="innerHTML">
+                                <i class="bi bi-x-circle me-2"></i>Cancel Payment
+                            </button>
+                        </div>
+                    {% elif payment.status == 'PROCESSING' %}
+                        {% ui_alert "info" "processing-alert" %}
+                            <i class="bi bi-hourglass-split me-2"></i>
+                            This payment is currently being processed.
+                        {% end_ui_alert %}
+                    {% elif payment.status == 'COMPLETED' %}
+                        {% ui_alert "success" "completed-alert" %}
+                            <i class="bi bi-check-circle me-2"></i>
+                            This payment has been completed successfully.
+                        {% end_ui_alert %}
+                        {% if payment.can_refund %}
+                            <div class="d-grid gap-2 mt-3">
+                                <button class="btn btn-warning" 
+                                        hx-post="{% url 'paymentsdetails:refund_payment' payment.id %}"
+                                        hx-confirm="Refund this payment?"
+                                        hx-target="#status-actions"
+                                        hx-swap="innerHTML">
+                                    <i class="bi bi-arrow-counterclockwise me-2"></i>Refund Payment
+                                </button>
+                            </div>
+                        {% endif %}
+                    {% elif payment.status == 'FAILED' %}
+                        {% ui_alert "danger" "failed-alert" %}
+                            <i class="bi bi-x-circle me-2"></i>
+                            This payment failed to process.
+                        {% end_ui_alert %}
+                        <div class="d-grid gap-2 mt-3">
+                            <button class="btn btn-primary" 
+                                    hx-post="{% url 'paymentsdetails:retry_payment' payment.id %}"
+                                    hx-confirm="Retry this payment?"
+                                    hx-target="#status-actions"
+                                    hx-swap="innerHTML">
+                                <i class="bi bi-arrow-clockwise me-2"></i>Retry Payment
+                            </button>
+                        </div>
+                    {% elif payment.status == 'REFUNDED' %}
+                        {% ui_alert "warning" "refunded-alert" %}
+                            <i class="bi bi-arrow-counterclockwise me-2"></i>
+                            This payment has been refunded.
+                        {% end_ui_alert %}
+                    {% endif %}
+                </div>
+            {% end_ui_card %}
+
+            <!-- Quick Actions -->
+            {% ui_card "" "quick-actions" %}
+                <div class="card-header">
+                    <h6 class="mb-0">Quick Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-primary" 
+                                hx-post="{% url 'paymentsdetails:send_receipt' payment.id %}"
+                                hx-confirm="Send receipt to {{ payment.user.email }}?">
+                            <i class="bi bi-envelope me-2"></i>Send Receipt
+                        </button>
+                        <a href="{% url 'paymentsdetails:payment_list' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-2"></i>Back to Payments
+                        </a>
+                        {% if payment.proposal %}
+                            <a href="{% url 'requirements:proposal_detail' payment.proposal.id %}" 
+                               class="btn btn-outline-info">
+                                <i class="bi bi-clipboard-data me-2"></i>View Related Proposal
+                            </a>
+                        {% endif %}
+                        <button class="btn btn-outline-success" 
+                                hx-post="{% url 'paymentsdetails:download_invoice' payment.id %}">
+                            <i class="bi bi-download me-2"></i>Download Invoice
+                        </button>
+                    </div>
+                </div>
+            {% end_ui_card %}
+
+            <!-- Related Information -->
+            {% if related_payments %}
+                {% ui_card "" "related-payments" %}
+                    <div class="card-header">
+                        <h6 class="mb-0">Related Payments</h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="list-group list-group-flush">
+                            {% for related in related_payments %}
+                                <a href="{% url 'paymentsdetails:payment_detail' related.id %}" 
+                                   class="list-group-item list-group-item-action">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">{{ related.description }}</h6>
+                                        <small>{{ related.created_at|date:"M d" }}</small>
+                                    </div>
+                                    <p class="mb-1 text-muted small">
+                                        ${{ related.amount|floatformat:2 }} - {{ related.get_status_display }}
+                                    </p>
+                                    {% ui_badge related.get_status_display "bg-"|add:related.get_status_color %}
+                                </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% end_ui_card %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: #e9ecef;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 30px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -22px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+}
+
+.timeline-content {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+@media (max-width: 768px) {
+    .timeline {
+        padding-left: 20px;
+    }
+    
+    .timeline::before {
+        left: 10px;
+    }
+    
+    .timeline-marker {
+        left: -17px;
+        width: 12px;
+        height: 12px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
+    // Add real-time updates for payment status
+    htmx.on('htmx:afterRequest', function(evt) {
+        if (evt.detail.successful) {
+            // Show success notification
+            const notification = document.createElement('div');
+            notification.className = 'alert alert-success alert-dismissible fade show position-fixed';
+            notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            notification.innerHTML = `
+                <i class="bi bi-check-circle me-2"></i>
+                Payment action completed successfully
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(notification);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 5000);
+        }
+    });
+});
+</script>
+{% endblock %}

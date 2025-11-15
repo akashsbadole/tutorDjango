@@ -1,0 +1,276 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Post Requirement - Django Tutor Platform{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3">Post Learning Requirement</h1>
+            <p class="text-muted">Tell us what you want to learn and connect with expert tutors</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <form hx-post="{% url 'requirements:requirement_create' %}" hx-target="#form-errors" hx-swap="innerHTML">
+                        {% csrf_token %}
+                        
+                        <!-- Basic Information -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">Basic Information</h5>
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <label for="title" class="form-label">Requirement Title *</label>
+                                    <input type="text" class="form-control" id="title" name="title" required
+                                           placeholder="e.g., Learn Python Programming">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="subject" class="form-label">Subject *</label>
+                                    <select class="form-select" id="subject" name="subject" required
+                                            hx-get="{% url 'requirements:subject_details' %}"
+                                            hx-trigger="change"
+                                            hx-target="#subject-details"
+                                            hx-swap="innerHTML">
+                                        <option value="">Select a subject</option>
+                                        {% for subject in subjects %}
+                                            <option value="{{ subject.id }}">{{ subject.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="skill_level" class="form-label">Skill Level</label>
+                                    <select class="form-select" id="skill_level" name="skill_level">
+                                        <option value="">Select level</option>
+                                        <option value="BEGINNER">Beginner</option>
+                                        <option value="INTERMEDIATE">Intermediate</option>
+                                        <option value="ADVANCED">Advanced</option>
+                                        <option value="EXPERT">Expert</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Subject Details (Dynamic) -->
+                        <div id="subject-details" class="mb-4">
+                            <!-- Subject-specific details will be loaded here -->
+                        </div>
+
+                        <!-- Description -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">Description</h5>
+                            <div class="mb-3">
+                                <label for="description" class="form-label">Detailed Description *</label>
+                                <textarea class="form-control" id="description" name="description" rows="5" required
+                                          placeholder="Describe what you want to learn, your current knowledge, and your goals..."></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="learning_objectives" class="form-label">Learning Objectives</label>
+                                <div id="learning-objectives-container">
+                                    <div class="input-group mb-2">
+                                        <input type="text" class="form-control" name="learning_objectives" placeholder="What do you want to achieve?">
+                                        <button type="button" class="btn btn-outline-secondary" @click="$el.parentElement.remove()">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-primary" @click="
+                                    const container = document.getElementById('learning-objectives-container');
+                                    const newInput = document.createElement('div');
+                                    newInput.className = 'input-group mb-2';
+                                    newInput.innerHTML = `
+                                        <input type='text' class='form-control' name='learning_objectives' placeholder='What do you want to achieve?'>
+                                        <button type='button' class='btn btn-outline-secondary' @click='$el.parentElement.remove()'>
+                                            <i class='bi bi-trash'></i>
+                                        </button>
+                                    `;
+                                    container.appendChild(newInput);
+                                ">
+                                    <i class="bi bi-plus-circle"></i> Add Objective
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Learning Preferences -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">Learning Preferences</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="learning_format" class="form-label">Learning Format</label>
+                                    <select class="form-select" id="learning_format" name="learning_format">
+                                        <option value="">Select format</option>
+                                        <option value="ONLINE">Online</option>
+                                        <option value="IN_PERSON">In Person</option>
+                                        <option value="HYBRID">Hybrid</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="frequency" class="form-label">Frequency</label>
+                                    <select class="form-select" id="frequency" name="frequency">
+                                        <option value="">Select frequency</option>
+                                        <option value="ONE_TIME">One Time</option>
+                                        <option value="WEEKLY">Weekly</option>
+                                        <option value="BI_WEEKLY">Bi-Weekly</option>
+                                        <option value="MONTHLY">Monthly</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="duration" class="form-label">Duration</label>
+                                    <select class="form-select" id="duration" name="duration">
+                                        <option value="">Select duration</option>
+                                        <option value="LESS_THAN_MONTH">Less than a month</option>
+                                        <option value="1_3_MONTHS">1-3 months</option>
+                                        <option value="3_6_MONTHS">3-6 months</option>
+                                        <option value="6_12_MONTHS">6-12 months</option>
+                                        <option value="MORE_THAN_YEAR">More than a year</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="session_duration" class="form-label">Preferred Session Duration (minutes)</label>
+                                    <select class="form-select" id="session_duration" name="session_duration">
+                                        <option value="">Select duration</option>
+                                        <option value="30">30 minutes</option>
+                                        <option value="60">60 minutes</option>
+                                        <option value="90">90 minutes</option>
+                                        <option value="120">120 minutes</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Budget -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">Budget</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="min_budget" class="form-label">Minimum Budget ($/hour)</label>
+                                    <input type="number" class="form-control" id="min_budget" name="min_budget" min="0" step="5">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="max_budget" class="form-label">Maximum Budget ($/hour)</label>
+                                    <input type="number" class="form-control" id="max_budget" name="max_budget" min="0" step="5">
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="budget_range" class="form-label">Quick Budget Selection</label>
+                                <div class="btn-group w-100" role="group">
+                                    <input type="radio" class="btn-check" name="budget_preset" id="budget-10-20" autocomplete="off">
+                                    <label class="btn btn-outline-primary" for="budget-10-20" @click="document.getElementById('min_budget').value = 10; document.getElementById('max_budget').value = 20;">$10-20</label>
+                                    
+                                    <input type="radio" class="btn-check" name="budget_preset" id="budget-20-50" autocomplete="off">
+                                    <label class="btn btn-outline-primary" for="budget-20-50" @click="document.getElementById('min_budget').value = 20; document.getElementById('max_budget').value = 50;">$20-50</label>
+                                    
+                                    <input type="radio" class="btn-check" name="budget_preset" id="budget-50-100" autocomplete="off">
+                                    <label class="btn btn-outline-primary" for="budget-50-100" @click="document.getElementById('min_budget').value = 50; document.getElementById('max_budget').value = 100;">$50-100</label>
+                                    
+                                    <input type="radio" class="btn-check" name="budget_preset" id="budget-100+" autocomplete="off">
+                                    <label class="btn btn-outline-primary" for="budget-100+" @click="document.getElementById('min_budget').value = 100; document.getElementById('max_budget').value = '';">$100+</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Additional Requirements -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">Additional Requirements</h5>
+                            <div class="mb-3">
+                                <label for="requirements" class="form-label">Specific Requirements</label>
+                                <textarea class="form-control" id="requirements" name="requirements" rows="3"
+                                          placeholder="Any specific requirements or preferences for the tutor..."></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="availability" class="form-label">Preferred Availability</label>
+                                <textarea class="form-control" id="availability" name="availability" rows="2"
+                                          placeholder="When are you available for learning sessions..."></textarea>
+                            </div>
+                        </div>
+
+                        <div id="form-errors"></div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <span class="htmx-indicator spinner-border spinner-border-sm me-2" role="status"></span>
+                                Post Requirement
+                            </button>
+                            <a href="{% url 'requirements:requirement_list' %}" class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Tips for Posting</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle text-success me-2"></i>
+                            Be specific about what you want to learn
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle text-success me-2"></i>
+                            Set a realistic budget based on market rates
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle text-success me-2"></i>
+                            Include your current knowledge level
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle text-success me-2"></i>
+                            Mention your learning goals
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle text-success me-2"></i>
+                            Specify preferred schedule if any
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0">What Happens Next?</h6>
+                </div>
+                <div class="card-body">
+                    <ol class="list-unstyled">
+                        <li class="mb-2">
+                            <strong>1.</strong> Your requirement will be posted immediately
+                        </li>
+                        <li class="mb-2">
+                            <strong>2.</strong> Tutors will submit proposals
+                        </li>
+                        <li class="mb-2">
+                            <strong>3.</strong> You review and select the best tutor
+                        </li>
+                        <li class="mb-2">
+                            <strong>4.</strong> Start learning sessions
+                        </li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Handle form submission success
+    document.body.addEventListener('htmx:afterRequest', function(evt) {
+        if (evt.detail.successful && evt.detail.target.id === 'form-errors') {
+            // Redirect on successful submission
+            window.location.href = evt.detail.xhr.responseURL || '{% url "requirements:requirement_list" %}';
+        }
+    });
+</script>
+{% endblock %}

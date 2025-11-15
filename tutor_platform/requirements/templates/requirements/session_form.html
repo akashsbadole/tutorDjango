@@ -1,0 +1,342 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Schedule Session - Django Tutor Platform{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3">Schedule Learning Session</h1>
+            <p class="text-muted">Set up a new learning session with your tutor</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <form hx-post="{% url 'requirements:session_create' %}" hx-target="#form-errors" hx-swap="innerHTML">
+                        {% csrf_token %}
+                        
+                        <!-- Proposal Information -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">Session Details</h5>
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label text-muted">Requirement</label>
+                                            <p><a href="{% url 'requirements:requirement_detail' proposal.requirement.id %}" class="text-decoration-none">{{ proposal.requirement.title }}</a></p>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label text-muted">Subject</label>
+                                            <p>{{ proposal.requirement.subject.name }}</p>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label text-muted">Tutor</label>
+                                            <p>{{ proposal.tutor.user.get_full_name }}</p>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label text-muted">Rate</label>
+                                            <p class="fw-bold text-primary">${{ proposal.proposed_rate }}/hour</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Scheduling -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">Scheduling</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="scheduled_date" class="form-label">Session Date *</label>
+                                    <input type="date" class="form-control" id="scheduled_date" name="scheduled_date" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="scheduled_time" class="form-label">Session Time *</label>
+                                    <input type="time" class="form-control" id="scheduled_time" name="scheduled_time" required>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="duration" class="form-label">Duration (minutes) *</label>
+                                    <select class="form-select" id="duration" name="duration" required>
+                                        <option value="30">30 minutes</option>
+                                        <option value="60" selected>60 minutes</option>
+                                        <option value="90">90 minutes</option>
+                                        <option value="120">120 minutes</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="timezone" class="form-label">Timezone</label>
+                                    <select class="form-select" id="timezone" name="timezone">
+                                        <option value="{{ user_timezone }}" selected>{{ user_timezone }}</option>
+                                        <option value="UTC">UTC</option>
+                                        <option value="America/New_York">Eastern Time (ET)</option>
+                                        <option value="America/Los_Angeles">Pacific Time (PT)</option>
+                                        <option value="Europe/London">London (GMT)</option>
+                                        <option value="Asia/Tokyo">Tokyo (JST)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Session Type -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">Session Type</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="session_type" class="form-label">Format *</label>
+                                    <select class="form-select" id="session_type" name="session_type" required
+                                            hx-get="{% url 'requirements:session_type_details' %}"
+                                            hx-trigger="change"
+                                            hx-target="#session-type-details"
+                                            hx-swap="innerHTML">
+                                        <option value="">Select format</option>
+                                        <option value="ONLINE">Online</option>
+                                        <option value="IN_PERSON">In Person</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="location" class="form-label">Location/Platform</label>
+                                    <input type="text" class="form-control" id="location" name="location" 
+                                           placeholder="e.g., Zoom, Google Meet, Library, etc.">
+                                </div>
+                            </div>
+                            <div id="session-type-details">
+                                <!-- Session type specific details will be loaded here -->
+                            </div>
+                        </div>
+
+                        <!-- Learning Objectives -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">Learning Objectives</h5>
+                            <div class="mb-3">
+                                <label for="objectives" class="form-label">What do you want to focus on in this session?</label>
+                                <textarea class="form-control" id="objectives" name="objectives" rows="4"
+                                          placeholder="e.g., Review calculus fundamentals, practice problem-solving techniques, prepare for exam..."></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="materials" class="form-label">Materials to Cover</label>
+                                <textarea class="form-control" id="materials" name="materials" rows="3"
+                                          placeholder="e.g., Textbook chapters, practice problems, specific topics..."></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Additional Notes -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">Additional Notes</h5>
+                            <div class="mb-3">
+                                <label for="notes" class="form-label">Special Requirements or Notes</label>
+                                <textarea class="form-control" id="notes" name="notes" rows="3"
+                                          placeholder="Any special requirements, accessibility needs, or other notes for the tutor..."></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="recording_preference" class="form-label">Recording Preference</label>
+                                <select class="form-select" id="recording_preference" name="recording_preference">
+                                    <option value="ALLOWED">Session can be recorded</option>
+                                    <option value="REQUIRED">Please record the session</option>
+                                    <option value="NOT_ALLOWED">Do not record the session</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Recurring Sessions -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">Recurring Sessions</h5>
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="is_recurring" name="is_recurring" 
+                                       @change="document.getElementById('recurring-options').style.display = $el.checked ? 'block' : 'none'">
+                                <label class="form-check-label" for="is_recurring">
+                                    This is a recurring session
+                                </label>
+                            </div>
+                            <div id="recurring-options" style="display: none;">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="frequency" class="form-label">Frequency</label>
+                                        <select class="form-select" id="frequency" name="frequency">
+                                            <option value="WEEKLY">Weekly</option>
+                                            <option value="BI_WEEKLY">Bi-weekly</option>
+                                            <option value="MONTHLY">Monthly</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="end_date" class="form-label">End Date</label>
+                                        <input type="date" class="form-control" id="end_date" name="end_date">
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="day_of_week" class="form-label">Day of Week</label>
+                                        <select class="form-select" id="day_of_week" name="day_of_week">
+                                            <option value="1">Monday</option>
+                                            <option value="2">Tuesday</option>
+                                            <option value="3">Wednesday</option>
+                                            <option value="4">Thursday</option>
+                                            <option value="5">Friday</option>
+                                            <option value="6">Saturday</option>
+                                            <option value="0">Sunday</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="total_sessions" class="form-label">Total Sessions</label>
+                                        <input type="number" class="form-control" id="total_sessions" name="total_sessions" 
+                                               min="2" max="52" value="4">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Payment Information -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">Payment Information</h5>
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle me-2"></i>
+                                <strong>Payment:</strong> The session fee will be deducted from your escrow account when the session is scheduled.
+                                The tutor will receive payment after the session is completed.
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label text-muted">Session Cost</label>
+                                    <p class="fw-bold text-primary">${{ session_cost }}</p>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label text-muted">Platform Fee</label>
+                                    <p>${{ platform_fee }}</p>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <label class="form-label text-muted">Total Cost</label>
+                                    <p class="fw-bold text-success">${{ total_cost }}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="form-errors"></div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <span class="htmx-indicator spinner-border spinner-border-sm me-2" role="status"></span>
+                                Schedule Session
+                            </button>
+                            <a href="{% url 'requirements:proposal_detail' proposal.id %}" class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-md-4">
+            <!-- Tutor Availability -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Tutor Availability</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Available Days</label>
+                        <div>
+                            {% for day in tutor.available_days %}
+                                <span class="badge bg-light text-dark me-1">{{ day }}</span>
+                            {% empty %}
+                                <span class="text-muted">Not specified</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Available Time</label>
+                        <div>{{ tutor.available_from|default:"Not specified" }} - {{ tutor.available_to|default:"Not specified" }}</div>
+                    </div>
+                    <div>
+                        <label class="form-label text-muted">Response Time</label>
+                        <div class="fw-bold">{{ tutor.response_time|default:"Within 24 hours" }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Scheduling Tips -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Scheduling Tips</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle text-success me-2"></i>
+                            Schedule sessions at least 24 hours in advance
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle text-success me-2"></i>
+                            Be specific about learning objectives
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle text-success me-2"></i>
+                            Prepare materials before the session
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle text-success me-2"></i>
+                            Test your video/audio equipment beforehand
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle text-success me-2"></i>
+                            Arrive 5-10 minutes early for online sessions
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Cancellation Policy -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Cancellation Policy</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="bi bi-clock text-info me-2"></i>
+                            <strong>24+ hours:</strong> Full refund
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-clock text-warning me-2"></i>
+                            <strong>12-24 hours:</strong> 50% refund
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-clock text-danger me-2"></i>
+                            <strong><12 hours:</strong> No refund
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Handle form submission success
+    document.body.addEventListener('htmx:afterRequest', function(evt) {
+        if (evt.detail.successful && evt.detail.target.id === 'form-errors') {
+            // Redirect on successful submission
+            window.location.href = evt.detail.xhr.responseURL || '{% url "requirements:session_list" %}';
+        }
+    });
+    
+    // Set minimum date to tomorrow
+    document.addEventListener('DOMContentLoaded', function() {
+        const dateInput = document.querySelector('input[name="scheduled_date"]');
+        if (dateInput) {
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            dateInput.min = tomorrow.toISOString().split('T')[0];
+        }
+    });
+</script>
+{% endblock %}

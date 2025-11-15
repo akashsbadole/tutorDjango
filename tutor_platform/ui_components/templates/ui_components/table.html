@@ -1,0 +1,329 @@
+{% load ui_tags %}
+<div class="table-responsive {{ container_class|default:'' }}"
+     {% if table_id %}id="{{ table_id }}_container"{% endif %}
+     x-data="tableComponent('{{ table_id|default:'table' }}', {{ selectable|default:'false' }})">
+    
+    <!-- Table Header with Search, Filters, and Actions -->
+    {% if show_search or show_filters or actions %}
+    <div class="table-header d-flex justify-content-between align-items-center mb-3">
+        <div class="table-controls d-flex align-items-center flex-wrap">
+            {% if show_search %}
+                <div class="search-container me-3" style="min-width: 250px;">
+                    <div class="input-group">
+                        <input type="text"
+                               class="form-control theme-input"
+                               placeholder="{{ search_placeholder|default:'Search...' }}"
+                               x-model="search"
+                               @input.debounce.300ms="performSearch()"
+                               @keydown.enter="performSearch()"
+                               aria-label="Search table">
+                        <span class="input-group-text">
+                            <i class="bi bi-search" aria-hidden="true"></i>
+                        </span>
+                        {% if search %}
+                        <button class="btn btn-outline-secondary"
+                                type="button"
+                                @click="clearSearch()"
+                                aria-label="Clear search">
+                            <i class="bi bi-x" aria-hidden="true"></i>
+                        </button>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Search Suggestions -->
+                    <div x-show="searchSuggestions.length > 0 && search.length > 0"
+                         class="search-suggestions dropdown-menu w-100 mt-1"
+                         style="display: none; max-height: 200px; overflow-y: auto;">
+                        <template x-for="suggestion in searchSuggestions" :key="suggestion">
+                            <button type="button"
+                                    class="dropdown-item d-flex justify-content-between align-items-center"
+                                    @click="selectSuggestion(suggestion)">
+                                <span x-text="suggestion.text"></span>
+                                <small class="text-muted" x-text="suggestion.count"></small>
+                            </button>
+                        </template>
+                    </div>
+                </div>
+            {% endif %}
+            
+            {% if show_filters %}
+                <div class="filter-container me-3">
+                    <button class="btn btn-outline-secondary dropdown-toggle"
+                            type="button"
+                            @click="filterOpen = !filterOpen"
+                            aria-expanded="false"
+                            aria-haspopup="true">
+                        <i class="bi bi-funnel me-1" aria-hidden="true"></i> Filters
+                        <span class="filter-count badge bg-primary ms-1"
+                              x-show="activeFilters > 0"
+                              x-text="activeFilters"></span>
+                    </button>
+                    <div class="dropdown-menu filter-dropdown p-3"
+                         style="min-width: 280px; display: none;"
+                         x-show="filterOpen"
+                         x-transition
+                         @click.outside="filterOpen = false">
+                        {% block filters %}{% endblock %}
+                        
+                        <!-- Filter Actions -->
+                        <div class="d-flex justify-content-between mt-3 pt-3 border-top">
+                            <button class="btn btn-sm btn-outline-secondary"
+                                    @click="clearFilters()"
+                                    type="button">
+                                <i class="bi bi-x-circle me-1" aria-hidden="true"></i> Clear All
+                            </button>
+                            <button class="btn btn-sm btn-primary"
+                                    @click="applyFilters()"
+                                    type="button">
+                                <i class="bi bi-check-circle me-1" aria-hidden="true"></i> Apply Filters
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+            
+            <!-- View Options -->
+            {% if show_view_options %}
+            <div class="view-options me-3">
+                <div class="btn-group" role="group">
+                    <button type="button"
+                            class="btn btn-sm btn-outline-secondary"
+                            @click="setViewMode('table')"
+                            :class="{ 'active': viewMode === 'table' }"
+                            title="Table view">
+                        <i class="bi bi-table" aria-hidden="true"></i>
+                    </button>
+                    <button type="button"
+                            class="btn btn-sm btn-outline-secondary"
+                            @click="setViewMode('grid')"
+                            :class="{ 'active': viewMode === 'grid' }"
+                            title="Grid view">
+                        <i class="bi bi-grid-3x3-gap" aria-hidden="true"></i>
+                    </button>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Table Actions -->
+        {% if actions %}
+        <div class="table-actions">
+            <div class="btn-group" role="group">
+                {% for action in actions %}
+                    <button class="btn {{ action.class|default:'btn-outline-secondary' }}"
+                            {% if action.action %}@click="{{ action.action }}"{% endif %}
+                            {% if action.id %}id="{{ action.id }}"{% endif %}
+                            {% if action.disabled %}disabled{% endif %}
+                            type="button"
+                            title="{{ action.title|default:action.label }}">
+                        {% if action.icon %}<i class="bi {{ action.icon }} me-1" aria-hidden="true"></i>{% endif %}
+                        <span class="d-none d-md-inline">{{ action.label }}</span>
+                    </button>
+                {% endfor %}
+            </div>
+            
+            <!-- Bulk Actions (for selectable tables) -->
+            {% if selectable and bulk_actions %}
+            <div class="bulk-actions ms-3" x-show="selectedItems.length > 0">
+                <div class="btn-group" role="group">
+                    {% for action in bulk_actions %}
+                    <button class="btn {{ action.class|default:'btn-outline-primary' }} btn-sm"
+                            {% if action.action %}@click="{{ action.action }}"{% endif %}
+                            type="button"
+                            title="{{ action.title|default:action.label }}">
+                        {% if action.icon %}<i class="bi {{ action.icon }} me-1" aria-hidden="true"></i>{% endif %}
+                        {{ action.label }}
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    <table class="table table-hover {{ table_class|default:'' }}" 
+           {% if table_id %}id="{{ table_id }}"{% endif %}>
+        
+        {% if headers %}
+        <thead class="{{ thead_class|default:'table-light' }}">
+            <tr>
+                {% for header in headers %}
+                    <th scope="col" 
+                        class="{{ header.class|default:'' }}"
+                        {% if header.sortable %}
+                            @click="sortBy('{{ header.key|default:header.text|lower }}')"
+                            style="cursor: pointer;"
+                            x-bind:class="{ 'text-primary': sortKey === '{{ header.key|default:header.text|lower }}' }"
+                        {% endif %}>
+                        
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>{{ header.text }}</span>
+                            {% if header.sortable %}
+                                <i class="bi ms-1"
+                                   x-bind:class="{
+                                       'bi-arrow-down': sortKey === '{{ header.key|default:header.text|lower }}' && sortOrder === 'asc',
+                                       'bi-arrow-up': sortKey === '{{ header.key|default:header.text|lower }}' && sortOrder === 'desc',
+                                       'bi-arrow-down-up': sortKey !== '{{ header.key|default:header.text|lower }}'
+                                   }"></i>
+                            {% endif %}
+                        </div>
+                    </th>
+                {% endfor %}
+            </tr>
+        </thead>
+        {% endif %}
+        
+        <tbody>
+            {% if items %}
+                {% for item in items %}
+                    <tr class="{% if forloop.counter %}table-row-{{ forloop.counter }}{% endif %} {{ row_class|default:'' }}"
+                        {% if row_click_url %}data-href="{{ item|get_attr:row_click_url }}"{% endif %}>
+                        {% for header in headers %}
+                            <td class="{{ header.cell_class|default:'' }}">
+                                {% if header.key %}
+                                    {% if item|get_attr:header.key %}
+                                        {% if header.format == 'currency' %}
+                                            {{ item|get_attr:header.key|currency }}
+                                        {% elif header.format == 'date' %}
+                                            {{ item|get_attr:header.key|date }}
+                                        {% elif header.format == 'datetime' %}
+                                            {{ item|get_attr:header.key|datetime }}
+                                        {% elif header.format == 'boolean' %}
+                                            {% if item|get_attr:header.key %}
+                                                <i class="bi bi-check-circle-fill text-success"></i>
+                                            {% else %}
+                                                <i class="bi bi-x-circle-fill text-danger"></i>
+                                            {% endif %}
+                                        {% elif header.format == 'badge' %}
+                                            <span class="badge {{ item|get_attr:header.key|get_attr:'class'|default:'bg-secondary' }}">
+                                                {{ item|get_attr:header.key|get_attr:'text'|default:item|get_attr:header.key }}
+                                            </span>
+                                        {% else %}
+                                            {{ item|get_attr:header.key }}
+                                        {% endif %}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                {% else %}
+                                    {% block cell_content %}{% endblock %}
+                                {% endif %}
+                            </td>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="{{ headers|length }}" class="text-center py-4">
+                        {% if empty_message %}
+                            {{ empty_message }}
+                        {% else %}
+                            <i class="bi bi-inbox fs-1 text-muted d-block mb-2"></i>
+                            <p class="text-muted">No data available</p>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+    
+    {% if show_pagination and pagination %}
+        {% include 'ui_components/pagination.html' with pagination=pagination %}
+    {% endif %}
+    
+    {% if loading %}
+    <div class="table-overlay position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-white bg-opacity-75"
+         x-show="loading"
+         x-transition>
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('tableComponent', (tableId) => ({
+        search: '',
+        sortKey: '{{ default_sort_key|default:'' }}',
+        sortOrder: '{{ default_sort_order|default:'asc' }}',
+        filterOpen: false,
+        filters: {},
+        loading: false,
+        
+        init() {
+            // Initialize with URL parameters if present
+            const urlParams = new URLSearchParams(window.location.search);
+            this.search = urlParams.get('search') || '';
+            this.sortKey = urlParams.get('sort') || this.sortKey;
+            this.sortOrder = urlParams.get('order') || this.sortOrder;
+            
+            // Make rows clickable if needed
+            this.makeRowsClickable();
+        },
+        
+        filterTable() {
+            this.loading = true;
+            
+            // Debounce the filtering
+            clearTimeout(this.filterTimeout);
+            this.filterTimeout = setTimeout(() => {
+                const rows = document.querySelectorAll(`#${tableId} tbody tr`);
+                const searchTerm = this.search.toLowerCase();
+                
+                rows.forEach(row => {
+                    const text = row.textContent.toLowerCase();
+                    row.style.display = text.includes(searchTerm) ? '' : 'none';
+                });
+                
+                this.loading = false;
+            }, 300);
+        },
+        
+        sortBy(key) {
+            if (this.sortKey === key) {
+                this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc';
+            } else {
+                this.sortKey = key;
+                this.sortOrder = 'asc';
+            }
+            
+            // Reload page with new sort parameters
+            const url = new URL(window.location);
+            url.searchParams.set('sort', this.sortKey);
+            url.searchParams.set('order', this.sortOrder);
+            window.location.href = url.toString();
+        },
+        
+        applyFilters() {
+            this.filterOpen = false;
+            // Apply filters logic here
+            this.filterTable();
+        },
+        
+        clearFilters() {
+            this.filters = {};
+            this.filterTable();
+        },
+        
+        makeRowsClickable() {
+            const rows = document.querySelectorAll(`#${tableId} tbody tr[data-href]`);
+            rows.forEach(row => {
+                row.style.cursor = 'pointer';
+                row.addEventListener('click', function(e) {
+                    // Don't trigger if clicking on a button or link
+                    if (e.target.tagName !== 'A' && e.target.tagName !== 'BUTTON' && !e.target.closest('a') && !e.target.closest('button')) {
+                        window.location.href = this.dataset.href;
+                    }
+                });
+            });
+        },
+        
+        get activeFilters() {
+            return Object.values(this.filters).filter(value => value !== '' && value !== null).length;
+        }
+    }));
+});
+</script>

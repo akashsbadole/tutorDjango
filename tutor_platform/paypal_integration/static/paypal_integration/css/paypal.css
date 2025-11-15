@@ -1,0 +1,282 @@
+/* PayPal Integration Styles */
+
+/* Base PayPal Styles */
+.paypal-status {
+    padding: 1rem 0;
+}
+
+.status-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.status-item:last-child {
+    border-bottom: none;
+}
+
+.status-value {
+    font-weight: 600;
+}
+
+/* Payment Form Styles */
+.payment-details {
+    background-color: #f8f9fa;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-top: 1rem;
+}
+
+.input-group-text {
+    background-color: #e9ecef;
+    border: 1px solid #ced4da;
+    border-radius: 0.375rem 0 0 0.375rem;
+    padding: 0.375rem 0.75rem;
+    font-weight: 600;
+    color: #495057;
+}
+
+/* Success and Cancel Pages */
+.success-icon,
+.cancel-icon {
+    text-align: center;
+    margin: 2rem 0;
+}
+
+.success-icon i {
+    color: #28a745;
+}
+
+.cancel-icon i {
+    color: #ffc107;
+}
+
+/* Account Linking */
+.paypal-user-id-screenshot {
+    border: 2px solid #dee2e6;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Transaction History */
+.transaction-item {
+    border: 1px solid #e9ecef;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    transition: all 0.3s ease;
+}
+
+.transaction-item:hover {
+    border-color: #007bff;
+    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.1);
+}
+
+.transaction-status {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.transaction-status.completed {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.transaction-status.pending {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.transaction-status.failed {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.transaction-status.cancelled {
+    background-color: #e2e3e5;
+    color: #383d41;
+}
+
+/* Subscription Management */
+.subscription-card {
+    border: 1px solid #e9ecef;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.subscription-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.subscription-status {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    border-radius: 2rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.subscription-status.active {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.subscription-status.cancelled {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.subscription-status.expired {
+    background-color: #e2e3e5;
+    color: #383d41;
+}
+
+/* Payout Form */
+.payout-info {
+    background-color: #e7f3ff;
+    border: 1px solid #b8daff;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-top: 1rem;
+}
+
+.fee-breakdown {
+    font-size: 0.875rem;
+}
+
+.fee-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+}
+
+.fee-item:last-child {
+    font-weight: 600;
+    border-top: 1px solid #dee2e6;
+    padding-top: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+/* Webhook Status */
+.webhook-status {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.webhook-status.pending {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.webhook-status.processed {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.webhook-status.failed {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .status-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+    }
+    
+    .subscription-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .d-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Loading States */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.spinner {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid #f3f3f3;
+    border-radius: 50%;
+    border-top-color: #007bff;
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* PayPal Brand Colors */
+.paypal-blue {
+    color: #003087;
+}
+
+.paypal-light-blue {
+    color: #0070ba;
+}
+
+.paypal-dark-blue {
+    color: #005ea6;
+}
+
+/* Form Validation */
+.is-invalid {
+    border-color: #dc3545;
+}
+
+.invalid-feedback {
+    color: #dc3545;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+/* Animations */
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.slide-up {
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}

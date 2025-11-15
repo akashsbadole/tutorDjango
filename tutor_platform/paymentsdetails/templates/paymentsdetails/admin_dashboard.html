@@ -1,0 +1,385 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Payment Admin Dashboard - Django Tutor Platform{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3">Payment Admin Dashboard</h1>
+            <p class="text-muted">Manage payments, transactions, and financial operations</p>
+        </div>
+    </div>
+
+    <!-- Financial Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Total Revenue</h6>
+                            <h4 class="mb-0">${{ total_revenue|floatformat:2 }}</h4>
+                            <small>{{ revenue_change }}% from last month</small>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-cash-stack" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Total Payouts</h6>
+                            <h4 class="mb-0">${{ total_payouts|floatformat:2 }}</h4>
+                            <small>{{ payout_change }}% from last month</small>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-wallet2" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Pending Transactions</h6>
+                            <h4 class="mb-0">{{ pending_transactions }}</h4>
+                            <small>Requires attention</small>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-clock-history" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Active Users</h6>
+                            <h4 class="mb-0">{{ active_users }}</h4>
+                            <small>With payment activity</small>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-people" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <!-- Recent Transactions -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Recent Transactions</h5>
+                    <div class="btn-group btn-group-sm">
+                        <a href="{% url 'paymentsdetails:transaction_list' %}" class="btn btn-outline-primary">
+                            View All
+                        </a>
+                        <button class="btn btn-outline-success" hx-post="{% url 'paymentsdetails:export_transactions' %}">
+                            Export
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>User</th>
+                                    <th>Type</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for transaction in recent_transactions %}
+                                    <tr>
+                                        <td>#{{ transaction.id }}</td>
+                                        <td>
+                                            <a href="#" class="text-decoration-none">
+                                                {{ transaction.user.get_full_name|default:transaction.user.username }}
+                                            </a>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{{ transaction.get_type_color }}">
+                                                {{ transaction.get_transaction_type_display }}
+                                            </span>
+                                        </td>
+                                        <td class="{% if transaction.amount > 0 %}text-success{% else %}text-danger{% endif %}">
+                                            {% if transaction.amount > 0 %}+{% endif %}${{ transaction.amount|floatformat:2 }}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{{ transaction.get_status_color }}">
+                                                {{ transaction.get_status_display }}
+                                            </span>
+                                        </td>
+                                        <td>{{ transaction.created_at|date:"M d, Y" }}</td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{% url 'paymentsdetails:transaction_detail' transaction.id %}" 
+                                                   class="btn btn-outline-primary" data-bs-toggle="tooltip" title="View Details">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                                {% if transaction.status == 'PENDING' %}
+                                                    <button class="btn btn-outline-success" 
+                                                            hx-post="{% url 'paymentsdetails:admin_process_transaction' transaction.id %}"
+                                                            data-bs-toggle="tooltip" title="Process">
+                                                        <i class="bi bi-play-circle"></i>
+                                                    </button>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="7" class="text-center py-4">
+                                            <i class="bi bi-list-ul text-muted" style="font-size: 3rem;"></i>
+                                            <p class="text-muted mt-2">No recent transactions</p>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pending Payouts -->
+            <div class="card mt-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Pending Payouts</h5>
+                    <div class="btn-group btn-group-sm">
+                        <a href="{% url 'paymentsdetails:payout_list' %}" class="btn btn-outline-primary">
+                            View All
+                        </a>
+                        <button class="btn btn-outline-success" hx-post="{% url 'paymentsdetails:batch_process_payouts' %}"
+                                hx-confirm="Process all pending payouts?">
+                            Batch Process
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>User</th>
+                                    <th>Amount</th>
+                                    <th>Method</th>
+                                    <th>Speed</th>
+                                    <th>Requested</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for payout in pending_payouts %}
+                                    <tr>
+                                        <td>#{{ payout.id }}</td>
+                                        <td>
+                                            <a href="#" class="text-decoration-none">
+                                                {{ payout.user.get_full_name|default:payout.user.username }}
+                                            </a>
+                                        </td>
+                                        <td class="text-success">${{ payout.amount|floatformat:2 }}</td>
+                                        <td>{{ payout.payment_method.get_display_name }}</td>
+                                        <td>
+                                            <span class="badge bg-{{ payout.get_speed_color }}">
+                                                {{ payout.get_payout_speed_display }}
+                                            </span>
+                                        </td>
+                                        <td>{{ payout.created_at|date:"M d, Y H:i" }}</td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{% url 'paymentsdetails:payout_detail' payout.id %}" 
+                                                   class="btn btn-outline-primary" data-bs-toggle="tooltip" title="View Details">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                                <button class="btn btn-outline-success" 
+                                                        hx-post="{% url 'paymentsdetails:admin_process_payout' payout.id %}"
+                                                        data-bs-toggle="tooltip" title="Process">
+                                                    <i class="bi bi-play-circle"></i>
+                                                </button>
+                                                <button class="btn btn-outline-danger" 
+                                                        hx-post="{% url 'paymentsdetails:admin_reject_payout' payout.id %}"
+                                                        hx-confirm="Reject this payout?"
+                                                        data-bs-toggle="tooltip" title="Reject">
+                                                    <i class="bi bi-x-circle"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="7" class="text-center py-4">
+                                            <i class="bi bi-cash-stack text-muted" style="font-size: 3rem;"></i>
+                                            <p class="text-muted mt-2">No pending payouts</p>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <!-- Quick Actions -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Quick Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'paymentsdetails:transaction_list' %}" class="btn btn-outline-primary">
+                            <i class="bi bi-list-ul me-2"></i>All Transactions
+                        </a>
+                        <a href="{% url 'paymentsdetails:payment_list' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-credit-card me-2"></i>Payments
+                        </a>
+                        <a href="{% url 'paymentsdetails:payout_list' %}" class="btn btn-outline-success">
+                            <i class="bi bi-cash-stack me-2"></i>Payouts
+                        </a>
+                        <a href="{% url 'paymentsdetails:payment_method_list' %}" class="btn btn-outline-info">
+                            <i class="bi bi-credit-card me-2"></i>Payment Methods
+                        </a>
+                        <button class="btn btn-outline-warning" hx-post="{% url 'paymentsdetails:generate_financial_report' %}">
+                            <i class="bi bi-file-text me-2"></i>Generate Report
+                        </button>
+                        <button class="btn btn-outline-danger" hx-post="{% url 'paymentsdetails:reconcile_accounts' %}"
+                                hx-confirm="Reconcile all accounts? This may take a while.">
+                            <i class="bi bi-arrow-repeat me-2"></i>Reconcile Accounts
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Statistics -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0">Payment Statistics</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center mb-3">
+                        <div class="col-6">
+                            <h4 class="text-primary">{{ today_payments }}</h4>
+                            <small class="text-muted">Today</small>
+                        </div>
+                        <div class="col-6">
+                            <h4 class="text-success">{{ week_payments }}</h4>
+                            <small class="text-muted">This Week</small>
+                        </div>
+                    </div>
+                    <div class="row text-center mb-3">
+                        <div class="col-6">
+                            <h4 class="text-info">{{ month_payments }}</h4>
+                            <small class="text-muted">This Month</small>
+                        </div>
+                        <div class="col-6">
+                            <h4 class="text-warning">{{ failed_payments }}</h4>
+                            <small class="text-muted">Failed</small>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <h6>Payment Methods</h6>
+                        <div class="progress mb-2">
+                            <div class="progress-bar bg-primary" style="width: {{ credit_card_percent }}%">
+                                Credit Card: {{ credit_card_percent }}%
+                            </div>
+                        </div>
+                        <div class="progress mb-2">
+                            <div class="progress-bar bg-success" style="width: {{ bank_account_percent }}%">
+                                Bank: {{ bank_account_percent }}%
+                            </div>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar bg-info" style="width: {{ paypal_percent }}%">
+                                PayPal: {{ paypal_percent }}%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Alerts -->
+            {% if system_alerts %}
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h6 class="mb-0">System Alerts</h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="list-group list-group-flush">
+                            {% for alert in system_alerts %}
+                                <div class="list-group-item">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">{{ alert.title }}</h6>
+                                        <small>{{ alert.created_at|date:"M d, H:i" }}</small>
+                                    </div>
+                                    <p class="mb-1">{{ alert.message }}</p>
+                                    <span class="badge bg-{{ alert.get_type_color }}">
+                                        {{ alert.get_type_display }}
+                                    </span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Recent Activity -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0">Recent Activity</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for activity in recent_activity %}
+                            <div class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">{{ activity.title }}</h6>
+                                    <small>{{ activity.timestamp|date:"M d, H:i" }}</small>
+                                </div>
+                                <p class="mb-1 text-muted small">{{ activity.description }}</p>
+                                <small class="text-muted">By: {{ activity.user.get_full_name|default:activity.user.username }}</small>
+                            </div>
+                        {% empty %}
+                            <div class="text-center py-3">
+                                <p class="text-muted">No recent activity</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    });
+</script>
+{% endblock %}

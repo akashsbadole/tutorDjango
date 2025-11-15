@@ -1,0 +1,906 @@
+// =============================================================================
+// Django Tutor Platform - Component Base Styles
+// =============================================================================
+// This file contains base component styles following the CUBE CSS methodology
+// (Composition, Utility, Block, Exception) with component variants, animations,
+// and interactive states.
+// =============================================================================
+
+// Import variables first
+@import 'variables';
+
+// -----------------------------------------------------------------------------
+// BUTTON COMPONENTS
+// -----------------------------------------------------------------------------
+
+// Base button styles (Block)
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: $btn-padding-y $btn-padding-x;
+  margin: 0;
+  font-family: $btn-font-family;
+  font-size: $btn-font-size;
+  font-weight: $font-weight-medium;
+  line-height: $btn-line-height;
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  vertical-align: middle;
+  cursor: pointer;
+  user-select: none;
+  border: 1px solid transparent;
+  border-radius: $btn-border-radius;
+  transition: $btn-transition;
+  
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 0.2rem rgba($color-primary, 0.25);
+  }
+  
+  &:disabled,
+  &.disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+  }
+  
+  // Button sizes (Utility)
+  &-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: $font-size-sm;
+    border-radius: $border-radius-sm;
+  }
+  
+  &-lg {
+    padding: 0.75rem 1.5rem;
+    font-size: $font-size-lg;
+    border-radius: $border-radius-lg;
+  }
+  
+  // Button variants (Composition)
+  &-primary {
+    color: $color-text-inverse;
+    background-color: $color-primary;
+    border-color: $color-primary;
+    
+    &:hover:not(:disabled):not(.disabled) {
+      background-color: darken($color-primary, 10%);
+      border-color: darken($color-primary, 10%);
+    }
+  }
+  
+  &-secondary {
+    color: $color-text-primary;
+    background-color: $color-secondary;
+    border-color: $color-secondary;
+    
+    &:hover:not(:disabled):not(.disabled) {
+      background-color: darken($color-secondary, 10%);
+      border-color: darken($color-secondary, 10%);
+    }
+  }
+  
+  &-success {
+    color: $color-text-inverse;
+    background-color: $color-success;
+    border-color: $color-success;
+    
+    &:hover:not(:disabled):not(.disabled) {
+      background-color: darken($color-success, 10%);
+      border-color: darken($color-success, 10%);
+    }
+  }
+  
+  &-danger {
+    color: $color-text-inverse;
+    background-color: $color-error;
+    border-color: $color-error;
+    
+    &:hover:not(:disabled):not(.disabled) {
+      background-color: darken($color-error, 10%);
+      border-color: darken($color-error, 10%);
+    }
+  }
+  
+  &-outline-primary {
+    color: $color-primary;
+    background-color: transparent;
+    border-color: $color-primary;
+    
+    &:hover:not(:disabled):not(.disabled) {
+      color: $color-text-inverse;
+      background-color: $color-primary;
+    }
+  }
+  
+  &-outline-secondary {
+    color: $color-text-secondary;
+    background-color: transparent;
+    border-color: $color-border-medium;
+    
+    &:hover:not(:disabled):not(.disabled) {
+      color: $color-text-primary;
+      background-color: $color-bg-secondary;
+    }
+  }
+  
+  &-ghost {
+    color: $color-text-secondary;
+    background-color: transparent;
+    border-color: transparent;
+    
+    &:hover:not(:disabled):not(.disabled) {
+      color: $color-primary;
+      background-color: rgba($color-primary, 0.1);
+    }
+  }
+  
+  // Button with icon
+  &-icon {
+    gap: $space-2;
+    
+    i {
+      font-size: 1em;
+    }
+  }
+  
+  // Full width button
+  &-block {
+    display: flex;
+    width: 100%;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// CARD COMPONENTS
+// -----------------------------------------------------------------------------
+
+// Base card styles (Block)
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  word-wrap: break-word;
+  background-color: $color-bg-primary;
+  background-clip: border-box;
+  border: 1px solid $color-border-light;
+  border-radius: $card-border-radius;
+  box-shadow: $card-box-shadow;
+  overflow: hidden;
+  transition: $transition-fast;
+  
+  &:hover {
+    box-shadow: $shadow-md;
+    transform: translateY(-2px);
+  }
+  
+  // Card variants (Composition)
+  &-interactive {
+    cursor: pointer;
+    
+    &:hover {
+      box-shadow: $shadow-lg;
+      transform: translateY(-4px);
+    }
+  }
+  
+  &-bordered {
+    border-width: 2px;
+    border-color: $color-border-medium;
+  }
+  
+  &-elevated {
+    box-shadow: $shadow-md;
+    
+    &:hover {
+      box-shadow: $shadow-lg;
+    }
+  }
+  
+  &-flat {
+    box-shadow: none;
+    border: none;
+  }
+  
+  // Card sections (Utility)
+  &-header {
+    padding: $card-spacer-y $card-spacer-x;
+    margin-bottom: 0;
+    background-color: $color-bg-secondary;
+    border-bottom: 1px solid $color-border-light;
+    
+    &:first-child {
+      border-radius: $card-inner-border-radius $card-inner-border-radius 0 0;
+    }
+  }
+  
+  &-body {
+    flex: 1 1 auto;
+    padding: $card-spacer-y $card-spacer-x;
+  }
+  
+  &-footer {
+    padding: $card-spacer-y $card-spacer-x;
+    background-color: $color-bg-secondary;
+    border-top: 1px solid $color-border-light;
+    
+    &:last-child {
+      border-radius: 0 0 $card-inner-border-radius $card-inner-border-radius;
+    }
+  }
+  
+  &-title {
+    margin-bottom: $space-2;
+    font-size: $font-size-lg;
+    font-weight: $font-weight-semibold;
+  }
+  
+  &-subtitle {
+    margin-top: -$space-1;
+    margin-bottom: $space-2;
+    font-size: $font-size-sm;
+    color: $color-text-secondary;
+  }
+  
+  &-text {
+    margin-bottom: $space-4;
+  }
+  
+  &-link {
+    &:hover {
+      text-decoration: none;
+    }
+  }
+  
+  // Card image
+  &-img {
+    width: 100%;
+    height: auto;
+    border-top-left-radius: $card-inner-border-radius;
+    border-top-right-radius: $card-inner-border-radius;
+  }
+  
+  &-img-top {
+    width: 100%;
+    height: auto;
+    border-top-left-radius: $card-inner-border-radius;
+    border-top-right-radius: $card-inner-border-radius;
+  }
+  
+  &-img-bottom {
+    width: 100%;
+    height: auto;
+    border-bottom-left-radius: $card-inner-border-radius;
+    border-bottom-right-radius: $card-inner-border-radius;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// ALERT COMPONENTS
+// -----------------------------------------------------------------------------
+
+// Base alert styles (Block)
+.alert {
+  position: relative;
+  padding: $space-4;
+  margin-bottom: $space-4;
+  border: 1px solid transparent;
+  border-radius: $border-radius-md;
+  
+  // Alert variants (Composition)
+  &-primary {
+    color: darken($color-primary, 20%);
+    background-color: rgba($color-primary, 0.1);
+    border-color: rgba($color-primary, 0.2);
+  }
+  
+  &-secondary {
+    color: darken($color-secondary, 20%);
+    background-color: rgba($color-secondary, 0.1);
+    border-color: rgba($color-secondary, 0.2);
+  }
+  
+  &-success {
+    color: darken($color-success, 20%);
+    background-color: rgba($color-success, 0.1);
+    border-color: rgba($color-success, 0.2);
+  }
+  
+  &-danger {
+    color: darken($color-error, 20%);
+    background-color: rgba($color-error, 0.1);
+    border-color: rgba($color-error, 0.2);
+  }
+  
+  &-warning {
+    color: darken($color-warning, 20%);
+    background-color: rgba($color-warning, 0.1);
+    border-color: rgba($color-warning, 0.2);
+  }
+  
+  &-info {
+    color: darken($color-info, 20%);
+    background-color: rgba($color-info, 0.1);
+    border-color: rgba($color-info, 0.2);
+  }
+  
+  // Alert with icon
+  &-icon {
+    display: flex;
+    align-items: flex-start;
+    gap: $space-3;
+    
+    i {
+      margin-top: 2px;
+      font-size: $font-size-lg;
+    }
+  }
+  
+  // Dismissible alert
+  &-dismissible {
+    padding-right: 3rem;
+    
+    .btn-close {
+      position: absolute;
+      top: 50%;
+      right: $space-3;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      font-size: $font-size-lg;
+      cursor: pointer;
+      opacity: 0.5;
+      transition: $transition-fast;
+      
+      &:hover {
+        opacity: 0.8;
+      }
+    }
+  }
+}
+
+// -----------------------------------------------------------------------------
+// BADGE COMPONENTS
+// -----------------------------------------------------------------------------
+
+// Base badge styles (Block)
+.badge {
+  display: inline-block;
+  padding: 0.25em 0.4em;
+  font-size: 75%;
+  font-weight: $font-weight-semibold;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: baseline;
+  border-radius: $border-radius-full;
+  
+  // Badge variants (Composition)
+  &-primary {
+    color: $color-text-inverse;
+    background-color: $color-primary;
+  }
+  
+  &-secondary {
+    color: $color-text-primary;
+    background-color: $color-secondary;
+  }
+  
+  &-success {
+    color: $color-text-inverse;
+    background-color: $color-success;
+  }
+  
+  &-danger {
+    color: $color-text-inverse;
+    background-color: $color-error;
+  }
+  
+  &-warning {
+    color: $color-text-inverse;
+    background-color: $color-warning;
+  }
+  
+  &-info {
+    color: $color-text-inverse;
+    background-color: $color-info;
+  }
+  
+  &-light {
+    color: $color-text-primary;
+    background-color: $color-gray-100;
+  }
+  
+  &-dark {
+    color: $color-text-inverse;
+    background-color: $color-gray-800;
+  }
+  
+  // Pill badge
+  &-pill {
+    padding-right: 0.6em;
+    padding-left: 0.6em;
+    border-radius: $border-radius-full;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// MODAL COMPONENTS
+// -----------------------------------------------------------------------------
+
+// Modal overlay
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: $z-index-modal-backdrop;
+  opacity: 0;
+  visibility: hidden;
+  transition: $transition-fast;
+  
+  &.active {
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+// Base modal styles (Block)
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: $z-index-modal;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(0.9);
+  transition: $transition-fast;
+  
+  &.active {
+    opacity: 1;
+    visibility: visible;
+    transform: scale(1);
+  }
+  
+  // Modal dialog
+  &-dialog {
+    position: relative;
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    background-color: $color-bg-primary;
+    border-radius: $border-radius-lg;
+    box-shadow: $shadow-xl;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    
+    @media (min-width: $breakpoint-md) {
+      width: 80%;
+      max-width: 600px;
+    }
+    
+    @media (min-width: $breakpoint-lg) {
+      width: 70%;
+      max-width: 800px;
+    }
+    
+    // Modal sizes (Utility)
+    &.modal-sm {
+      max-width: 400px;
+    }
+    
+    &.modal-lg {
+      max-width: 800px;
+    }
+    
+    &.modal-xl {
+      max-width: 1140px;
+    }
+  }
+  
+  // Modal sections (Utility)
+  &-header {
+    padding: $space-6;
+    border-bottom: 1px solid $color-border-light;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  
+  &-title {
+    margin: 0;
+    font-size: $font-size-xl;
+    font-weight: $font-weight-semibold;
+  }
+  
+  &-body {
+    padding: $space-6;
+    flex: 1;
+    overflow-y: auto;
+  }
+  
+  &-footer {
+    padding: $space-6;
+    border-top: 1px solid $color-border-light;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: $space-3;
+  }
+  
+  // Modal close button
+  &-close {
+    background: none;
+    border: none;
+    font-size: $font-size-2xl;
+    cursor: pointer;
+    color: $color-text-muted;
+    transition: $transition-fast;
+    
+    &:hover {
+      color: $color-text-primary;
+    }
+  }
+}
+
+// -----------------------------------------------------------------------------
+// FORM COMPONENTS
+// -----------------------------------------------------------------------------
+
+// Form group (Block)
+.form-group {
+  margin-bottom: $space-4;
+  
+  // Form row
+  &.form-row {
+    display: flex;
+    flex-wrap: wrap;
+    margin-right: -$space-2;
+    margin-left: -$space-2;
+    
+    > .col,
+    > [class*="col-"] {
+      padding-right: $space-2;
+      padding-left: $space-2;
+    }
+  }
+}
+
+// Form control (Block)
+.form-control {
+  display: block;
+  width: 100%;
+  padding: $input-padding-y $input-padding-x;
+  font-family: $input-font-family;
+  font-size: $input-font-size;
+  line-height: $input-line-height;
+  color: $color-text-primary;
+  background-color: $color-bg-primary;
+  background-clip: padding-box;
+  border: $input-border-width solid $input-border-color;
+  border-radius: $input-border-radius;
+  transition: $transition-fast;
+  
+  &:focus {
+    outline: none;
+    border-color: $input-focus-border-color;
+    box-shadow: $input-focus-box-shadow;
+  }
+  
+  &:disabled,
+  &.disabled {
+    background-color: $color-gray-100;
+    color: $color-text-muted;
+    cursor: not-allowed;
+    opacity: 1;
+  }
+  
+  // Form control sizes (Utility)
+  &.form-control-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: $font-size-sm;
+    border-radius: $border-radius-sm;
+  }
+  
+  &.form-control-lg {
+    padding: 0.75rem 1.5rem;
+    font-size: $font-size-lg;
+    border-radius: $border-radius-lg;
+  }
+  
+  // Form control states (Composition)
+  &.is-valid {
+    border-color: $color-success;
+    
+    &:focus {
+      border-color: $color-success;
+      box-shadow: 0 0 0 0.2rem rgba($color-success, 0.25);
+    }
+  }
+  
+  &.is-invalid {
+    border-color: $color-error;
+    
+    &:focus {
+      border-color: $color-error;
+      box-shadow: 0 0 0 0.2rem rgba($color-error, 0.25);
+    }
+  }
+}
+
+// Form validation feedback
+.valid-feedback {
+  display: none;
+  width: 100%;
+  margin-top: 0.25rem;
+  font-size: $font-size-sm;
+  color: $color-success;
+}
+
+.invalid-feedback {
+  display: none;
+  width: 100%;
+  margin-top: 0.25rem;
+  font-size: $font-size-sm;
+  color: $color-error;
+}
+
+.is-valid ~ .valid-feedback,
+.is-valid ~ .valid-tooltip,
+.is-invalid ~ .invalid-feedback,
+.is-invalid ~ .invalid-tooltip {
+  display: block;
+}
+
+// -----------------------------------------------------------------------------
+// ANIMATIONS AND TRANSITIONS
+// -----------------------------------------------------------------------------
+
+// Fade animation
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+// Slide up animation
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+// Slide down animation
+@keyframes slideDown {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+// Scale animation
+@keyframes scaleIn {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+// Bounce animation
+@keyframes bounce {
+  0%, 20%, 53%, 80%, 100% {
+    transform: translate3d(0, 0, 0);
+  }
+  40%, 43% {
+    transform: translate3d(0, -30px, 0);
+  }
+  70% {
+    transform: translate3d(0, -15px, 0);
+  }
+  90% {
+    transform: translate3d(0, -4px, 0);
+  }
+}
+
+// Pulse animation
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+// Animation utility classes
+.fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.fade-out {
+  animation: fadeOut 0.3s ease-in-out;
+}
+
+.slide-up {
+  animation: slideUp 0.3s ease-out;
+}
+
+.slide-down {
+  animation: slideDown 0.3s ease-out;
+}
+
+.scale-in {
+  animation: scaleIn 0.3s ease-out;
+}
+
+.bounce {
+  animation: bounce 1s ease-in-out;
+}
+
+.pulse {
+  animation: pulse 2s infinite;
+}
+
+// Hover effects
+.hover-lift {
+  transition: $transition-fast;
+  
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: $shadow-lg;
+  }
+}
+
+.hover-scale {
+  transition: $transition-fast;
+  
+  &:hover {
+    transform: scale(1.05);
+  }
+}
+
+.hover-shadow {
+  transition: $transition-fast;
+  
+  &:hover {
+    box-shadow: $shadow-lg;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// LOADING STATES
+// -----------------------------------------------------------------------------
+
+// Spinner
+.spinner {
+  display: inline-block;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 2px solid rgba($color-primary, 0.3);
+  border-radius: 50%;
+  border-top-color: $color-primary;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// Loading states
+.loading {
+  position: relative;
+  pointer-events: none;
+  
+  &::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 1rem;
+    height: 1rem;
+    margin: -0.5rem 0 0 -0.5rem;
+    border: 2px solid rgba($color-primary, 0.3);
+    border-radius: 50%;
+    border-top-color: $color-primary;
+    animation: spin 1s ease-in-out infinite;
+  }
+}
+
+// Skeleton loading
+.skeleton {
+  background: linear-gradient(90deg, $color-gray-200 25%, $color-gray-100 50%, $color-gray-200 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+  border-radius: $border-radius-md;
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// INTERACTIVE STATES
+// -----------------------------------------------------------------------------
+
+// Focus states
+.focus-ring {
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba($color-primary, 0.3);
+  }
+}
+
+.focus-ring-danger {
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba($color-error, 0.3);
+  }
+}
+
+.focus-ring-success {
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba($color-success, 0.3);
+  }
+}
+
+// Active states
+.active-scale:active {
+  transform: scale(0.95);
+}
+
+.active-opacity:active {
+  opacity: 0.7;
+}
+
+// Disabled states
+.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+}

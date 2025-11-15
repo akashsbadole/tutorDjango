@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}PayPal Integration{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'paypal_integration/css/paypal.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-3">
+            <!-- PayPal Navigation -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">PayPal</h5>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="nav nav-pills flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'paypal_integration:payment_form' %}active{% endif %}" 
+                               href="{% url 'paypal_integration:payment_form' %}">
+                                <i class="fas fa-credit-card me-2"></i>Make Payment
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'paypal_integration:payout_form' %}active{% endif %}" 
+                               href="{% url 'paypal_integration:payout_form' %}">
+                                <i class="fas fa-money-bill-wave me-2"></i>Request Payout
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'paypal_integration:subscription_form' %}active{% endif %}" 
+                               href="{% url 'paypal_integration:subscription_form' %}">
+                                <i class="fas fa-sync-alt me-2"></i>Subscription
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'paypal_integration:account_link' %}active{% endif %}" 
+                               href="{% url 'paypal_integration:account_link' %}">
+                                <i class="fas fa-link me-2"></i>Link Account
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'paypal_integration:account_list' %}active{% endif %}" 
+                               href="{% url 'paypal_integration:account_list' %}">
+                                <i class="fas fa-list me-2"></i>My Accounts
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'paypal_integration:transaction_list' %}active{% endif %}" 
+                               href="{% url 'paypal_integration:transaction_list' %}">
+                                <i class="fas fa-history me-2"></i>Transactions
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'paypal_integration:subscription_list' %}active{% endif %}" 
+                               href="{% url 'paypal_integration:subscription_list' %}">
+                                <i class="fas fa-repeat me-2"></i>Subscriptions
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- PayPal Status Card -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Account Status</h5>
+                </div>
+                <div class="card-body">
+                    <div class="paypal-status">
+                        <div class="status-item">
+                            <small class="text-muted">Environment</small>
+                            <div class="status-value">
+                                {% if paypal_sandbox %}
+                                    <span class="badge bg-warning text-dark">Sandbox</span>
+                                {% else %}
+                                    <span class="badge bg-success">Live</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="status-item">
+                            <small class="text-muted">Webhook Status</small>
+                            <div class="status-value">
+                                {% if webhook_configured %}
+                                    <span class="badge bg-success">Configured</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Not Configured</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-9">
+            <!-- Main Content -->
+            {% if messages %}
+                <div class="row mb-3">
+                    <div class="col-12">
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+            
+            {% block paypal_content %}
+            <!-- Content will be inserted here -->
+            {% endblock %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'paypal_integration/js/paypal.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,389 @@
+{% extends 'ui_components/base.html' %}
+{% load ui_tags static %}
+
+{% block title %}{% if form.instance.pk %}Edit{% else %}Add{% endif %} Payment Method - Django Tutor Platform{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            {% ui_breadcrumb %}
+                <li class="breadcrumb-item"><a href="{% url 'paymentsdetails:payment_method_list' %}">Payment Methods</a></li>
+                <li class="breadcrumb-item active">{% if form.instance.pk %}Edit{% else %}Add{% endif %} Payment Method</li>
+            {% end_ui_breadcrumb %}
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 col-md-7">
+            {% ui_card "" "payment-method-form" %}
+                <div class="card-header">
+                    <h5 class="mb-0">{% if form.instance.pk %}Edit{% else %}Add{% endif %} Payment Method</h5>
+                </div>
+                <div class="card-body">
+                    {% ui_form "" "payment-form" %}
+                        {% csrf_token %}
+                        
+                        <div class="mb-4">
+                            <h6>Payment Type</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="radio" name="payment_type" id="credit_card" 
+                                               value="CREDIT_CARD" {% if form.payment_type.value == 'CREDIT_CARD' or not form.payment_type.value %}checked{% endif %}
+                                               x-model="paymentType" @change="paymentType = 'CREDIT_CARD'">
+                                        <label class="form-check-label" for="credit_card">
+                                            <i class="bi bi-credit-card text-primary me-2"></i>Credit Card
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="radio" name="payment_type" id="debit_card" 
+                                               value="DEBIT_CARD" {% if form.payment_type.value == 'DEBIT_CARD' %}checked{% endif %}
+                                               x-model="paymentType" @change="paymentType = 'DEBIT_CARD'">
+                                        <label class="form-check-label" for="debit_card">
+                                            <i class="bi bi-credit-card text-info me-2"></i>Debit Card
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="radio" name="payment_type" id="bank_account" 
+                                               value="BANK_ACCOUNT" {% if form.payment_type.value == 'BANK_ACCOUNT' %}checked{% endif %}
+                                               x-model="paymentType" @change="paymentType = 'BANK_ACCOUNT'">
+                                        <label class="form-check-label" for="bank_account">
+                                            <i class="bi bi-bank text-success me-2"></i>Bank Account
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="radio" name="payment_type" id="paypal" 
+                                               value="PAYPAL" {% if form.payment_type.value == 'PAYPAL' %}checked{% endif %}
+                                               x-model="paymentType" @change="paymentType = 'PAYPAL'">
+                                        <label class="form-check-label" for="paypal">
+                                            <i class="bi bi-paypal text-primary me-2"></i>PayPal
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Credit/Debit Card Fields -->
+                        <div x-show="paymentType === 'CREDIT_CARD' || paymentType === 'DEBIT_CARD'" x-transition>
+                            <h6>Card Information</h6>
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <div class="mb-3">
+                                        <label for="card_number" class="form-label">Card Number</label>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control" id="card_number" name="card_number" 
+                                                   value="{{ form.card_number.value|default:'' }}" 
+                                                   placeholder="1234 5678 9012 3456" maxlength="19" required
+                                                   x-model="cardNumber" @input="formatCardNumber">
+                                            <span class="input-group-text">
+                                                <i class="bi bi-credit-card"></i>
+                                            </span>
+                                        </div>
+                                        {% if form.card_number.errors %}
+                                            <div class="text-danger small mt-1">
+                                                {% for error in form.card_number.errors %}{{ error }}{% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="cvv" class="form-label">CVV</label>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control" id="cvv" name="cvv" 
+                                                   value="{{ form.cvv.value|default:'' }}" 
+                                                   placeholder="123" maxlength="4" required>
+                                            <span class="input-group-text">
+                                                <i class="bi bi-shield-check"></i>
+                                            </span>
+                                        </div>
+                                        {% if form.cvv.errors %}
+                                            <div class="text-danger small mt-1">
+                                                {% for error in form.cvv.errors %}{{ error }}{% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="expiry_month" class="form-label">Expiry Month</label>
+                                        <select class="form-select" id="expiry_month" name="expiry_month" required>
+                                            <option value="">Month</option>
+                                            {% for month in months %}
+                                                <option value="{{ month }}" {% if form.expiry_month.value == month %}selected{% endif %}>{{ month }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        {% if form.expiry_month.errors %}
+                                            <div class="text-danger small mt-1">
+                                                {% for error in form.expiry_month.errors %}{{ error }}{% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="expiry_year" class="form-label">Expiry Year</label>
+                                        <select class="form-select" id="expiry_year" name="expiry_year" required>
+                                            <option value="">Year</option>
+                                            {% for year in years %}
+                                                <option value="{{ year }}" {% if form.expiry_year.value == year %}selected{% endif %}>{{ year }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        {% if form.expiry_year.errors %}
+                                            <div class="text-danger small mt-1">
+                                                {% for error in form.expiry_year.errors %}{{ error }}{% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="cardholder_name" class="form-label">Cardholder Name</label>
+                                <input type="text" class="form-control" id="cardholder_name" name="cardholder_name" 
+                                       value="{{ form.cardholder_name.value|default:'' }}" 
+                                       placeholder="John Doe" required>
+                                {% if form.cardholder_name.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.cardholder_name.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Bank Account Fields -->
+                        <div x-show="paymentType === 'BANK_ACCOUNT'" x-transition>
+                            <h6>Bank Account Information</h6>
+                            <div class="mb-3">
+                                <label for="account_holder_name" class="form-label">Account Holder Name</label>
+                                <input type="text" class="form-control" id="account_holder_name" name="account_holder_name" 
+                                       value="{{ form.account_holder_name.value|default:'' }}" 
+                                       placeholder="John Doe" required>
+                                {% if form.account_holder_name.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.account_holder_name.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="routing_number" class="form-label">Routing Number</label>
+                                        <input type="text" class="form-control" id="routing_number" name="routing_number" 
+                                               value="{{ form.routing_number.value|default:'' }}" 
+                                               placeholder="123456789" required>
+                                        {% if form.routing_number.errors %}
+                                            <div class="text-danger small mt-1">
+                                                {% for error in form.routing_number.errors %}{{ error }}{% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="account_number" class="form-label">Account Number</label>
+                                        <input type="text" class="form-control" id="account_number" name="account_number" 
+                                               value="{{ form.account_number.value|default:'' }}" 
+                                               placeholder="123456789" required>
+                                        {% if form.account_number.errors %}
+                                            <div class="text-danger small mt-1">
+                                                {% for error in form.account_number.errors %}{{ error }}{% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="account_type" class="form-label">Account Type</label>
+                                <select class="form-select" id="account_type" name="account_type" required>
+                                    <option value="">Select Account Type</option>
+                                    <option value="CHECKING" {% if form.account_type.value == 'CHECKING' %}selected{% endif %}>Checking</option>
+                                    <option value="SAVINGS" {% if form.account_type.value == 'SAVINGS' %}selected{% endif %}>Savings</option>
+                                </select>
+                                {% if form.account_type.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.account_type.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- PayPal Fields -->
+                        <div x-show="paymentType === 'PAYPAL'" x-transition>
+                            <h6>PayPal Information</h6>
+                            <div class="mb-3">
+                                <label for="paypal_email" class="form-label">PayPal Email</label>
+                                <input type="email" class="form-control" id="paypal_email" name="paypal_email" 
+                                       value="{{ form.paypal_email.value|default:'' }}" 
+                                       placeholder="your@email.com" required>
+                                {% if form.paypal_email.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.paypal_email.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Common Fields -->
+                        <div class="mb-3">
+                            <label for="nickname" class="form-label">Nickname (Optional)</label>
+                            <input type="text" class="form-control" id="nickname" name="nickname" 
+                                   value="{{ form.nickname.value|default:'' }}" 
+                                   placeholder="My Personal Card">
+                            {% if form.nickname.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.nickname.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-check mb-3">
+                                    <input type="checkbox" class="form-check-input" id="set_as_default" name="set_as_default" 
+                                           {% if form.set_as_default.value %}checked{% endif %}>
+                                    <label class="form-check-label" for="set_as_default">
+                                        Set as default payment method
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check mb-3">
+                                    <input type="checkbox" class="form-check-input" id="is_active" name="is_active" 
+                                           {% if form.is_active.value or not form.instance.pk %}checked{% endif %}>
+                                    <label class="form-check-label" for="is_active">
+                                        Active
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {% ui_alert "info" "security-notice" %}
+                            <i class="bi bi-shield-check me-2"></i>
+                            <strong>Security Notice:</strong> Your payment information is encrypted and stored securely. We never share your payment details with third parties.
+                        {% end_ui_alert %}
+                        
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% url 'paymentsdetails:payment_method_list' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-2"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save me-2"></i>{% if form.instance.pk %}Update{% else %}Add{% endif %} Payment Method
+                            </button>
+                        </div>
+                    {% end_ui_form %}
+                    
+                    <div id="form-result" class="mt-3"></div>
+                </div>
+            {% end_ui_card %}
+        </div>
+        
+        <div class="col-lg-4 col-md-5">
+            <!-- Security Information -->
+            {% ui_card "" "security-info" %}
+                <div class="card-header">
+                    <h6 class="mb-0">Security Information</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6><i class="bi bi-lock text-primary me-2"></i>Encryption</h6>
+                        <p class="small text-muted">All payment data is encrypted using industry-standard SSL/TLS protocols.</p>
+                    </div>
+                    <div class="mb-3">
+                        <h6><i class="bi bi-shield-check text-success me-2"></i>PCI Compliance</h6>
+                        <p class="small text-muted">We are PCI DSS compliant, ensuring your payment information is handled securely.</p>
+                    </div>
+                    <div class="mb-3">
+                        <h6><i class="bi bi-fingerprint text-info me-2"></i>Fraud Detection</h6>
+                        <p class="small text-muted">Advanced fraud detection systems protect your account from unauthorized transactions.</p>
+                    </div>
+                    <div class="mb-3">
+                        <h6><i class="bi bi-eye-slash text-warning me-2"></i>Privacy</h6>
+                        <p class="small text-muted">Your payment information is never shared with tutors or other users.</p>
+                    </div>
+                </div>
+            {% end_ui_card %}
+            
+            <!-- Help Section -->
+            {% ui_card "" "help-section" %}
+                <div class="card-header">
+                    <h6 class="mb-0">Need Help?</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6><i class="bi bi-question-circle text-primary me-2"></i>Common Questions</h6>
+                        <ul class="small text-muted">
+                            <li>Why do we need payment details?</li>
+                            <li>How is my information protected?</li>
+                            <li>Can I delete my payment method?</li>
+                            <li>What happens if my card expires?</li>
+                        </ul>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <a href="#" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-book me-2"></i>View Help Center
+                        </a>
+                        <a href="#" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-chat-dots me-2"></i>Contact Support
+                        </a>
+                    </div>
+                </div>
+            {% end_ui_card %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Alpine.js data
+    Alpine.data('paymentForm', () => ({
+        paymentType: document.querySelector('input[name="payment_type"]:checked')?.value || 'CREDIT_CARD',
+        cardNumber: '{{ form.card_number.value|default:'' }}',
+        
+        formatCardNumber() {
+            let value = this.cardNumber.replace(/\s/g, '');
+            let formattedValue = value.match(/.{1,4}/g)?.join(' ') || value;
+            this.cardNumber = formattedValue;
+        }
+    }));
+    
+    // Handle form submission with HTMX
+    htmx.on('htmx:afterRequest', function(evt) {
+        if (evt.detail.successful) {
+            // Show success notification
+            const notification = document.createElement('div');
+            notification.className = 'alert alert-success alert-dismissible fade show position-fixed';
+            notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            notification.innerHTML = `
+                <i class="bi bi-check-circle me-2"></i>
+                Payment method {% if form.instance.pk %}updated{% else %}added{% endif %} successfully
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(notification);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 5000);
+            
+            // Redirect to payment method list after a short delay
+            setTimeout(() => {
+                window.location.href = '{% url "paymentsdetails:payment_method_list" %}';
+            }, 2000);
+        }
+    });
+});
+</script>
+{% endblock %}

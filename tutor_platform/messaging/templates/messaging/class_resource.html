@@ -1,0 +1,397 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Class Resource - {{ resource.title }} - Django Tutor Platform{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'messaging:message_list' %}">Messages</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'messaging:online_class_detail' resource.online_class.id %}">{{ resource.online_class.topic }}</a></li>
+                    <li class="breadcrumb-item active">Resource</li>
+                </ol>
+            </nav>
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3">{{ resource.title }}</h1>
+                    <p class="text-muted">From {{ resource.online_class.topic }} class on {{ resource.online_class.scheduled_date|date:"M d, Y" }}</p>
+                </div>
+                <div>
+                    <span class="badge bg-{{ resource.get_resource_type_display|resource_type_color }} fs-6">
+                        {{ resource.get_resource_type_display }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-md-8">
+            <!-- Resource Preview -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Resource Preview</h5>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-three-dots"></i>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a class="dropdown-item" href="#">
+                                    <i class="bi bi-pencil me-2"></i>Edit Details
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ resource.file.url }}" download="{{ resource.title }}">
+                                    <i class="bi bi-download me-2"></i>Download
+                                </a>
+                            </li>
+                            <li>
+                                <button class="dropdown-item" 
+                                        hx-post="{% url 'messaging:class_resource_share' resource.id %}"
+                                        hx-target="#share-modal"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#share-modal">
+                                    <i class="bi bi-share me-2"></i>Share Resource
+                                </button>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <button class="dropdown-item text-danger" 
+                                        hx-post="{% url 'messaging:class_resource_delete' resource.id %}"
+                                        hx-confirm="Are you sure you want to delete this resource?">
+                                    <i class="bi bi-trash me-2"></i>Delete Resource
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if resource.is_image %}
+                        <div class="text-center mb-3">
+                            <img src="{{ resource.file.url }}" class="img-fluid" alt="{{ resource.title }}">
+                        </div>
+                    {% elif resource.is_video %}
+                        <div class="ratio ratio-16x9 mb-3">
+                            <video controls class="w-100">
+                                <source src="{{ resource.file.url }}" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                        </div>
+                    {% elif resource.is_audio %}
+                        <div class="mb-3">
+                            <audio controls class="w-100">
+                                <source src="{{ resource.file.url }}" type="audio/mpeg">
+                                Your browser does not support the audio element.
+                            </audio>
+                        </div>
+                    {% elif resource.is_pdf %}
+                        <div class="ratio ratio-4x3 mb-3">
+                            <iframe src="{{ resource.file.url }}" class="w-100 h-100" frameborder="0"></iframe>
+                        </div>
+                    {% elif resource.is_document %}
+                        <div class="text-center p-5 bg-light mb-3">
+                            <i class="bi bi-file-earmark-text display-1 text-muted"></i>
+                            <h4 class="mt-3">Document Preview</h4>
+                            <p class="text-muted">This document cannot be previewed directly.</p>
+                            <a href="{{ resource.file.url }}" class="btn btn-primary" download="{{ resource.title }}">
+                                <i class="bi bi-download"></i> Download Document
+                            </a>
+                        </div>
+                    {% else %}
+                        <div class="text-center p-5 bg-light mb-3">
+                            <i class="bi bi-file-earmark display-1 text-muted"></i>
+                            <h4 class="mt-3">File Preview</h4>
+                            <p class="text-muted">This file cannot be previewed directly.</p>
+                            <a href="{{ resource.file.url }}" class="btn btn-primary" download="{{ resource.title }}">
+                                <i class="bi bi-download"></i> Download File
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Resource Details -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Resource Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Title</label>
+                            <p>{{ resource.title }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Type</label>
+                            <p>{{ resource.get_resource_type_display }}</p>
+                        </div>
+                    </div>
+                    <div class="row mb-4">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">File Size</label>
+                            <p>{{ resource.file_size|filesizeformat }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Downloads</label>
+                            <p>{{ resource.download_count }} downloads</p>
+                        </div>
+                    </div>
+                    <div class="row mb-4">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Uploaded By</label>
+                            <p>{{ resource.uploaded_by.get_full_name }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Uploaded At</label>
+                            <p>{{ resource.uploaded_at|date:"M d, Y H:i" }}</p>
+                        </div>
+                    </div>
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <label class="form-label text-muted">Description</label>
+                            <p>{{ resource.description|default:"No description provided" }}</p>
+                        </div>
+                    </div>
+                    {% if resource.tags.exists %}
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <label class="form-label text-muted">Tags</label>
+                                <div>
+                                    {% for tag in resource.tags.all %}
+                                        <span class="badge bg-secondary me-1">{{ tag.name }}</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Comments Section -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Comments</h5>
+                    <button class="btn btn-sm btn-outline-primary" 
+                            hx-get="{% url 'messaging:class_resource_comment_add' resource.id %}"
+                            hx-target="#comment-modal"
+                            data-bs-toggle="modal"
+                            data-bs-target="#comment-modal">
+                        <i class="bi bi-plus-circle"></i> Add Comment
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        {% for comment in comments %}
+                            <div class="list-group-item px-0">
+                                <div class="d-flex justify-content-between">
+                                    <div class="d-flex">
+                                        <img src="{{ comment.user.profile_picture.url|default:'/static/images/default-avatar.png' }}" 
+                                             class="rounded-circle me-3" width="40" height="40" alt="{{ comment.user.get_full_name }}">
+                                        <div>
+                                            <h6 class="mb-1">{{ comment.user.get_full_name }}</h6>
+                                            <p class="mb-1">{{ comment.content }}</p>
+                                            <small class="text-muted">{{ comment.created_at|timesince }} ago</small>
+                                        </div>
+                                    </div>
+                                    {% if can_delete_comment %}
+                                        <button class="btn btn-sm btn-outline-danger" 
+                                                hx-post="{% url 'messaging:class_resource_comment_delete' comment.id %}"
+                                                hx-confirm="Delete this comment?">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% empty %}
+                            <p class="text-muted text-center">No comments yet</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-md-4">
+            <!-- Resource Statistics -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Resource Statistics</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6 mb-3">
+                            <div class="display-6 text-primary">{{ resource.download_count }}</div>
+                            <div class="small text-muted">Downloads</div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="display-6 text-success">{{ resource.view_count }}</div>
+                            <div class="small text-muted">Views</div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="display-6 text-info">{{ resource.unique_downloads }}</div>
+                            <div class="small text-muted">Unique Downloads</div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="display-6 text-warning">{{ comments.count }}</div>
+                            <div class="small text-muted">Comments</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Download Analytics -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Download Analytics</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="downloads-chart" width="400" height="200"></canvas>
+                </div>
+            </div>
+
+            <!-- Recent Downloaders -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Recent Downloaders</h6>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        {% for downloader in recent_downloaders %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                <div class="d-flex align-items-center">
+                                    <img src="{{ downloader.user.profile_picture.url|default:'/static/images/default-avatar.png' }}" 
+                                         class="rounded-circle me-2" width="30" height="30" alt="{{ downloader.user.get_full_name }}">
+                                    <div>
+                                        <div class="fw-semibold">{{ downloader.user.get_full_name }}</div>
+                                        <small class="text-muted">{{ downloader.downloaded_at|timesince }} ago</small>
+                                    </div>
+                                </div>
+                            </div>
+                        {% empty %}
+                            <p class="text-muted text-center">No downloads yet</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Quick Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ resource.file.url }}" class="btn btn-outline-primary btn-sm" download="{{ resource.title }}">
+                            <i class="bi bi-download"></i> Download
+                        </a>
+                        <button class="btn btn-outline-primary btn-sm" 
+                                hx-get="{% url 'messaging:class_resource_edit' resource.id %}"
+                                hx-target="#edit-modal"
+                                data-bs-toggle="modal"
+                                data-bs-target="#edit-modal">
+                            <i class="bi bi-pencil"></i> Edit Details
+                        </button>
+                        <button class="btn btn-outline-primary btn-sm" 
+                                hx-post="{% url 'messaging:class_resource_duplicate' resource.id %}"
+                                hx-confirm="Duplicate this resource?">
+                            <i class="bi bi-files"></i> Duplicate
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Related Resources -->
+            {% if related_resources %}
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">Related Resources</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="list-group list-group-flush">
+                            {% for related in related_resources %}
+                                <a href="{% url 'messaging:class_resource' related.id %}" class="list-group-item list-group-item-action px-0">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">{{ related.title }}</h6>
+                                        <small>{{ related.get_resource_type_display }}</small>
+                                    </div>
+                                    <p class="mb-1 text-muted">{{ related.description|truncatewords:15 }}</p>
+                                    <small>{{ related.download_count }} downloads</small>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Share Modal -->
+<div class="modal fade" id="share-modal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <!-- Content will be loaded via HTMX -->
+        </div>
+    </div>
+</div>
+
+<!-- Comment Modal -->
+<div class="modal fade" id="comment-modal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <!-- Content will be loaded via HTMX -->
+        </div>
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal fade" id="edit-modal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <!-- Content will be loaded via HTMX -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Track resource views
+        fetch('{% url "messaging:class_resource_track_view" resource.id %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        });
+        
+        // Initialize downloads chart
+        const ctx = document.getElementById('downloads-chart');
+        if (ctx) {
+            // This would typically use a charting library like Chart.js
+            // For now, we'll just show a placeholder
+            ctx.getContext('2d').fillText('Downloads chart will be implemented here', 10, 50);
+        }
+        
+        // Track download when download link is clicked
+        const downloadLinks = document.querySelectorAll('a[href="{{ resource.file.url }}"]');
+        downloadLinks.forEach(link => {
+            link.addEventListener('click', function() {
+                fetch('{% url "messaging:class_resource_track_download" resource.id %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    }
+                });
+            });
+        });
+    });
+</script>
+{% endblock %}

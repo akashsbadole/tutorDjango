@@ -1,0 +1,254 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ subject.name }} - Django Tutor Platform{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'accounts:home' %}">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'accounts:subject_list' %}">Subjects</a></li>
+                    <li class="breadcrumb-item active">{{ subject.name }}</li>
+                </ol>
+            </nav>
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3">{{ subject.name }}</h1>
+                    <p class="text-muted">{{ subject.category.name }}</p>
+                </div>
+                {% if subject.icon %}
+                    <i class="{{ subject.icon }} text-primary" style="font-size: 3rem;"></i>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Subject Overview -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">About {{ subject.name }}</h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">{{ subject.description }}</p>
+                    
+                    {% if subject.learning_objectives %}
+                        <h6>Learning Objectives</h6>
+                        <ul>
+                            {% for objective in subject.learning_objectives %}
+                                <li>{{ objective }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Subject Statistics</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center mb-3">
+                        <div class="col-6">
+                            <h4 class="text-primary">{{ subject.tutor_count }}</h4>
+                            <small class="text-muted">Expert Tutors</small>
+                        </div>
+                        <div class="col-6">
+                            <h4 class="text-success">{{ subject.requirement_count }}</h4>
+                            <small class="text-muted">Active Requirements</small>
+                        </div>
+                    </div>
+                    <div class="row text-center mb-3">
+                        <div class="col-6">
+                            <h4 class="text-info">{{ subject.session_count }}</h4>
+                            <small class="text-muted">Sessions Completed</small>
+                        </div>
+                        <div class="col-6">
+                            <h4 class="text-warning">{{ subject.student_count }}</h4>
+                            <small class="text-muted">Active Students</small>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>Average Rating</span>
+                            <div class="text-warning">
+                                {% if subject.average_rating %}
+                                    {% for i in subject.average_rating|star_range %}
+                                        <i class="bi bi-star-fill"></i>
+                                    {% endfor %}
+                                    <span class="text-muted">({{ subject.average_rating }}/5.0)</span>
+                                {% else %}
+                                    <span class="text-muted">No ratings yet</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>Average Hourly Rate</span>
+                            <span class="fw-bold">${{ subject.average_hourly_rate }}/hr</span>
+                        </div>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'accounts:tutor_list' %}?subject={{ subject.id }}" class="btn btn-primary">
+                            <i class="bi bi-search"></i> Find Tutors
+                        </a>
+                        {% if user.is_authenticated and user.user_type == 'STUDENT' %}
+                            <a href="{% url 'requirements:requirement_create' %}?subject={{ subject.id }}" class="btn btn-outline-primary">
+                                <i class="bi bi-plus-circle"></i> Post Requirement
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Tutors -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Top Tutors in {{ subject.name }}</h5>
+                    <a href="{% url 'accounts:tutor_list' %}?subject={{ subject.id }}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    {% if top_tutors %}
+                        <div class="row">
+                            {% for tutor in top_tutors %}
+                                <div class="col-md-6 col-lg-4 mb-3">
+                                    <div class="card h-100 card-hover">
+                                        <div class="card-body">
+                                            <div class="d-flex align-items-center mb-3">
+                                                <img src="{{ tutor.profile_picture.url|default:'/static/images/default-avatar.png' }}" 
+                                                     class="rounded-circle me-3" width="50" height="50" alt="{{ tutor.user.get_full_name }}">
+                                                <div>
+                                                    <h6 class="card-title mb-0">{{ tutor.user.get_full_name }}</h6>
+                                                    <div class="text-warning small">
+                                                        {% for i in tutor.average_rating|star_range %}
+                                                            <i class="bi bi-star-fill"></i>
+                                                        {% endfor %}
+                                                        <span class="text-muted">({{ tutor.total_reviews }})</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <p class="card-text small">{{ tutor.bio|truncatewords:15 }}</p>
+                                            <div class="mb-2">
+                                                <span class="badge bg-light text-dark me-1">{{ tutor.experience_years }} years exp.</span>
+                                                <span class="badge bg-light text-dark">{{ tutor.get_education_level_display }}</span>
+                                            </div>
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <span class="text-primary fw-bold">${{ tutor.hourly_rate }}/hr</span>
+                                                <a href="{% url 'accounts:tutor_detail' tutor.id %}" class="btn btn-sm btn-outline-primary">View Profile</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-person-x text-muted" style="font-size: 3rem;"></i>
+                            <p class="text-muted mt-2">No tutors available for this subject yet.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Requirements -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Recent Requirements in {{ subject.name }}</h5>
+                    <a href="{% url 'requirements:requirement_list' %}?subject={{ subject.id }}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    {% if recent_requirements %}
+                        <div class="row">
+                            {% for requirement in recent_requirements %}
+                                <div class="col-md-6 mb-3">
+                                    <div class="card h-100">
+                                        <div class="card-body">
+                                            <h6 class="card-title">{{ requirement.title }}</h6>
+                                            <p class="card-text text-muted small">by {{ requirement.student.user.get_full_name }}</p>
+                                            <p class="card-text">{{ requirement.description|truncatewords:15 }}</p>
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <span class="badge bg-{{ requirement.status|status_color }}">{{ requirement.get_status_display }}</span>
+                                                <small class="text-muted">{{ requirement.created_at|date:"M d, Y" }}</small>
+                                            </div>
+                                        </div>
+                                        <div class="card-footer bg-transparent">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <span class="text-primary fw-bold">${{ requirement.budget_range }}/hr</span>
+                                                <a href="{% url 'requirements:requirement_detail' requirement.id %}" class="btn btn-sm btn-primary">View Details</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-clipboard-x text-muted" style="font-size: 3rem;"></i>
+                            <p class="text-muted mt-2">No requirements posted for this subject yet.</p>
+                            {% if user.is_authenticated and user.user_type == 'STUDENT' %}
+                                <a href="{% url 'requirements:requirement_create' %}?subject={{ subject.id }}" class="btn btn-primary">Be the First to Post</a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Related Subjects -->
+    {% if related_subjects %}
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Related Subjects</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            {% for related in related_subjects %}
+                                <div class="col-md-4 mb-3">
+                                    <div class="card h-100 card-hover">
+                                        <div class="card-body">
+                                            <h6 class="card-title">{{ related.name }}</h6>
+                                            <p class="card-text text-muted small">{{ related.category.name }}</p>
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <span class="badge bg-primary">{{ related.tutor_count }} Tutors</span>
+                                                <a href="{% url 'accounts:subject_detail' related.id %}" class="btn btn-sm btn-outline-primary">View</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    });
+</script>
+{% endblock %}

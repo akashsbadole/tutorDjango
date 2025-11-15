@@ -1,0 +1,522 @@
+{% extends "search/base.html" %}
+{% load static %}
+
+{% block title %}Search Analytics{% endblock %}
+
+{% block search_content %}
+<!-- Analytics Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4>Search Analytics</h4>
+    <div class="btn-group" role="group">
+        <input type="radio" class="btn-check" name="period" id="period-7" value="7" {% if period == 7 %}checked{% endif %}>
+        <label class="btn btn-outline-primary" for="period-7">7 Days</label>
+        
+        <input type="radio" class="btn-check" name="period" id="period-30" value="30" {% if period == 30 %}checked{% endif %}>
+        <label class="btn btn-outline-primary" for="period-30">30 Days</label>
+        
+        <input type="radio" class="btn-check" name="period" id="period-90" value="90" {% if period == 90 %}checked{% endif %}>
+        <label class="btn btn-outline-primary" for="period-90">90 Days</label>
+        
+        <input type="radio" class="btn-check" name="period" id="period-365" value="365" {% if period == 365 %}checked{% endif %}>
+        <label class="btn btn-outline-primary" for="period-365">1 Year</label>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ analytics.total_searches }}</h4>
+                        <p class="card-text">Total Searches</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-search fa-2x opacity-75"></i>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <small>
+                        {% if analytics.searches_change > 0 %}
+                        <i class="fas fa-arrow-up"></i> +{{ analytics.searches_change|floatformat:1 }}% from previous period
+                        {% elif analytics.searches_change < 0 %}
+                        <i class="fas fa-arrow-down"></i> {{ analytics.searches_change|floatformat:1 }}% from previous period
+                        {% else %}
+                        <i class="fas fa-minus"></i> No change from previous period
+                        {% endif %}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ analytics.unique_searchers }}</h4>
+                        <p class="card-text">Unique Searchers</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-users fa-2x opacity-75"></i>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <small>
+                        {% if analytics.searchers_change > 0 %}
+                        <i class="fas fa-arrow-up"></i> +{{ analytics.searchers_change|floatformat:1 }}% from previous period
+                        {% elif analytics.searchers_change < 0 %}
+                        <i class="fas fa-arrow-down"></i> {{ analytics.searchers_change|floatformat:1 }}% from previous period
+                        {% else %}
+                        <i class="fas fa-minus"></i> No change from previous period
+                        {% endif %}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ analytics.avg_results|floatformat:1 }}</h4>
+                        <p class="card-text">Avg. Results/Search</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-chart-bar fa-2x opacity-75"></i>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <small>
+                        {% if analytics.results_change > 0 %}
+                        <i class="fas fa-arrow-up"></i> +{{ analytics.results_change|floatformat:1 }}% from previous period
+                        {% elif analytics.results_change < 0 %}
+                        <i class="fas fa-arrow-down"></i> {{ analytics.results_change|floatformat:1 }}% from previous period
+                        {% else %}
+                        <i class="fas fa-minus"></i> No change from previous period
+                        {% endif %}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ analytics.no_result_percentage|floatformat:1 }}%</h4>
+                        <p class="card-text">No-Result Searches</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-exclamation-triangle fa-2x opacity-75"></i>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <small>
+                        {% if analytics.no_result_change > 0 %}
+                        <i class="fas fa-arrow-up"></i> +{{ analytics.no_result_change|floatformat:1 }}% from previous period
+                        {% elif analytics.no_result_change < 0 %}
+                        <i class="fas fa-arrow-down"></i> {{ analytics.no_result_change|floatformat:1 }}% from previous period
+                        {% else %}
+                        <i class="fas fa-minus"></i> No change from previous period
+                        {% endif %}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row mb-4">
+    <!-- Search Trend Chart -->
+    <div class="col-md-8 mb-3">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Search Trend</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="searchTrendChart" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Content Type Distribution -->
+    <div class="col-md-4 mb-3">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Search by Content Type</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="contentTypeChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Top Searches and Users -->
+<div class="row mb-4">
+    <!-- Top Queries -->
+    <div class="col-md-6 mb-3">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Top Search Queries</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Query</th>
+                                <th class="text-end">Count</th>
+                                <th class="text-end">Avg. Results</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for query in analytics.top_queries %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'search:results' %}?q={{ query.query }}" class="text-decoration-none">
+                                        {{ query.query }}
+                                    </a>
+                                </td>
+                                <td class="text-end">{{ query.count }}</td>
+                                <td class="text-end">{{ query.avg_results|floatformat:1 }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- No Result Queries -->
+    <div class="col-md-6 mb-3">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Queries with No Results</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Query</th>
+                                <th class="text-end">Count</th>
+                                <th class="text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for query in analytics.no_result_queries %}
+                            <tr>
+                                <td>{{ query.query }}</td>
+                                <td class="text-end">{{ query.count }}</td>
+                                <td class="text-end">
+                                    <button class="btn btn-sm btn-outline-primary" 
+                                            onclick="suggestContent('{{ query.query }}')">
+                                        <i class="fas fa-lightbulb"></i> Suggest
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Top Searchers -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Most Active Searchers</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>User</th>
+                                <th class="text-end">Search Count</th>
+                                <th class="text-end">Unique Queries</th>
+                                <th class="text-end">Avg. Results</th>
+                                <th class="text-end">Last Search</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for searcher in analytics.top_searchers %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="me-2">
+                                            {% if searcher.avatar %}
+                                            <img src="{{ searcher.avatar }}" class="rounded-circle" width="32" height="32" alt="{{ searcher.username }}">
+                                            {% else %}
+                                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                                {{ searcher.username|first|upper }}
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold">{{ searcher.username }}</div>
+                                            <small class="text-muted">{{ searcher.email }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="text-end">{{ searcher.search_count }}</td>
+                                <td class="text-end">{{ searcher.unique_queries }}</td>
+                                <td class="text-end">{{ searcher.avg_results|floatformat:1 }}</td>
+                                <td class="text-end">{{ searcher.last_search|date:"M d, Y" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Export Options -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Export Analytics</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="export-format" class="form-label">Export Format</label>
+                        <select class="form-select" id="export-format">
+                            <option value="csv">CSV</option>
+                            <option value="excel">Excel</option>
+                            <option value="pdf">PDF Report</option>
+                            <option value="json">JSON</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="export-data" class="form-label">Data to Export</label>
+                        <select class="form-select" id="export-data">
+                            <option value="summary">Summary Only</option>
+                            <option value="queries">Top Queries</option>
+                            <option value="users">Top Searchers</option>
+                            <option value="all">All Data</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3 d-flex align-items-end">
+                        <button class="btn btn-primary w-100" onclick="exportAnalytics()">
+                            <i class="fas fa-download me-1"></i> Export Data
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Suggest Content Modal -->
+<div class="modal fade" id="suggestContentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Suggest Content for Query</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="suggest-content-form">
+                    <div class="mb-3">
+                        <label for="suggest-query" class="form-label">Query</label>
+                        <input type="text" class="form-control" id="suggest-query" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label for="suggest-content-type" class="form-label">Content Type to Suggest</label>
+                        <select class="form-select" id="suggest-content-type">
+                            <option value="tutor">New Tutor Profile</option>
+                            <option value="requirement">New Requirement</option>
+                            <option value="content">Educational Content</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="suggest-description" class="form-label">Suggestion Details</label>
+                        <textarea class="form-control" id="suggest-description" rows="4" 
+                                  placeholder="Describe what content should be created for this query..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitSuggestion()">Submit Suggestion</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    // Chart data from Django context
+    const analyticsData = {
+        dailyTrends: {{ analytics.daily_trends|safe }},
+        contentTypeStats: {{ analytics.content_type_stats|safe }},
+        topQueries: {{ analytics.top_queries|safe }},
+        noResultQueries: {{ analytics.no_result_queries|safe }},
+        topSearchers: {{ analytics.top_searchers|safe }}
+    };
+    
+    // Initialize Search Trend Chart
+    const trendCtx = document.getElementById('searchTrendChart').getContext('2d');
+    const searchTrendChart = new Chart(trendCtx, {
+        type: 'line',
+        data: {
+            labels: analyticsData.dailyTrends.labels,
+            datasets: [{
+                label: 'Search Count',
+                data: analyticsData.dailyTrends.data,
+                borderColor: 'rgb(75, 192, 192)',
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+    
+    // Initialize Content Type Chart
+    const typeCtx = document.getElementById('contentTypeChart').getContext('2d');
+    const contentTypeChart = new Chart(typeCtx, {
+        type: 'doughnut',
+        data: {
+            labels: analyticsData.contentTypeStats.labels,
+            datasets: [{
+                data: analyticsData.contentTypeStats.data,
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.8)',
+                    'rgba(54, 162, 235, 0.8)',
+                    'rgba(255, 206, 86, 0.8)',
+                    'rgba(75, 192, 192, 0.8)',
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+    
+    // Period change handler
+    document.querySelectorAll('input[name="period"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            const period = this.value;
+            window.location.href = `{% url 'search:analytics' %}?period=${period}`;
+        });
+    });
+    
+    // Suggest content for no-result query
+    function suggestContent(query) {
+        document.getElementById('suggest-query').value = query;
+        const modal = new bootstrap.Modal(document.getElementById('suggestContentModal'));
+        modal.show();
+    }
+    
+    // Submit suggestion
+    function submitSuggestion() {
+        const query = document.getElementById('suggest-query').value;
+        const contentType = document.getElementById('suggest-content-type').value;
+        const description = document.getElementById('suggest-description').value;
+        
+        fetch('/search/api/suggest-content/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                query: query,
+                content_type: contentType,
+                description: description
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                bootstrap.Modal.getInstance(document.getElementById('suggestContentModal')).hide();
+                showAlert('Suggestion submitted successfully!', 'success');
+            } else {
+                showAlert('Error submitting suggestion: ' + data.error, 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error submitting suggestion:', error);
+            showAlert('Error submitting suggestion', 'danger');
+        });
+    }
+    
+    // Export analytics
+    function exportAnalytics() {
+        const format = document.getElementById('export-format').value;
+        const dataType = document.getElementById('export-data').value;
+        const period = document.querySelector('input[name="period"]:checked').value;
+        
+        window.location.href = `/search/analytics/export/?format=${format}&data=${dataType}&period=${period}`;
+    }
+    
+    // Helper function to get CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
+    // Show alert message
+    function showAlert(message, type) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+        alertDiv.style.top = '20px';
+        alertDiv.style.right = '20px';
+        alertDiv.style.zIndex = '9999';
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        document.body.appendChild(alertDiv);
+        
+        // Auto-dismiss after 5 seconds
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.parentNode.removeChild(alertDiv);
+            }
+        }, 5000);
+    }
+</script>
+{% endblock %}

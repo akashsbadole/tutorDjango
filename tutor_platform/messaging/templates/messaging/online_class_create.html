@@ -1,0 +1,464 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Schedule Online Class - Django Tutor Platform{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3">Schedule Online Class</h1>
+            <p class="text-muted">Set up a video session with your tutor or student</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <form hx-post="{% url 'messaging:online_class_create' %}" hx-target="#form-errors" hx-swap="innerHTML">
+                        {% csrf_token %}
+                        
+                        <!-- Participant Information -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">Class Participants</h5>
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label text-muted">
+                                                {% if user.user_type == 'STUDENT' %}
+                                                    Tutor
+                                                {% else %}
+                                                    Student
+                                                {% endif %}
+                                            </label>
+                                            {% if recipient %}
+                                                <p>{{ recipient.get_full_name }}</p>
+                                                <input type="hidden" name="recipient" value="{{ recipient.id }}">
+                                            {% endif %}
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label text-muted">You</label>
+                                            <p>{{ user.get_full_name }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Class Details -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">Class Details</h5>
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <label for="topic" class="form-label">Topic *</label>
+                                    <input type="text" class="form-control" id="topic" name="topic" required
+                                           placeholder="e.g., Calculus Problem Solving, Python Basics Review">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="scheduled_date" class="form-label">Date *</label>
+                                    <input type="date" class="form-control" id="scheduled_date" name="scheduled_date" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="scheduled_time" class="form-label">Time *</label>
+                                    <input type="time" class="form-control" id="scheduled_time" name="scheduled_time" required>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="timezone" class="form-label">Timezone *</label>
+                                    <select class="form-select" id="timezone" name="timezone" required>
+                                        <option value="">Select timezone</option>
+                                        {% for tz in timezones %}
+                                            <option value="{{ tz.0 }}" {% if tz.0 == user_timezone %}selected{% endif %}>{{ tz.1 }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="duration" class="form-label">Duration (minutes) *</label>
+                                    <select class="form-select" id="duration" name="duration" required>
+                                        <option value="30">30 minutes</option>
+                                        <option value="60" selected>60 minutes</option>
+                                        <option value="90">90 minutes</option>
+                                        <option value="120">120 minutes</option>
+                                        <option value="180">180 minutes</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="max_participants" class="form-label">Max Participants</label>
+                                    <select class="form-select" id="max_participants" name="max_participants">
+                                        <option value="2" selected>2 (You + 1 other)</option>
+                                        <option value="3">3 (You + 2 others)</option>
+                                        <option value="4">4 (You + 3 others)</option>
+                                        <option value="5">5 (You + 4 others)</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="max_waiting_list" class="form-label">Max Waiting List</label>
+                                    <input type="number" class="form-control" id="max_waiting_list" name="max_waiting_list" 
+                                           min="0" max="20" value="5" placeholder="Maximum waiting list size">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Recurring Class Settings -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">Recurring Class Settings</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="is_recurring" name="is_recurring">
+                                        <label class="form-check-label" for="is_recurring">
+                                            This is a recurring class
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="recurring-options" style="display: none;">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="recurrence_type" class="form-label">Recurrence Pattern</label>
+                                        <select class="form-select" id="recurrence_type" name="recurrence_type">
+                                            <option value="DAILY">Daily</option>
+                                            <option value="WEEKLY">Weekly</option>
+                                            <option value="MONTHLY">Monthly</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="recurrence_end_date" class="form-label">Recurrence End Date</label>
+                                        <input type="date" class="form-control" id="recurrence_end_date" name="recurrence_end_date">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Video Platform -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">Video Platform</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="platform" class="form-label">Platform *</label>
+                                    <select class="form-select" id="platform" name="platform" required
+                                            hx-get="{% url 'messaging:platform_settings' %}"
+                                            hx-trigger="change"
+                                            hx-target="#platform-settings"
+                                            hx-swap="innerHTML">
+                                        <option value="">Select platform</option>
+                                        <option value="ZOOM">Zoom</option>
+                                        <option value="GOOGLE_MEET">Google Meet</option>
+                                        <option value="SKYPE">Skype</option>
+                                        <option value="TEAMS">Microsoft Teams</option>
+                                        <option value="DISCORD">Discord</option>
+                                        <option value="OTHER">Other</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="meeting_link" class="form-label">Meeting Link</label>
+                                    <div class="input-group">
+                                        <input type="url" class="form-control" id="meeting_link" name="meeting_link" 
+                                               placeholder="https://zoom.us/j/...">
+                                        <button class="btn btn-outline-secondary" type="button" 
+                                                hx-get="{% url 'messaging:generate_meeting_link' %}"
+                                                hx-target="#meeting-link"
+                                                hx-swap="innerHTML">
+                                            <i class="bi bi-magic"></i> Generate
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="platform-settings">
+                                <!-- Platform-specific settings will be loaded here -->
+                            </div>
+                        </div>
+
+                        <!-- Class Materials -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">Class Materials</h5>
+                            <div class="mb-3">
+                                <label for="description" class="form-label">Description</label>
+                                <textarea class="form-control" id="description" name="description" rows="4"
+                                          placeholder="Describe what will be covered in this session..."></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="materials" class="form-label">Materials Needed</label>
+                                <textarea class="form-control" id="materials" name="materials" rows="3"
+                                          placeholder="e.g., Notebook, calculator, specific textbook chapters..."></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="preparation" class="form-label">Preparation Required</label>
+                                <textarea class="form-control" id="preparation" name="preparation" rows="2"
+                                          placeholder="What should participants prepare before the session?"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Recording Settings -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">Recording Settings</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="record_session" class="form-label">Record Session</label>
+                                    <select class="form-select" id="record_session" name="record_session">
+                                        <option value="NO">No recording</option>
+                                        <option value="HOST_ONLY">Host only</option>
+                                        <option value="ALL">All participants</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="recording_access" class="form-label">Recording Access</label>
+                                    <select class="form-select" id="recording_access" name="recording_access">
+                                        <option value="PRIVATE">Private (only participants)</option>
+                                        <option value="SHARED">Shared with participants</option>
+                                        <option value="PUBLIC">Public (with link)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Calendar Integration -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">Calendar Integration</h5>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="add_to_google_calendar" name="add_to_google_calendar" checked>
+                                <label class="form-check-label" for="add_to_google_calendar">
+                                    Add to Google Calendar
+                                </label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="add_to_outlook_calendar" name="add_to_outlook_calendar">
+                                <label class="form-check-label" for="add_to_outlook_calendar">
+                                    Add to Outlook Calendar
+                                </label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="send_calendar_invites" name="send_calendar_invites" checked>
+                                <label class="form-check-label" for="send_calendar_invites">
+                                    Send calendar invitations to participants
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Waiting List Settings -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">Waiting List Settings</h5>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="waiting_list_enabled" name="waiting_list_enabled" checked>
+                                <label class="form-check-label" for="waiting_list_enabled">
+                                    Enable waiting list when class is full
+                                </label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="auto_notify_waiting_list" name="auto_notify_waiting_list" checked>
+                                <label class="form-check-label" for="auto_notify_waiting_list">
+                                    Automatically notify waiting list when spots become available
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Reminder Settings -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">Reminders</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="email_reminder_hours" class="form-label">Email Reminder (hours before)</label>
+                                    <select class="form-select" id="email_reminder_hours" name="email_reminder_hours">
+                                        <option value="0">No email reminder</option>
+                                        <option value="1" selected>1 hour before</option>
+                                        <option value="2">2 hours before</option>
+                                        <option value="6">6 hours before</option>
+                                        <option value="12">12 hours before</option>
+                                        <option value="24">24 hours before</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="notification_reminder_minutes" class="form-label">Notification Reminder (minutes before)</label>
+                                    <select class="form-select" id="notification_reminder_minutes" name="notification_reminder_minutes">
+                                        <option value="0">No notification reminder</option>
+                                        <option value="5">5 minutes before</option>
+                                        <option value="10">10 minutes before</option>
+                                        <option value="15" selected>15 minutes before</option>
+                                        <option value="30">30 minutes before</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="form-errors"></div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <span class="htmx-indicator spinner-border spinner-border-sm me-2" role="status"></span>
+                                Schedule Class
+                            </button>
+                            <a href="{% url 'messaging:message_list' %}" class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-md-4">
+            <!-- Tips for Online Classes -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Tips for Successful Online Classes</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle text-success me-2"></i>
+                            Test your equipment beforehand
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle text-success me-2"></i>
+                            Choose a quiet, well-lit location
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle text-success me-2"></i>
+                            Have materials ready before start
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle text-success me-2"></i>
+                            Join 5-10 minutes early
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle text-success me-2"></i>
+                            Close unnecessary applications
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Platform Comparison -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Platform Comparison</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Platform</th>
+                                    <th>Max Time</th>
+                                    <th>Features</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Zoom</td>
+                                    <td>40 min (free)</td>
+                                    <td>Screen share, recording, breakout rooms</td>
+                                </tr>
+                                <tr>
+                                    <td>Google Meet</td>
+                                    <td>60 min</td>
+                                    <td>Screen share, recording, live captions</td>
+                                </tr>
+                                <tr>
+                                    <td>Skype</td>
+                                    <td>4 hours</td>
+                                    <td>Screen share, recording, group calls</td>
+                                </tr>
+                                <tr>
+                                    <td>Teams</td>
+                                    <td>24 hours</td>
+                                    <td>Screen share, recording, collaboration tools</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Technical Requirements -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Technical Requirements</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="bi bi-camera-video text-info me-2"></i>
+                            Webcam or built-in camera
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-mic text-info me-2"></i>
+                            Microphone or headset
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-wifi text-info me-2"></i>
+                            Stable internet connection
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-laptop text-info me-2"></i>
+                            Computer with speakers/headphones
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Timezone Information -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Timezone Information</h6>
+                </div>
+                <div class="card-body">
+                    <p class="small text-muted">
+                        Your current timezone: <strong>{{ user_timezone_display }}</strong><br>
+                        All class times will be displayed in your local timezone.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Handle form submission success
+    document.body.addEventListener('htmx:afterRequest', function(evt) {
+        if (evt.detail.successful && evt.detail.target.id === 'form-errors') {
+            // Redirect on successful submission
+            window.location.href = evt.detail.xhr.responseURL || '{% url "messaging:message_list" %}';
+        }
+    });
+    
+    // Set minimum date to tomorrow
+    document.addEventListener('DOMContentLoaded', function() {
+        const dateInput = document.querySelector('input[name="scheduled_date"]');
+        if (dateInput) {
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            dateInput.min = tomorrow.toISOString().split('T')[0];
+        }
+        
+        // Handle recurring class options
+        const isRecurringCheckbox = document.getElementById('is_recurring');
+        const recurringOptions = document.getElementById('recurring-options');
+        
+        if (isRecurringCheckbox && recurringOptions) {
+            isRecurringCheckbox.addEventListener('change', function() {
+                recurringOptions.style.display = this.checked ? 'block' : 'none';
+            });
+        }
+        
+        // Set minimum recurrence end date
+        const recurrenceEndDateInput = document.getElementById('recurrence_end_date');
+        if (recurrenceEndDateInput && dateInput) {
+            dateInput.addEventListener('change', function() {
+                const startDate = new Date(this.value);
+                const minEndDate = new Date(startDate);
+                minEndDate.setDate(minEndDate.getDate() + 1);
+                recurrenceEndDateInput.min = minEndDate.toISOString().split('T')[0];
+            });
+        }
+    });
+</script>
+{% endblock %}

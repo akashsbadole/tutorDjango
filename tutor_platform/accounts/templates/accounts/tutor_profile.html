@@ -1,0 +1,316 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Tutor Profile - Django Tutor Platform{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3">Tutor Profile</h1>
+            <p class="text-muted">Manage your tutor information and services</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Profile Information -->
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <img src="{{ tutor.profile_picture.url|default:'/static/images/default-avatar.png' }}" 
+                         class="rounded-circle mb-3" width="150" height="150" alt="Profile Picture">
+                    <h4>{{ tutor.user.get_full_name }}</h4>
+                    <p class="text-muted">{{ tutor.user.email }}</p>
+                    <div class="mb-3">
+                        <span class="badge bg-primary">Tutor</span>
+                        {% if tutor.is_verified %}
+                            <span class="badge bg-success">Verified</span>
+                        {% endif %}
+                        {% if tutor.is_featured %}
+                            <span class="badge bg-warning">Featured</span>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <div class="text-warning mb-2">
+                            {% for i in tutor.average_rating|star_range %}
+                                <i class="bi bi-star-fill"></i>
+                            {% endfor %}
+                            <span class="text-muted">({{ tutor.average_rating }}/5.0)</span>
+                        </div>
+                        <small class="text-muted">{{ tutor.total_reviews }} reviews</small>
+                    </div>
+                    <div class="mb-3">
+                        <h4 class="text-primary">${{ tutor.hourly_rate }}/hr</h4>
+                    </div>
+                    <button class="btn btn-primary" 
+                            hx-get="{% url 'accounts:edit_tutor_profile' %}"
+                            hx-target="#profile-edit-modal"
+                            data-bs-toggle="modal"
+                            data-bs-target="#profile-edit-modal">
+                        <i class="bi bi-pencil"></i> Edit Profile
+                    </button>
+                </div>
+            </div>
+
+            <!-- Profile Completion -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0">Profile Completion</h6>
+                </div>
+                <div class="card-body">
+                    <div class="progress mb-2">
+                        <div class="progress-bar bg-success" role="progressbar" 
+                             style="width: {{ profile_completion }}%"
+                             aria-valuenow="{{ profile_completion }}" 
+                             aria-valuemin="0" aria-valuemax="100">
+                            {{ profile_completion }}%
+                        </div>
+                    </div>
+                    <small class="text-muted">Complete your profile to attract more students</small>
+                </div>
+            </div>
+
+            <!-- Teaching Stats -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0">Teaching Statistics</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <h5 class="text-primary">{{ total_sessions }}</h5>
+                            <small class="text-muted">Sessions</small>
+                        </div>
+                        <div class="col-6">
+                            <h5 class="text-success">{{ total_students }}</h5>
+                            <small class="text-muted">Students</small>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <h5 class="text-info">{{ total_hours }}</h5>
+                            <small class="text-muted">Hours Taught</small>
+                        </div>
+                        <div class="col-6">
+                            <h5 class="text-warning">{{ tutor.experience_years }}</h5>
+                            <small class="text-muted">Years Exp.</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-8">
+            <!-- Professional Information -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Professional Information</h5>
+                    <button class="btn btn-sm btn-outline-primary" 
+                            hx-get="{% url 'accounts:edit_professional_info' %}"
+                            hx-target="#professional-info-edit"
+                            hx-swap="innerHTML">
+                        <i class="bi bi-pencil"></i> Edit
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="professional-info-display">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label text-muted">First Name</label>
+                                <p>{{ tutor.user.first_name }}</p>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label text-muted">Last Name</label>
+                                <p>{{ tutor.user.last_name }}</p>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label text-muted">Email</label>
+                                <p>{{ tutor.user.email }}</p>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label text-muted">Phone</label>
+                                <p>{{ tutor.phone_number|default:"Not provided" }}</p>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label text-muted">Location</label>
+                                <p>{{ tutor.location|default:"Not provided" }}</p>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label text-muted">Hourly Rate</label>
+                                <p>${{ tutor.hourly_rate }}/hour</p>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <label class="form-label text-muted">Bio</label>
+                                <p>{{ tutor.bio|default:"No bio provided" }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="professional-info-edit"></div>
+                </div>
+            </div>
+
+            <!-- Teaching Expertise -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Teaching Expertise</h5>
+                    <button class="btn btn-sm btn-outline-primary" 
+                            hx-get="{% url 'accounts:edit_teaching_expertise' %}"
+                            hx-target="#teaching-expertise-edit"
+                            hx-swap="innerHTML">
+                        <i class="bi bi-pencil"></i> Edit
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="teaching-expertise-display">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label text-muted">Experience Years</label>
+                                <p>{{ tutor.experience_years }} years</p>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label text-muted">Education Level</label>
+                                <p>{{ tutor.get_education_level_display|default:"Not specified" }}</p>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label text-muted">Teaching Style</label>
+                                <p>{{ tutor.get_teaching_style_display|default:"Not specified" }}</p>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label text-muted">Languages</label>
+                                <p>{{ tutor.languages|default:"English" }}</p>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <label class="form-label text-muted">Subjects</label>
+                                <div>
+                                    {% for subject in tutor.subjects.all %}
+                                        <span class="badge bg-light text-dark me-1">{{ subject.name }}</span>
+                                    {% empty %}
+                                        <span class="text-muted">No subjects specified</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12">
+                                <label class="form-label text-muted">Qualifications</label>
+                                <p>{{ tutor.qualifications|default:"No qualifications specified" }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="teaching-expertise-edit"></div>
+                </div>
+            </div>
+
+            <!-- Availability -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Availability</h5>
+                    <button class="btn btn-sm btn-outline-primary" 
+                            hx-get="{% url 'accounts:edit_availability' %}"
+                            hx-target="#availability-edit"
+                            hx-swap="innerHTML">
+                        <i class="bi bi-pencil"></i> Edit
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="availability-display">
+                        <div class="row">
+                            <div class="col-12">
+                                <label class="form-label text-muted">Available Days</label>
+                                <div>
+                                    {% for day in tutor.available_days %}
+                                        <span class="badge bg-light text-dark me-1">{{ day }}</span>
+                                    {% empty %}
+                                        <span class="text-muted">No availability specified</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <label class="form-label text-muted">Available From</label>
+                                <p>{{ tutor.available_from|default:"Not specified" }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted">Available To</label>
+                                <p>{{ tutor.available_to|default:"Not specified" }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="availability-edit"></div>
+                </div>
+            </div>
+
+            <!-- Recent Reviews -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Recent Reviews</h5>
+                    <a href="#" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    {% if recent_reviews %}
+                        <div class="row">
+                            {% for review in recent_reviews %}
+                                <div class="col-md-6 mb-3">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                                <div>
+                                                    <h6 class="card-title mb-0">{{ review.student.user.get_full_name }}</h6>
+                                                    <div class="text-warning small">
+                                                        {% for i in review.rating|star_range %}
+                                                            <i class="bi bi-star-fill"></i>
+                                                        {% endfor %}
+                                                    </div>
+                                                </div>
+                                                <small class="text-muted">{{ review.created_at|date:"M d, Y" }}</small>
+                                            </div>
+                                            <p class="card-text">{{ review.comment }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-star text-muted" style="font-size: 3rem;"></i>
+                            <p class="text-muted mt-2">No reviews yet.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Profile Edit Modal -->
+<div class="modal fade" id="profile-edit-modal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <!-- Content will be loaded via HTMX -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    });
+</script>
+{% endblock %}

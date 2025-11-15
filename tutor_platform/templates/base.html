@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Django Tutor Platform{% endblock %}</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <!-- Custom CSS -->
+    <style>
+        .navbar-brand {
+            font-weight: bold;
+        }
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background-color: #dc3545;
+            color: white;
+            border-radius: 50%;
+            padding: 2px 6px;
+            font-size: 0.7rem;
+        }
+        .card-hover {
+            transition: transform 0.2s;
+        }
+        .card-hover:hover {
+            transform: translateY(-5px);
+        }
+        .htmx-indicator {
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .htmx-request .htmx-indicator {
+            opacity: 1;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .sidebar {
+            min-height: calc(100vh - 56px);
+            background-color: #f8f9fa;
+        }
+        .main-content {
+            min-height: calc(100vh - 56px);
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{% url 'accounts:home' %}">
+                <i class="bi bi-mortarboard-fill"></i> Tutor Platform
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <!-- Search Bar -->
+                <form class="d-flex me-3" action="{% url 'search:global' %}" method="get">
+                    <input class="form-control me-2" type="search" name="query" placeholder="Search tutors, requirements..." aria-label="Search">
+                    <button class="btn btn-outline-light" type="submit">Search</button>
+                </form>
+                
+                {% if user.is_authenticated %}
+                    <!-- Student Navigation -->
+                    {% if user.user_type == 'STUDENT' %}
+                        <ul class="navbar-nav me-auto">
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'accounts:student_dashboard' %}">
+                                    <i class="bi bi-speedometer2"></i> Dashboard
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'requirements:requirement_list' %}">
+                                    <i class="bi bi-clipboard-check"></i> My Requirements
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'requirements:requirement_create' %}">
+                                    <i class="bi bi-plus-circle"></i> Post Requirement
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'accounts:tutor_list' %}">
+                                    <i class="bi bi-people"></i> Find Tutors
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'messaging:message_list' %}">
+                                    <i class="bi bi-envelope"></i> Messages
+                                </a>
+                            </li>
+                        </ul>
+                    {% endif %}
+                    
+                    <!-- Tutor Navigation -->
+                    {% if user.user_type == 'TUTOR' %}
+                        <ul class="navbar-nav me-auto">
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'accounts:tutor_dashboard' %}">
+                                    <i class="bi bi-speedometer2"></i> Dashboard
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'requirements:proposal_list' %}">
+                                    <i class="bi bi-clipboard-data"></i> My Proposals
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'requirements:requirement_list' %}">
+                                    <i class="bi bi-search"></i> Find Requirements
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'messaging:message_list' %}">
+                                    <i class="bi bi-envelope"></i> Messages
+                                </a>
+                            </li>
+                        </ul>
+                    {% endif %}
+                    
+                    <!-- Admin Navigation -->
+                    {% if user.is_staff %}
+                        <ul class="navbar-nav me-auto">
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'accounts:admin_dashboard' %}">
+                                    <i class="bi bi-speedometer2"></i> Admin Dashboard
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'admin:index' %}">
+                                    <i class="bi bi-gear"></i> Admin Panel
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'paymentsdetails:admin_dashboard' %}">
+                                    <i class="bi bi-currency-dollar"></i> Financial Dashboard
+                                </a>
+                            </li>
+                        </ul>
+                    {% endif %}
+                {% else %}
+                    <!-- Guest Navigation -->
+                    <ul class="navbar-nav me-auto">
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'accounts:home' %}">Home</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'accounts:tutor_list' %}">Find Tutors</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">How It Works</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">About</a>
+                        </li>
+                    </ul>
+                {% endif %}
+                
+                <!-- Right Navigation -->
+                <ul class="navbar-nav">
+                    {% if user.is_authenticated %}
+                        <!-- Notifications Dropdown -->
+                        <li class="nav-item dropdown" x-data="{ open: false }">
+                            <a class="nav-link dropdown-toggle position-relative" href="#" 
+                               id="notificationDropdown" role="button" 
+                               @click="open = !open"
+                               @click.outside="open = false">
+                                <i class="bi bi-bell"></i>
+                                <span class="notification-badge" 
+                                      hx-get="{% url 'notifications:unread_count' %}" 
+                                      hx-trigger="load, every 30s"
+                                      hx-target="this">
+                                    0
+                                </span>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end" 
+                                x-show="open" 
+                                x-transition
+                                style="display: none;">
+                                <li><h6 class="dropdown-header">Notifications</h6></li>
+                                <li>
+                                    <div hx-get="{% url 'notifications:recent' %}" 
+                                         hx-trigger="load, every 30s"
+                                         hx-target="this">
+                                        <div class="dropdown-item text-center">
+                                            <div class="htmx-indicator spinner-border spinner-border-sm" role="status">
+                                                <span class="visually-hidden">Loading...</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'notifications:notification_list' %}">
+                                        View All Notifications
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                        
+                        <!-- User Dropdown -->
+                        <li class="nav-item dropdown" x-data="{ open: false }">
+                            <a class="nav-link dropdown-toggle" href="#" 
+                               id="userDropdown" role="button" 
+                               @click="open = !open"
+                               @click.outside="open = false">
+                                <i class="bi bi-person-circle"></i> {{ user.username }}
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end" 
+                                x-show="open" 
+                                x-transition
+                                style="display: none;">
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'accounts:profile' %}">
+                                        <i class="bi bi-person"></i> Profile
+                                    </a>
+                                </li>
+                                {% if user.user_type == 'STUDENT' %}
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'accounts:student_profile' %}">
+                                            <i class="bi bi-mortarboard"></i> Student Profile
+                                        </a>
+                                    </li>
+                                {% endif %}
+                                {% if user.user_type == 'TUTOR' %}
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'accounts:tutor_profile' %}">
+                                            <i class="bi bi-award"></i> Tutor Profile
+                                        </a>
+                                    </li>
+                                {% endif %}
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'paymentsdetails:escrow_account' %}">
+                                        <i class="bi bi-wallet2"></i> Wallet
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'notifications:preferences' %}">
+                                        <i class="bi bi-gear"></i> Preferences
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'accounts:logout' %}">
+                                        <i class="bi bi-box-arrow-right"></i> Logout
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'accounts:login' %}">Login</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'accounts:signup' %}">Sign Up</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Flash Messages -->
+    {% if messages %}
+        <div class="container-fluid mt-3">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show fade-in" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Main Content -->
+    <div class="container-fluid">
+        <div class="row">
+            {% block sidebar %}
+                <!-- Sidebar content will go here if needed -->
+            {% endblock %}
+            
+            <div class="col-md-12 main-content">
+                {% block content %}
+                    <!-- Page content will go here -->
+                {% endblock %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-light text-center text-lg-start mt-5">
+        <div class="container p-4">
+            <div class="row">
+                <div class="col-lg-6 col-md-12 mb-4 mb-md-0">
+                    <h5 class="text-uppercase">Django Tutor Platform</h5>
+                    <p>
+                        Connecting students with qualified tutors for personalized learning experiences.
+                    </p>
+                </div>
+                <div class="col-lg-6 col-md-12 mb-4 mb-md-0">
+                    <h5 class="text-uppercase">Links</h5>
+                    <ul class="list-unstyled mb-0">
+                        <li><a href="#" class="text-dark">About Us</a></li>
+                        <li><a href="#" class="text-dark">Contact</a></li>
+                        <li><a href="#" class="text-dark">Terms of Service</a></li>
+                        <li><a href="#" class="text-dark">Privacy Policy</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="text-center p-3 bg-primary text-white">
+            © 2023 Django Tutor Platform. All rights reserved.
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.6"></script>
+    
+    <!-- Custom JS -->
+    <script>
+        // HTMX configuration
+        htmx.config.globalViewTransitions = true;
+        htmx.config.useTemplateFragments = true;
+        
+        // Custom event listeners
+        document.addEventListener('htmx:afterRequest', function(evt) {
+            // Re-initialize Bootstrap components after HTMX updates
+            var dropdowns = document.querySelectorAll('[data-bs-toggle="dropdown"]');
+            dropdowns.forEach(function(dropdown) {
+                new bootstrap.Dropdown(dropdown);
+            });
+            
+            // Re-initialize Alpine.js components
+            if (window.Alpine) {
+                window.Alpine.initTree(document.body);
+            }
+        });
+        
+        // Auto-hide flash messages after 5 seconds
+        setTimeout(function() {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(function(alert) {
+                const bsAlert = new bootstrap.Alert(alert);
+                bsAlert.close();
+            });
+        }, 5000);
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

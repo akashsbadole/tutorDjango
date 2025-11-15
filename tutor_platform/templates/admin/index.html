@@ -1,0 +1,182 @@
+{% extends "admin/index.html" %}
+{% load i18n %}
+
+{% block content %}
+<div class="dashboard-stats">
+    <h1>{% trans "Dashboard Statistics" %}</h1>
+    
+    <div class="stats-grid">
+        <!-- User Statistics -->
+        <div class="stats-card">
+            <h2>{% trans "User Statistics" %}</h2>
+            <div class="stats-row">
+                <div class="stat-item">
+                    <span class="stat-value">{{ stats.total_users }}</span>
+                    <span class="stat-label">{% trans "Total Users" %}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value">{{ stats.total_tutors }}</span>
+                    <span class="stat-label">{% trans "Tutors" %}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value">{{ stats.total_students }}</span>
+                    <span class="stat-label">{% trans "Students" %}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value">{{ stats.active_users }}</span>
+                    <span class="stat-label">{% trans "Active (30 days)" %}</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Requirements Statistics -->
+        <div class="stats-card">
+            <h2>{% trans "Requirements" %}</h2>
+            <div class="stats-row">
+                <div class="stat-item">
+                    <span class="stat-value">{{ stats.total_requirements }}</span>
+                    <span class="stat-label">{% trans "Total Requirements" %}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value">{{ stats.open_requirements }}</span>
+                    <span class="stat-label">{% trans "Open" %}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value">{{ stats.total_proposals }}</span>
+                    <span class="stat-label">{% trans "Total Proposals" %}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value">{{ stats.pending_proposals }}</span>
+                    <span class="stat-label">{% trans "Pending" %}</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Session Statistics -->
+        <div class="stats-card">
+            <h2>{% trans "Sessions" %}</h2>
+            <div class="stats-row">
+                <div class="stat-item">
+                    <span class="stat-value">{{ stats.total_sessions }}</span>
+                    <span class="stat-label">{% trans "Total Sessions" %}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value">{{ stats.upcoming_sessions }}</span>
+                    <span class="stat-label">{% trans "Upcoming" %}</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Payment Statistics -->
+        <div class="stats-card">
+            <h2>{% trans "Payments" %}</h2>
+            <div class="stats-row">
+                <div class="stat-item">
+                    <span class="stat-value">{{ stats.total_payments }}</span>
+                    <span class="stat-label">{% trans "Total Payments" %}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value">{{ stats.completed_payments }}</span>
+                    <span class="stat-label">{% trans "Completed" %}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value">{{ stats.pending_payouts }}</span>
+                    <span class="stat-label">{% trans "Pending Payouts" %}</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Messaging Statistics -->
+        <div class="stats-card">
+            <h2>{% trans "Messaging" %}</h2>
+            <div class="stats-row">
+                <div class="stat-item">
+                    <span class="stat-value">{{ stats.total_conversations }}</span>
+                    <span class="stat-label">{% trans "Total Conversations" %}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value">{{ stats.total_messages }}</span>
+                    <span class="stat-label">{% trans "Total Messages" %}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value">{{ stats.recent_messages }}</span>
+                    <span class="stat-label">{% trans "Last 7 Days" %}</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Notification Statistics -->
+        <div class="stats-card">
+            <h2>{% trans "Notifications" %}</h2>
+            <div class="stats-row">
+                <div class="stat-item">
+                    <span class="stat-value">{{ stats.total_notifications }}</span>
+                    <span class="stat-label">{% trans "Total Notifications" %}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value">{{ stats.unread_notifications }}</span>
+                    <span class="stat-label">{% trans "Unread" %}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.dashboard-stats {
+    margin-bottom: 20px;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.stats-card {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.stats-card h2 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #333;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+}
+
+.stats-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.stat-item {
+    flex: 1;
+    min-width: 100px;
+    text-align: center;
+}
+
+.stat-value {
+    display: block;
+    font-size: 24px;
+    font-weight: bold;
+    color: #007cba;
+    margin-bottom: 5px;
+}
+
+.stat-label {
+    display: block;
+    font-size: 12px;
+    color: #666;
+    text-transform: uppercase;
+}
+</style>
+
+{{ block.super }}
+{% endblock %}

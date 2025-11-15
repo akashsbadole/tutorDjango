@@ -1,0 +1,167 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}New Conversation - Django Tutor Platform{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3">Start New Conversation</h1>
+            <p class="text-muted">Connect with tutors or students</p>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <form hx-post="{% url 'messaging:conversation_create' %}" hx-target="#form-errors" hx-swap="innerHTML">
+                        {% csrf_token %}
+                        
+                        <!-- Recipient Selection -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">Who would you like to message?</h5>
+                            <div class="mb-3">
+                                <label for="recipient_type" class="form-label">Recipient Type</label>
+                                <select class="form-select" id="recipient_type" name="recipient_type" required
+                                        hx-get="{% url 'messaging:user_search' %}"
+                                        hx-trigger="change"
+                                        hx-target="#recipient-search"
+                                        hx-swap="innerHTML">
+                                    <option value="">Select recipient type</option>
+                                    {% if user.user_type == 'STUDENT' %}
+                                        <option value="TUTOR">Tutor</option>
+                                    {% else %}
+                                        <option value="STUDENT">Student</option>
+                                    {% endif %}
+                                </select>
+                            </div>
+                            
+                            <div id="recipient-search">
+                                <!-- Recipient search will be loaded here based on selection -->
+                            </div>
+                        </div>
+
+                        <!-- Initial Message -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">Initial Message</h5>
+                            <div class="mb-3">
+                                <label for="subject" class="form-label">Subject</label>
+                                <input type="text" class="form-control" id="subject" name="subject" 
+                                       placeholder="e.g., Question about Python tutoring"
+                                       value="{{ initial_subject|default:'' }}">
+                            </div>
+                            <div class="mb-3">
+                                <label for="message" class="form-label">Message *</label>
+                                <textarea class="form-control" id="message" name="message" rows="6" required
+                                          placeholder="Introduce yourself and explain what you'd like to discuss..."></textarea>
+                                <div class="form-text">Minimum 10 characters</div>
+                            </div>
+                        </div>
+
+                        <!-- Message Templates -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">Quick Templates</h5>
+                            <div class="row">
+                                {% if user.user_type == 'STUDENT' %}
+                                    <div class="col-md-6 mb-2">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm w-100" 
+                                                @click="document.getElementById('message').value = 'Hi, I\'m interested in learning more about your tutoring services. Could you tell me about your teaching approach and availability?'">
+                                            Inquiry about Services
+                                        </button>
+                                    </div>
+                                    <div class="col-md-6 mb-2">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm w-100" 
+                                                @click="document.getElementById('message').value = 'Hi, I saw your profile and would like to schedule a session. What subjects do you specialize in and what are your rates?'">
+                                            Request Session Info
+                                        </button>
+                                    </div>
+                                {% else %}
+                                    <div class="col-md-6 mb-2">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm w-100" 
+                                                @click="document.getElementById('message').value = 'Hi, I noticed you posted a requirement for tutoring. I have experience in this subject and would love to help you achieve your learning goals.'">
+                                            Respond to Requirement
+                                        </button>
+                                    </div>
+                                    <div class="col-md-6 mb-2">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm w-100" 
+                                                @click="document.getElementById('message').value = 'Hi, I saw you\'re looking for a tutor. I have extensive experience in this subject and would be happy to help you learn. What specific topics are you struggling with?'">
+                                            Offer Tutoring
+                                        </button>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Communication Preferences -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">Communication Preferences</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="preferred_contact" class="form-label">Preferred Contact Method</label>
+                                    <select class="form-select" id="preferred_contact" name="preferred_contact">
+                                        <option value="MESSAGE">Platform Messages</option>
+                                        <option value="EMAIL">Email</option>
+                                        <option value="PHONE">Phone</option>
+                                        <option value="VIDEO">Video Call</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="response_time" class="form-label">Expected Response Time</label>
+                                    <select class="form-select" id="response_time" name="response_time">
+                                        <option value="ASAP">As soon as possible</option>
+                                        <option value="HOURS">Within a few hours</option>
+                                        <option value="DAY">Within a day</option>
+                                        <option value="FLEXIBLE">Flexible</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="form-errors"></div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <span class="htmx-indicator spinner-border spinner-border-sm me-2" role="status"></span>
+                                Send Message
+                            </button>
+                            <a href="{% url 'messaging:message_list' %}" class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Handle form submission success
+    document.body.addEventListener('htmx:afterRequest', function(evt) {
+        if (evt.detail.successful && evt.detail.target.id === 'form-errors') {
+            // Redirect on successful submission
+            window.location.href = evt.detail.xhr.responseURL || '{% url "messaging:message_list" %}';
+        }
+    });
+    
+    // Character counter for message
+    document.addEventListener('DOMContentLoaded', function() {
+        const messageField = document.getElementById('message');
+        if (messageField) {
+            messageField.addEventListener('input', function() {
+                const charCount = this.value.length;
+                const formText = this.parentElement.querySelector('.form-text');
+                if (charCount < 10) {
+                    formText.textContent = `Minimum 10 characters (${10 - charCount} more needed)`;
+                    formText.classList.add('text-danger');
+                } else {
+                    formText.textContent = 'Minimum 10 characters';
+                    formText.classList.remove('text-danger');
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

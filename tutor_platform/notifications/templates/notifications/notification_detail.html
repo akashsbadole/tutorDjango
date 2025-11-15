@@ -1,0 +1,250 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ notification.title }} - Django Tutor Platform{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'notifications:notification_list' %}">Notifications</a></li>
+                    <li class="breadcrumb-item active">Details</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <div class="notification-icon me-3">
+                            {% if notification.notification_type == 'MESSAGE' %}
+                                <i class="bi bi-envelope text-primary"></i>
+                            {% elif notification.notification_type == 'PROPOSAL' %}
+                                <i class="bi bi-clipboard-data text-success"></i>
+                            {% elif notification.notification_type == 'SESSION' %}
+                                <i class="bi bi-calendar-check text-info"></i>
+                            {% elif notification.notification_type == 'PAYMENT' %}
+                                <i class="bi bi-currency-dollar text-warning"></i>
+                            {% elif notification.notification_type == 'REVIEW' %}
+                                <i class="bi bi-star text-warning"></i>
+                            {% else %}
+                                <i class="bi bi-info-circle text-secondary"></i>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <h5 class="mb-0">{{ notification.title }}</h5>
+                            <small class="text-muted">{{ notification.created_at|date:"M d, Y H:i" }}</small>
+                        </div>
+                    </div>
+                    <div>
+                        {% if not notification.is_read %}
+                            <button class="btn btn-sm btn-outline-primary me-2" 
+                                    hx-post="{% url 'notifications:mark_read' notification.id %}"
+                                    hx-target="#notification-status">
+                                <i class="bi bi-check2"></i> Mark as Read
+                            </button>
+                        {% endif %}
+                        <button class="btn btn-sm btn-outline-danger" 
+                                hx-post="{% url 'notifications:delete_notification' notification.id %}"
+                                hx-confirm="Delete this notification?"
+                                hx-target="#notification-actions">
+                            <i class="bi bi-trash"></i> Delete
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="notification-status">
+                        {% if not notification.is_read %}
+                            <div class="alert alert-info mb-3">
+                                <i class="bi bi-info-circle me-2"></i> This notification is unread
+                            </div>
+                        {% else %}
+                            <div class="alert alert-success mb-3">
+                                <i class="bi bi-check-circle me-2"></i> This notification has been read
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="notification-content">
+                        <h6>Message</h6>
+                        <p>{{ notification.message|default:notification.title }}</p>
+                    </div>
+
+                    {% if notification.action_url %}
+                        <div class="notification-actions mt-4">
+                            <h6>Actions</h6>
+                            <a href="{{ notification.action_url }}" class="btn btn-primary">
+                                {% if notification.notification_type == 'MESSAGE' %}
+                                    <i class="bi bi-envelope me-2"></i>View Message
+                                {% elif notification.notification_type == 'PROPOSAL' %}
+                                    <i class="bi bi-clipboard-data me-2"></i>View Proposal
+                                {% elif notification.notification_type == 'SESSION' %}
+                                    <i class="bi bi-calendar-check me-2"></i>View Session
+                                {% elif notification.notification_type == 'PAYMENT' %}
+                                    <i class="bi bi-currency-dollar me-2"></i>View Payment
+                                {% elif notification.notification_type == 'REVIEW' %}
+                                    <i class="bi bi-star me-2"></i>View Review
+                                {% else %}
+                                    <i class="bi bi-arrow-right me-2"></i>View Details
+                                {% endif %}
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">
+                            <i class="bi bi-clock me-1"></i>
+                            Created: {{ notification.created_at|date:"M d, Y H:i" }}
+                            {% if notification.read_at %}
+                                | Read: {{ notification.read_at|date:"M d, Y H:i" }}
+                            {% endif %}
+                        </small>
+                        <div id="notification-actions">
+                            <a href="{% url 'notifications:notification_list' %}" class="btn btn-outline-secondary btn-sm">
+                                <i class="bi bi-arrow-left"></i> Back to List
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Notification Details</h6>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tr>
+                            <td class="text-muted">Type:</td>
+                            <td>
+                                <span class="badge bg-{{ notification.get_type_color }}">
+                                    {{ notification.get_notification_type_display }}
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Status:</td>
+                            <td>
+                                {% if notification.is_read %}
+                                    <span class="badge bg-success">Read</span>
+                                {% else %}
+                                    <span class="badge bg-primary">Unread</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Priority:</td>
+                            <td>
+                                {% if notification.priority == 'HIGH' %}
+                                    <span class="badge bg-danger">High</span>
+                                {% elif notification.priority == 'MEDIUM' %}
+                                    <span class="badge bg-warning">Medium</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Low</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Created:</td>
+                            <td>{{ notification.created_at|date:"M d, Y H:i" }}</td>
+                        </tr>
+                        {% if notification.read_at %}
+                            <tr>
+                                <td class="text-muted">Read At:</td>
+                                <td>{{ notification.read_at|date:"M d, Y H:i" }}</td>
+                            </tr>
+                        {% endif %}
+                        {% if notification.expires_at %}
+                            <tr>
+                                <td class="text-muted">Expires:</td>
+                                <td>{{ notification.expires_at|date:"M d, Y H:i" }}</td>
+                            </tr>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+
+            <!-- Related Notifications -->
+            {% if related_notifications %}
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h6 class="mb-0">Related Notifications</h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="list-group list-group-flush">
+                            {% for related in related_notifications %}
+                                <a href="{% url 'notifications:notification_detail' related.id %}" 
+                                   class="list-group-item list-group-item-action">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">{{ related.title }}</h6>
+                                        <small>{{ related.created_at|date:"M d" }}</small>
+                                    </div>
+                                    <p class="mb-1 text-muted small">{{ related.message|truncatewords:10 }}</p>
+                                    {% if not related.is_read %}
+                                        <span class="badge bg-primary">New</span>
+                                    {% endif %}
+                                </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Quick Actions -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0">Quick Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'notifications:notification_list' %}" class="btn btn-outline-primary">
+                            <i class="bi bi-list"></i> All Notifications
+                        </a>
+                        <a href="{% url 'notifications:preferences' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-gear"></i> Notification Settings
+                        </a>
+                        {% if not notification.is_read %}
+                            <button class="btn btn-outline-success" 
+                                    hx-post="{% url 'notifications:mark_all_read' %}">
+                                <i class="bi bi-check-all"></i> Mark All Read
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.notification-icon {
+    font-size: 2rem;
+    width: 3rem;
+    text-align: center;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-mark as read after 5 seconds
+    setTimeout(function() {
+        if (!{{ notification.is_read|lower }}) {
+            htmx.ajax('POST', '{% url "notifications:mark_read" notification.id %}', {
+                target: '#notification-status',
+                swap: 'innerHTML'
+            });
+        }
+    }, 5000);
+</script>
+{% endblock %}

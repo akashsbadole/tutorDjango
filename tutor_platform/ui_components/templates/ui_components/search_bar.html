@@ -1,0 +1,705 @@
+{% load ui_tags %}
+<!-- Enhanced Search Bar Component -->
+<div class="search-container {{ container_class|default:'' }}" 
+     x-data="searchComponent('{{ search_id|default:'search' }}', {{ autocomplete|default:'false' }})"
+     :class="{
+         'search-focused': focused,
+         'search-loading': loading
+     }">
+    
+    <form class="search-form {{ form_class|default:'' }}" 
+          action="{{ action|default:'#' }}" 
+          method="{{ method|default:'GET' }}"
+          role="search"
+          @submit.prevent="performSearch()">
+        
+        <div class="input-group {{ input_group_class|default:'' }}"
+             :class="{
+                 'input-group-lg': size === 'lg',
+                 'input-group-sm': size === 'sm'
+             }">
+            
+            {% if addon_before %}
+            <span class="input-group-text">{{ addon_before }}</span>
+            {% endif %}
+            
+            <div class="search-input-wrapper flex-grow-1 position-relative">
+                <input type="search" 
+                       class="form-control theme-input {{ input_class|default:'' }}" 
+                       name="{{ input_name|default:'q' }}"
+                       placeholder="{{ placeholder|default:'Search...' }}"
+                       value="{{ value|default:'' }}"
+                       aria-label="{{ aria_label|default:'Search' }}"
+                       {% if autocomplete %}autocomplete="{{ autocomplete }}"{% endif %}
+                       {% if min_length %}minlength="{{ min_length }}"{% endif %}
+                       {% if max_length %}maxlength="{{ max_length }}"{% endif %}
+                       x-model="query"
+                       @input.debounce.300ms="handleInput()"
+                       @focus="focused = true; showResults = true"
+                       @blur.debounce.200ms="focused = false; showResults = false"
+                       @keydown="handleKeydown($event)">
+                
+                <!-- Clear Button -->
+                <button type="button" 
+                        class="btn-clear-search"
+                        @click="clearSearch()"
+                        x-show="query.length > 0"
+                        x-transition
+                        aria-label="Clear search">
+                    <i class="bi bi-x-circle"></i>
+                </button>
+                
+                <!-- Search Icon -->
+                <div class="search-icon">
+                    <i class="bi bi-search"></i>
+                </div>
+            </div>
+            
+            {% if addon_after %}
+            <span class="input-group-text">{{ addon_after }}</span>
+            {% endif %}
+            
+            <button class="btn {{ button_class|default:'btn-primary' }} search-button" 
+                    type="submit"
+                    :disabled="loading || !query.trim()">
+                <span x-show="!loading" x-transition>
+                    {% if button_icon %}<i class="bi {{ button_icon }} me-1"></i>{% endif %}
+                    {{ button_text|default:'Search' }}
+                </span>
+                <span x-show="loading" class="d-flex align-items-center" x-transition>
+                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    {{ loading_text|default:'Searching...' }}
+                </span>
+            </button>
+        </div>
+        
+        <!-- Search Filters -->
+        {% if show_filters %}
+        <div class="search-filters mt-3">
+            <button type="button" 
+                    class="btn btn-sm btn-outline-secondary filter-toggle"
+                    @click="showFilterOptions = !showFilterOptions"
+                    :class="{ 'active': showFilterOptions }">
+                <i class="bi bi-funnel me-1"></i>
+                Filters
+                <span class="badge bg-primary ms-1" 
+                      x-show="activeFilters > 0"
+                      x-text="activeFilters"></span>
+            </button>
+            
+            <div class="filter-dropdown mt-2 p-3 border rounded bg-light shadow-sm" 
+                 x-show="showFilterOptions"
+                 x-transition
+                 @click.outside="showFilterOptions = false">
+                {% block filters %}{% endblock %}
+                
+                <div class="filter-actions d-flex justify-content-between mt-3 pt-3 border-top">
+                    <button type="button" 
+                            class="btn btn-sm btn-outline-secondary"
+                            @click="clearFilters()">
+                        <i class="bi bi-x-circle me-1"></i>
+                        Clear All
+                    </button>
+                    <button type="button" 
+                            class="btn btn-sm btn-primary"
+                            @click="applyFilters()">
+                        <i class="bi bi-check-circle me-1"></i>
+                        Apply Filters
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </form>
+    
+    <!-- Search Suggestions -->
+    {% if show_suggestions %}
+    <div class="search-suggestions dropdown-menu w-100 mt-1" 
+         x-show="suggestions.length > 0 && query.length > 2 && focused"
+         x-transition
+         style="display: none; max-height: 200px; overflow-y: auto;">
+        <div class="dropdown-header">
+            <small class="text-muted">Suggestions</small>
+        </div>
+        <template x-for="suggestion in suggestions" :key="suggestion.text">
+            <button type="button" 
+                    class="dropdown-item d-flex justify-content-between align-items-center"
+                    @click="selectSuggestion(suggestion)">
+                <span x-text="suggestion.text"></span>
+                <small class="text-muted" x-text="suggestion.count"></small>
+            </button>
+        </template>
+    </div>
+    {% endif %}
+    
+    <!-- Search Results -->
+    {% if show_results %}
+    <div class="search-results dropdown-menu w-100 mt-1 {{ results_class|default:'' }}" 
+         x-show="results.length > 0 && showResults"
+         x-transition
+         @click.outside="showResults = false"
+         style="display: none; max-height: 400px; overflow-y: auto;">
+        
+        {% if results_header %}
+        <div class="dropdown-header">
+            {{ results_header }}
+        </div>
+        {% endif %}
+        
+        <template x-for="(result, index) in results" :key="result.id">
+            <a :href="result.url" 
+               class="dropdown-item search-result-item d-flex align-items-center"
+               :class="{ 'active': selectedIndex === index }"
+               @click="selectResult(result)"
+               @mouseenter="selectedIndex = index">
+                
+                {% if result.image %}
+                <img :src="result.image" 
+                     :alt="result.title" 
+                     class="search-result-image me-3"
+                     style="width: 40px; height: 40px; object-fit: cover; border-radius: var(--border-radius-sm);">
+                {% endif %}
+                
+                <div class="flex-grow-1">
+                    <div class="search-result-title" x-text="result.title"></div>
+                    {% if result.description %}
+                    <div class="search-result-description text-muted small" x-text="result.description"></div>
+                    {% endif %}
+                    {% if result.category %}
+                    <div class="search-result-category mt-1">
+                        <span class="badge bg-secondary" x-text="result.category"></span>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                {% if result.type %}
+                <div class="search-result-type ms-2">
+                    <i class="bi" 
+                       :class="getSearchResultIcon(result.type)"></i>
+                </div>
+                {% endif %}
+            </a>
+        </template>
+        
+        {% if show_all_results_url %}
+        <div class="dropdown-divider"></div>
+        <a href="{{ show_all_results_url }}" 
+           class="dropdown-item text-center">
+            View all results
+            <i class="bi bi-arrow-right ms-1"></i>
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    <!-- Recent Searches -->
+    {% if show_recent_searches %}
+    <div class="recent-searches mt-2" x-show="recentSearches.length > 0 && !query && focused">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <small class="text-muted">Recent searches</small>
+            <button type="button" 
+                    class="btn btn-sm btn-link text-muted p-0"
+                    @click="clearRecentSearches()">
+                Clear all
+            </button>
+        </div>
+        <div class="d-flex flex-wrap gap-1">
+            <template x-for="search in recentSearches" :key="search">
+                <button type="button" 
+                        class="btn btn-sm btn-outline-secondary recent-search-item"
+                        @click="selectRecentSearch(search)">
+                    <i class="bi bi-clock-history me-1"></i>
+                    <span x-text="search"></span>
+                </button>
+            </template>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('searchComponent', (searchId, hasAutocomplete = false) => ({
+        query: '{{ value|default:'' }}',
+        results: [],
+        suggestions: [],
+        recentSearches: [],
+        showResults: false,
+        showFilterOptions: false,
+        focused: false,
+        loading: false,
+        filters: {},
+        selectedIndex: -1,
+        
+        init() {
+            // Load recent searches from localStorage
+            this.loadRecentSearches();
+            
+            // Set up keyboard navigation
+            this.setupKeyboardNavigation();
+        },
+        
+        async handleInput() {
+            this.selectedIndex = -1;
+            
+            if (this.query.length < {{ min_length|default:2 }}) {
+                this.results = [];
+                this.suggestions = [];
+                return;
+            }
+            
+            // Get suggestions if enabled
+            {% if show_suggestions %}
+            this.updateSuggestions();
+            {% endif %}
+            
+            // Get autocomplete results if enabled
+            if (hasAutocomplete) {
+                await this.performAutocomplete();
+            }
+        },
+        
+        async performSearch() {
+            if (!this.query.trim()) return;
+            
+            this.loading = true;
+            
+            try {
+                // Add to recent searches
+                this.addToRecentSearches(this.query);
+                
+                // Emit search event
+                this.$dispatch('search-performed', {
+                    searchId: searchId,
+                    query: this.query,
+                    filters: this.filters
+                });
+                
+                {% if search_url %}
+                // If search URL is provided, navigate to it
+                const url = new URL('{{ search_url }}', window.location.origin);
+                url.searchParams.set('q', this.query);
+                
+                // Add filters to URL
+                Object.entries(this.filters).forEach(([key, value]) => {
+                    if (value) {
+                        url.searchParams.set(key, value);
+                    }
+                });
+                
+                {% if ajax %}
+                // For AJAX search
+                const response = await fetch(url.toString());
+                const data = await response.json();
+                this.results = data.results || [];
+                this.showResults = true;
+                {% else %}
+                // For regular navigation
+                window.location.href = url.toString();
+                {% endif %}
+                {% endif %}
+                
+            } catch (error) {
+                console.error('Search error:', error);
+                this.$dispatch('search-error', {
+                    searchId: searchId,
+                    error: error.message
+                });
+            } finally {
+                this.loading = false;
+            }
+        },
+        
+        async performAutocomplete() {
+            try {
+                {% if autocomplete_url %}
+                const url = new URL('{{ autocomplete_url }}', window.location.origin);
+                url.searchParams.set('q', this.query);
+                
+                const response = await fetch(url.toString());
+                const data = await response.json();
+                this.results = data.results || [];
+                this.showResults = true;
+                {% endif %}
+            } catch (error) {
+                console.error('Autocomplete error:', error);
+                this.results = [];
+            }
+        },
+        
+        updateSuggestions() {
+            // Simulate suggestions (replace with actual API call)
+            this.suggestions = [
+                { text: this.query, count: '12 results' },
+                { text: this.query + ' tutoring', count: '8 results' },
+                { text: this.query + ' online', count: '5 results' }
+            ];
+        },
+        
+        selectResult(result) {
+            this.showResults = false;
+            this.addToRecentSearches(this.query);
+            
+            // Emit result selection event
+            this.$dispatch('search-result-selected', {
+                searchId: searchId,
+                result: result
+            });
+            
+            // Navigate to result
+            window.location.href = result.url;
+        },
+        
+        selectSuggestion(suggestion) {
+            this.query = suggestion.text;
+            this.suggestions = [];
+            this.performSearch();
+        },
+        
+        selectRecentSearch(search) {
+            this.query = search;
+            this.performSearch();
+        },
+        
+        clearSearch() {
+            this.query = '';
+            this.results = [];
+            this.suggestions = [];
+            this.selectedIndex = -1;
+            
+            // Focus the input
+            this.$el.querySelector('input[type="search"]').focus();
+        },
+        
+        addToRecentSearches(query) {
+            // Remove if already exists
+            this.recentSearches = this.recentSearches.filter(s => s !== query);
+            
+            // Add to beginning
+            this.recentSearches.unshift(query);
+            
+            // Keep only last 5
+            this.recentSearches = this.recentSearches.slice(0, 5);
+            
+            // Save to localStorage
+            localStorage.setItem(`recentSearches_${searchId}`, JSON.stringify(this.recentSearches));
+        },
+        
+        loadRecentSearches() {
+            const saved = localStorage.getItem(`recentSearches_${searchId}`);
+            if (saved) {
+                try {
+                    this.recentSearches = JSON.parse(saved);
+                } catch (e) {
+                    this.recentSearches = [];
+                }
+            }
+        },
+        
+        clearRecentSearches() {
+            this.recentSearches = [];
+            localStorage.removeItem(`recentSearches_${searchId}`);
+        },
+        
+        applyFilters() {
+            this.showFilterOptions = false;
+            this.performSearch();
+        },
+        
+        clearFilters() {
+            this.filters = {};
+            this.showFilterOptions = false;
+            this.performSearch();
+        },
+        
+        get activeFilters() {
+            return Object.values(this.filters).filter(value => value !== '' && value !== null).length;
+        },
+        
+        getSearchResultIcon(type) {
+            const icons = {
+                'tutor': 'bi-person',
+                'course': 'bi-book',
+                'requirement': 'bi-clipboard',
+                'message': 'bi-envelope',
+                'session': 'bi-calendar',
+                'payment': 'bi-credit-card'
+            };
+            return icons[type] || 'bi-file-text';
+        },
+        
+        handleKeydown(event) {
+            if (!this.showResults || this.results.length === 0) return;
+            
+            switch (event.key) {
+                case 'ArrowDown':
+                    event.preventDefault();
+                    this.selectedIndex = Math.min(this.selectedIndex + 1, this.results.length - 1);
+                    break;
+                case 'ArrowUp':
+                    event.preventDefault();
+                    this.selectedIndex = Math.max(this.selectedIndex - 1, -1);
+                    break;
+                case 'Enter':
+                    event.preventDefault();
+                    if (this.selectedIndex >= 0) {
+                        this.selectResult(this.results[this.selectedIndex]);
+                    } else {
+                        this.performSearch();
+                    }
+                    break;
+                case 'Escape':
+                    this.showResults = false;
+                    this.selectedIndex = -1;
+                    break;
+            }
+        },
+        
+        setupKeyboardNavigation() {
+            // Additional keyboard setup if needed
+        }
+    }));
+});
+</script>
+
+<style>
+/* Search Container */
+.search-container {
+    position: relative;
+    width: 100%;
+}
+
+/* Search Input Wrapper */
+.search-input-wrapper {
+    position: relative;
+}
+
+.search-input-wrapper .form-control {
+    padding-right: 2.5rem;
+    padding-left: 2.5rem;
+}
+
+/* Search Icon */
+.search-icon {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--color-text-muted);
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Clear Button */
+.btn-clear-search {
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 50%;
+    transition: var(--transition-fast);
+    z-index: 1;
+}
+
+.btn-clear-search:hover {
+    color: var(--color-text-primary);
+    background-color: var(--color-bg-secondary);
+}
+
+/* Search Button */
+.search-button {
+    border-radius: 0 var(--border-radius-sm) var(--border-radius-sm) 0;
+}
+
+/* Search States */
+.search-focused .search-input-wrapper .form-control {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 0.2rem rgba(var(--color-primary), 0.25);
+}
+
+.search-loading .search-icon {
+    color: var(--color-primary);
+}
+
+/* Search Filters */
+.filter-toggle {
+    transition: var(--transition-fast);
+}
+
+.filter-toggle.active {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+    color: white;
+}
+
+.filter-dropdown {
+    background-color: var(--color-bg-primary);
+    border: 1px solid var(--color-border-medium);
+    box-shadow: var(--shadow-md);
+    border-radius: var(--border-radius-md);
+}
+
+.filter-actions {
+    gap: var(--space-2);
+}
+
+/* Search Suggestions */
+.search-suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 1050;
+    border: none;
+    box-shadow: var(--shadow-lg);
+    border-radius: var(--border-radius-md);
+}
+
+/* Search Results */
+.search-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 1050;
+    border: none;
+    box-shadow: var(--shadow-lg);
+    border-radius: var(--border-radius-md);
+}
+
+.search-result-item {
+    display: flex;
+    align-items: center;
+    padding: var(--space-3);
+    border-bottom: 1px solid var(--color-border-light);
+    transition: var(--transition-fast);
+}
+
+.search-result-item:last-child {
+    border-bottom: none;
+}
+
+.search-result-item:hover,
+.search-result-item.active {
+    background-color: var(--color-bg-secondary);
+}
+
+.search-result-title {
+    font-weight: 600;
+    margin-bottom: var(--space-1);
+    color: var(--color-text-primary);
+}
+
+.search-result-description {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-1);
+}
+
+.search-result-image {
+    border-radius: var(--border-radius-sm);
+    object-fit: cover;
+}
+
+.search-result-type {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-lg);
+}
+
+/* Recent Searches */
+.recent-searches {
+    background-color: var(--color-bg-secondary);
+    border-radius: var(--border-radius-md);
+    padding: var(--space-3);
+    margin-top: var(--space-2);
+}
+
+.recent-search-item {
+    font-size: var(--font-size-sm);
+    transition: var(--transition-fast);
+}
+
+.recent-search-item:hover {
+    background-color: var(--color-bg-tertiary);
+}
+
+/* Size Variants */
+.input-group-lg .search-input-wrapper .form-control {
+    padding-left: 3rem;
+    padding-right: 3rem;
+}
+
+.input-group-lg .search-icon {
+    left: 1rem;
+}
+
+.input-group-lg .btn-clear-search {
+    right: 1rem;
+}
+
+.input-group-sm .search-input-wrapper .form-control {
+    padding-left: 2rem;
+    padding-right: 2rem;
+}
+
+.input-group-sm .search-icon {
+    left: 0.5rem;
+    font-size: var(--font-size-sm);
+}
+
+.input-group-sm .btn-clear-search {
+    right: 0.5rem;
+    font-size: var(--font-size-sm);
+}
+
+/* Dark Mode Adjustments */
+[data-theme="dark"] .filter-dropdown {
+    background-color: var(--color-bg-secondary);
+    border-color: var(--color-border-medium);
+}
+
+[data-theme="dark"] .recent-searches {
+    background-color: var(--color-bg-tertiary);
+    border: 1px solid var(--color-border-medium);
+}
+
+/* Accessibility */
+.search-container:focus-within {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+    .search-result-item {
+        border-bottom-width: 2px;
+    }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+    .search-result-item,
+    .btn-clear-search,
+    .filter-toggle,
+    .recent-search-item {
+        transition: none;
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .search-result-item {
+        padding: var(--space-2);
+    }
+    
+    .search-result-image {
+        width: 32px;
+        height: 32px;
+    }
+}
+</style>

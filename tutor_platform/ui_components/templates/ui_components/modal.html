@@ -1,0 +1,612 @@
+{% load ui_tags %}
+<!-- Enhanced Modal Component -->
+<div class="modal fade {{ modal_class|default:'' }}" 
+     id="{{ modal_id|default:'exampleModal' }}" 
+     tabindex="-1" 
+     aria-labelledby="{{ modal_id|default:'exampleModal' }}Label" 
+     aria-hidden="true"
+     x-data="modalComponent('{{ modal_id|default:'exampleModal' }}', {{ scrollable|default:'false' }}, {{ centered|default:'false' }})"
+     {% if backdrop %}data-bs-backdrop="{{ backdrop }}"{% endif %}
+     {% if keyboard %}data-bs-keyboard="{{ keyboard }}"{% endif %}
+     {% if focus %}data-bs-focus="{{ focus }}"{% endif %}
+     role="dialog"
+     aria-modal="true">
+    <div class="modal-dialog {{ size|default:'' }} {{ centered|default:'' }} {{ scrollable|yesno:'modal-dialog-scrollable' }}"
+         :class="{
+             'modal-fullscreen': fullscreen,
+             'modal-dialog-centered': centered
+         }">
+        <div class="modal-content {{ content_class|default:'' }}"
+             :class="{
+                 'border-0': noBorder,
+                 'shadow-lg': !noBorder
+             }">
+            <!-- Modal Header -->
+            <div class="modal-header {{ header_class|default:'' }}"
+                 :class="{
+                     'border-0': noHeaderBorder,
+                     'bg-transparent': transparentHeader
+                 }">
+                {% if show_close_button|default:true %}
+                <button type="button" 
+                        class="btn-close {{ close_button_class|default:'' }}" 
+                        data-bs-dismiss="modal" 
+                        aria-label="Close"
+                        :class="{
+                            'btn-close-white': darkHeader
+                        }"></button>
+                {% endif %}
+                
+                {% if title %}
+                <h5 class="modal-title {{ title_class|default:'' }}" 
+                    id="{{ modal_id|default:'exampleModal' }}Label">
+                    {% if icon %}
+                    <i class="bi {{ icon }} me-2 {{ icon_class|default:'' }}"></i>
+                    {% endif %}
+                    {{ title }}
+                    {% if subtitle %}
+                    <div class="modal-subtitle text-muted small">{{ subtitle }}</div>
+                    {% endif %}
+                </h5>
+                {% endif %}
+                
+                {% if header_actions %}
+                <div class="modal-header-actions ms-auto">
+                    {% for action in header_actions %}
+                    <button type="button" 
+                            class="btn btn-sm {{ action.class|default:'btn-outline-secondary' }}" 
+                            {% if action.action %}@click="{{ action.action }}"{% endif %}
+                            title="{{ action.title|default:action.label }}">
+                        {% if action.icon %}
+                        <i class="bi {{ action.icon }}"></i>
+                        {% endif %}
+                        <span class="d-none d-sm-inline">{{ action.label }}</span>
+                    </button>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Modal Body -->
+            <div class="modal-body {{ body_class|default:'' }}"
+                 :class="{
+                     'p-0': noPadding,
+                     'pt-0': noTopPadding
+                 }">
+                <!-- Loading State -->
+                <div class="modal-loading" x-show="loading" x-transition>
+                    <div class="d-flex flex-column align-items-center justify-content-center py-5">
+                        <div class="spinner-border text-primary mb-3" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="text-muted">{{ loading_text|default:'Loading content...' }}</p>
+                    </div>
+                </div>
+                
+                <!-- Error State -->
+                <div class="modal-error" x-show="error" x-transition>
+                    <div class="alert alert-danger d-flex align-items-center" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <div>
+                            <strong>Error:</strong> {{ error_text|default:'Failed to load content' }}
+                            {% if retry_action %}
+                            <button class="btn btn-sm btn-outline-danger ms-2" 
+                                    @click="{{ retry_action }}">
+                                Retry
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Modal Content -->
+                <div x-show="!loading && !error">
+                    {% if content %}
+                        {{ content|safe }}
+                    {% endif %}
+                    {% block modal_body %}{% endblock %}
+                </div>
+            </div>
+            
+            <!-- Modal Footer -->
+            {% if footer or actions or primary_button or secondary_button or show_footer|default:false %}
+            <div class="modal-footer {{ footer_class|default:'' }}"
+                 :class="{
+                     'border-0': noFooterBorder,
+                     'bg-transparent': transparentFooter,
+                     'justify-content-between': footerJustify === 'between',
+                     'justify-content-start': footerJustify === 'start'
+                 }">
+                {% if footer %}
+                <div class="modal-footer-text {{ footer_text_class|default:'text-muted' }}">
+                    {{ footer|safe }}
+                </div>
+                {% endif %}
+                
+                <div class="modal-footer-actions">
+                    {% if secondary_button %}
+                    <button type="button" 
+                            class="btn {{ secondary_button_class|default:'btn-secondary' }}" 
+                            data-bs-dismiss="modal"
+                            {% if secondary_button_id %}id="{{ secondary_button_id }}"{% endif %}>
+                        {{ secondary_button }}
+                    </button>
+                    {% endif %}
+                    
+                    {% if actions %}
+                        {% for action in actions %}
+                        <button type="button" 
+                                class="btn {{ action.class|default:'btn-secondary' }} {{ action.size|default:'' }}" 
+                                {% if action.dismiss %}data-bs-dismiss="modal"{% endif %}
+                                {% if action.action %}@click="{{ action.action }}"{% endif %}
+                                {% if action.disabled %}disabled{% endif %}
+                                {% if action.loading %}:disabled="actionLoading['{{ action.id|default:forloop.counter0 }}']"{% endif %}
+                                :class="{
+                                    'position-relative': actionLoading['{{ action.id|default:forloop.counter0 }}']
+                                }">
+                            {% if action.loading %}
+                            <span class="btn-loading-spinner" 
+                                  x-show="actionLoading['{{ action.id|default:forloop.counter0 }}']"
+                                  x-transition>
+                                <span class="spinner-border spinner-border-sm" 
+                                      role="status" 
+                                      aria-hidden="true"></span>
+                            </span>
+                            {% endif %}
+                            
+                            {% if action.icon %}
+                            <i class="bi {{ action.icon }} {{ action.loading and 'd-none' or '' }}" 
+                               x-show="!actionLoading['{{ action.id|default:forloop.counter0 }}']"></i>
+                            {% endif %}
+                            
+                            <span x-show="!actionLoading['{{ action.id|default:forloop.counter0 }}']">
+                                {{ action.label }}
+                            </span>
+                            
+                            {% if action.loading_text %}
+                            <span x-show="actionLoading['{{ action.id|default:forloop.counter0 }}']">
+                                {{ action.loading_text }}
+                            </span>
+                            {% endif %}
+                        </button>
+                        {% endfor %}
+                    {% endif %}
+                    
+                    {% if primary_button %}
+                    <button type="button" 
+                            class="btn {{ primary_button_class|default:'btn-primary' }}" 
+                            {% if primary_button_action %}@click="{{ primary_button_action }}"{% endif %}
+                            {% if primary_button_id %}id="{{ primary_button_id }}"{% endif %}>
+                        {{ primary_button }}
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('modalComponent', (modalId, isScrollable = false, isCentered = false) =>({
+        modal: null,
+        loading: false,
+        error: false,
+        fullscreen: false,
+        actionLoading: {},
+        
+        init() {
+            // Initialize modal
+            const modalElement = document.getElementById(modalId);
+            this.modal = new bootstrap.Modal(modalElement);
+            
+            // Listen for show event
+            modalElement.addEventListener('show.bs.modal', (event) => {
+                this.onShow(event);
+            });
+            
+            // Listen for shown event
+            modalElement.addEventListener('shown.bs.modal', (event) => {
+                this.onShown(event);
+            });
+            
+            // Listen for hide event
+            modalElement.addEventListener('hide.bs.modal', (event) => {
+                this.onHide(event);
+            });
+            
+            // Listen for hidden event
+            modalElement.addEventListener('hidden.bs.modal', (event) => {
+                this.onHidden(event);
+            });
+            
+            // Handle escape key for fullscreen mode
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape' && this.fullscreen) {
+                    this.toggleFullscreen();
+                }
+            });
+        },
+        
+        show(options = {}) {
+            // Set loading state if specified
+            if (options.loading !== undefined) {
+                this.loading = options.loading;
+            }
+            
+            // Set error state if specified
+            if (options.error !== undefined) {
+                this.error = options.error;
+            }
+            
+            // Show modal
+            this.modal.show();
+            
+            // Emit show event
+            this.$dispatch('modal-show', {
+                modalId: modalId,
+                options: options
+            });
+        },
+        
+        hide() {
+            this.modal.hide();
+            
+            // Emit hide event
+            this.$dispatch('modal-hide', {
+                modalId: modalId
+            });
+        },
+        
+        toggle() {
+            if (this.modal._isShown) {
+                this.hide();
+            } else {
+                this.show();
+            }
+        },
+        
+        setLoading(loading, text = '') {
+            this.loading = loading;
+            if (text) {
+                this.loadingText = text;
+            }
+            
+            // Emit loading state change
+            this.$dispatch('modal-loading-changed', {
+                modalId: modalId,
+                loading: loading,
+                text: text
+            });
+        },
+        
+        setError(error, text = '') {
+            this.error = error;
+            if (text) {
+                this.errorText = text;
+            }
+            
+            // Emit error state change
+            this.$dispatch('modal-error-changed', {
+                modalId: modalId,
+                error: error,
+                text: text
+            });
+        },
+        
+        setActionLoading(actionId, loading) {
+            this.$set(this.actionLoading, actionId, loading);
+            
+            // Emit action loading state change
+            this.$dispatch('modal-action-loading-changed', {
+                modalId: modalId,
+                actionId: actionId,
+                loading: loading
+            });
+        },
+        
+        toggleFullscreen() {
+            this.fullscreen = !this.fullscreen;
+            
+            // Emit fullscreen toggle
+            this.$dispatch('modal-fullscreen-toggled', {
+                modalId: modalId,
+                fullscreen: this.fullscreen
+            });
+        },
+        
+        updateSize(size) {
+            const dialog = document.querySelector(`#${modalId} .modal-dialog`);
+            
+            // Remove all size classes
+            dialog.classList.remove('modal-sm', 'modal-lg', 'modal-xl');
+            
+            // Add new size class if specified
+            if (size) {
+                dialog.classList.add(`modal-${size}`);
+            }
+            
+            // Emit size change
+            this.$dispatch('modal-size-changed', {
+                modalId: modalId,
+                size: size
+            });
+        },
+        
+        onShow(event) {
+            // Reset states when showing
+            this.error = false;
+            
+            // Custom logic when modal is shown
+            this.$dispatch('modal-showing', {
+                modalId: modalId,
+                event: event
+            });
+        },
+        
+        onShown(event) {
+            // Focus management for accessibility
+            const focusableElements = document.querySelectorAll(`#${modalId} input, #${modalId} button, #${modalId} [tabindex]:not([tabindex="-1"])`);
+            if (focusableElements.length > 0) {
+                focusableElements[0].focus();
+            }
+            
+            // Custom logic when modal is fully shown
+            this.$dispatch('modal-shown', {
+                modalId: modalId,
+                event: event
+            });
+        },
+        
+        onHide(event) {
+            // Custom logic when modal is hiding
+            this.$dispatch('modal-hiding', {
+                modalId: modalId,
+                event: event
+            });
+        },
+        
+        onHidden(event) {
+            // Reset states when hidden
+            this.loading = false;
+            this.error = false;
+            this.fullscreen = false;
+            this.actionLoading = {};
+            
+            // Return focus to the trigger element
+            if (event.relatedTarget) {
+                event.relatedTarget.focus();
+            }
+            
+            // Custom logic when modal is fully hidden
+            this.$dispatch('modal-hidden', {
+                modalId: modalId,
+                event: event
+            });
+        }
+    }));
+    
+    // Modal stacking support
+    document.addEventListener('show.bs.modal', function(event) {
+        // Keep track of open modals for stacking
+        const openModals = document.querySelectorAll('.modal.show');
+        if (openModals.length > 0) {
+            // Adjust z-index for stacking
+            const maxZIndex = Math.max(...Array.from(openModals).map(modal => 
+                parseInt(window.getComputedStyle(modal).zIndex) || 1050
+            ));
+            event.target.style.zIndex = maxZIndex + 10;
+        }
+    });
+    
+    // Modal backdrop management
+    document.addEventListener('hidden.bs.modal', function(event) {
+        // Check if there are still open modals
+        const remainingModals = document.querySelectorAll('.modal.show');
+        if (remainingModals.length === 0) {
+            // Remove all backdrops
+            document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+                backdrop.remove();
+            });
+        }
+    });
+});
+</script>
+
+<style>
+/* Modal Enhancements */
+.modal-content {
+    border-radius: var(--border-radius-lg);
+    overflow: hidden;
+}
+
+.modal-header {
+    border-bottom: 1px solid var(--color-border-light);
+    padding: var(--space-4) var(--space-4);
+}
+
+.modal-body {
+    padding: var(--space-4);
+}
+
+.modal-footer {
+    border-top: 1px solid var(--color-border-light);
+    padding: var(--space-3) var(--space-4);
+}
+
+/* Modal Title Enhancements */
+.modal-title {
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.modal-subtitle {
+    font-weight: 400;
+    margin-top: var(--space-1);
+}
+
+/* Modal Header Actions */
+.modal-header-actions {
+    display: flex;
+    gap: var(--space-2);
+    margin-left: var(--space-3);
+}
+
+/* Modal Loading State */
+.modal-loading {
+    padding: var(--space-5);
+}
+
+.modal-error {
+    padding: var(--space-4);
+}
+
+/* Button Loading State */
+.btn-loading-spinner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+/* Modal Transitions */
+.modal-loading,
+.modal-error {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+/* Modal Size Variants */
+.modal-fullscreen {
+    width: 100vw;
+    max-width: none;
+    height: 100vh;
+    margin: 0;
+}
+
+.modal-fullscreen .modal-content {
+    height: 100%;
+    border-radius: 0;
+}
+
+/* Modal Animation Enhancements */
+.modal.fade .modal-dialog {
+    transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+}
+
+.modal.show .modal-dialog {
+    transform: translate(0, 0);
+}
+
+/* Modal Backdrop */
+.modal-backdrop {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+/* Modal Focus Management */
+.modal:focus-within {
+    outline: none;
+}
+
+/* Modal Responsive Design */
+@media (max-width: 576px) {
+    .modal-dialog {
+        margin: var(--space-2);
+    }
+    
+    .modal-header,
+    .modal-body,
+    .modal-footer {
+        padding: var(--space-3);
+    }
+    
+    .modal-header-actions .btn span {
+        display: none;
+    }
+    
+    .modal-footer-actions {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .modal-footer-actions .btn {
+        width: 100%;
+        margin-bottom: var(--space-1);
+    }
+    
+    .modal-footer-actions .btn:last-child {
+        margin-bottom: 0;
+    }
+}
+
+/* Dark Mode Adjustments */
+[data-theme="dark"] .modal-content {
+    background-color: var(--color-bg-secondary);
+    color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .modal-header {
+    border-color: var(--color-border-medium);
+}
+
+[data-theme="dark"] .modal-footer {
+    border-color: var(--color-border-medium);
+}
+
+[data-theme="dark"] .btn-close-white {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+/* Accessibility Enhancements */
+.modal[aria-hidden="false"] {
+    display: block !important;
+}
+
+.modal[aria-hidden="true"] {
+    display: none !important;
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+    .modal-content {
+        border: 2px solid;
+    }
+    
+    .modal-header,
+    .modal-footer {
+        border-width: 2px;
+    }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+    .modal.fade .modal-dialog {
+        transition: none;
+    }
+    
+    .modal-loading,
+    .modal-error {
+        transition: none;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .modal {
+        position: static;
+        display: block;
+        overflow: visible;
+    }
+    
+    .modal-dialog {
+        width: 100%;
+        max-width: none;
+        margin: 0;
+        transform: none;
+    }
+    
+    .modal-backdrop {
+        display: none;
+    }
+}
+</style>
